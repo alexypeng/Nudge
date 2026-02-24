@@ -1,11 +1,13 @@
 from ninja import Router
 from .models import Group, Alarm
 from .schemas import GroupOut, GroupCreate, AlarmOut, AlarmCreate
+from users.api import TokenAuth
+
 
 router = Router()
 
 
-@router.post("/groups/", response=GroupOut)
+@router.post("/groups/", response=GroupOut, auth=TokenAuth())
 def create_group(request, payload: GroupCreate):
     group = Group.objects.create(name=payload.name)
     return group
@@ -16,7 +18,7 @@ def list_groups(request):
     return list(Group.objects.all())
 
 
-@router.post("/alarms/", response=AlarmOut)
+@router.post("/alarms/", response=AlarmOut, auth=TokenAuth())
 def create_alarm(request, payload: AlarmCreate):
     clean_time = payload.time.replace(tzinfo=None)
     alarm = Alarm.objects.create(
