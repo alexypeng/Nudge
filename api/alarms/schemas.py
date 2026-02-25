@@ -18,6 +18,7 @@ class AlarmOut(Schema):
     time: time
     repeats: str | None = None
     is_one_time: bool
+    user_id: uuid.UUID
     group_id: uuid.UUID
     is_active: bool
 

@@ -1,20 +1,12 @@
 from ninja import Router
-from ninja.security import HttpBearer
 from .models import User, AuthToken
 from .schemas import UserOut, UserCreate, UserLogin, TokenOut
 from django.contrib.auth import authenticate
-from django.shortcuts import get_object_or_404
 from ninja.errors import HttpError
 import uuid
 
 
 router = Router()
-
-
-class TokenAuth(HttpBearer):
-    def authenticate(self, request, token):
-        auth_token = get_object_or_404(AuthToken, id=token)
-        return auth_token.user
 
 
 @router.post("/users/", response=UserOut)
