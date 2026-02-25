@@ -1,5 +1,4 @@
 {
     "editor.defaultFormatter": "charliermarsh.ruff",
-    "python.defaultInterpreterPath": "${workspaceFolder}/api/.venv/bin/python",
     "python.languageServer": "None"
 }
