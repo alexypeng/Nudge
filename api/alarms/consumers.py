@@ -33,14 +33,41 @@ class AlarmConsumer(AsyncWebsocketConsumer):
             return
 
         self.scope["user"] = user
+        self.user_group_name = f"user_{str(self.scope['user'].id)}"
+
+        assert self.channel_layer is not None
+        await self.channel_layer.group_add(self.user_group_name, self.channel_name)
+
         await self.accept()
 
     async def disconnect(self, code):
-        pass
+        if hasattr(self, "user_group_name") and self.channel_layer is not None:
+            await self.channel_layer.group_discard(self.user_group_name, self.channel_name)
 
     async def receive(self, text_data=None, bytes_data=None):
         if text_data:
             text_data_json = json.loads(text_data)
-            message = text_data_json.get("message", "")
+            action = text_data_json.get("action", "")
 
-            await self.send(text_data=json.dumps({"message": message}))
+            if action == "manual_ring":
+                target_user_id = text_data_json.get("target_user_id")
+                target_group_name = f"user_{target_user_id}"
+                alarm_id = text_data_json.get("alarm_id")
+            else:
+                return
+
+            assert self.channel_layer is not None
+            await self.channel_layer.group_send(
+                target_group_name,
+                {"type": "ring.alarm", "alarm_id": alarm_id, "ringer_name": self.scope["user"].display_name},
+            )
+
+    async def ring_alarm(self, event):
+        alarm_id = event["alarm_id"]
+        ringer_name = event["ringer_name"]
+
+        await self.send(
+            text_data=json.dumps(
+                {"action": "ring", "alarm_id": alarm_id, "message": f"{ringer_name} is ringing your alarm!"}
+            )
+        )
