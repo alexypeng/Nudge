@@ -1,6 +1,7 @@
+from typing import Optional
 from ninja import Schema
 import uuid
-from datetime import time
+from datetime import time as Time
 
 
 class GroupOut(Schema):
@@ -15,8 +16,8 @@ class GroupCreate(Schema):
 class AlarmOut(Schema):
     id: uuid.UUID
     name: str
-    time: time
-    repeats: str | None = None
+    time: Time
+    repeats: Optional[str] = None
     is_one_time: bool
     user_id: uuid.UUID
     group_id: uuid.UUID
@@ -25,7 +26,15 @@ class AlarmOut(Schema):
 
 class AlarmCreate(Schema):
     name: str
-    time: time
-    repeats: str | None = None
+    time: Time
+    repeats: Optional[str] = None
     is_one_time: bool
     group_id: uuid.UUID
+
+
+class AlarmUpdate(Schema):
+    name: Optional[str] = None
+    time: Optional[Time] = None
+    repeats: Optional[str] = None
+    is_one_time: Optional[bool] = None
+    is_active: Optional[bool] = None
