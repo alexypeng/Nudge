@@ -17,6 +17,11 @@ class UserCreate(Schema):
     password: str
 
 
+class UserUpdate(Schema):
+    display_name: str
+    password: str
+
+
 class UserLogin(Schema):
     username: str
     password: str
