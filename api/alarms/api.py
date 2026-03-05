@@ -10,7 +10,7 @@ router = Router()
 
 @router.post("/groups/", response=GroupOut, auth=TokenAuth())
 def create_group(request, payload: GroupCreate):
-    group = Group.objects.create(name=payload.name)
+    group = Group.objects.create(name=payload.name, owner=request.auth)
     group.members.add(request.auth)
     return group
 
@@ -24,7 +24,7 @@ def list_groups(request):
 def delete_group(request, group_id: str):
     group = get_object_or_404(Group, id=group_id)
 
-    if request.auth not in group.members.all():
+    if request.auth != group.owner:
         return 403, None
 
     group.delete()
