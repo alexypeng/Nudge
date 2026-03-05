@@ -1,5 +1,4 @@
 from ninja import Router
-from django.shortcuts import get_object_or_404
 from .auth import TokenAuth
 from .models import User, AuthToken
 from .schemas import UserOut, UserCreate, UserLogin, TokenOut, UserUpdate
