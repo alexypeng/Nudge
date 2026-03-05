@@ -22,28 +22,22 @@ def create_user(request, payload: UserCreate):
     return user
 
 
-@router.get("/users/", response=list[UserOut], auth=TokenAuth())
-def list_users(request):
-    return list(User.objects.all())
+@router.get("/users/me/", response=UserOut, auth=TokenAuth())
+def list_user(request):
+    return request.auth
 
 
-@router.delete("/users/{user_id}/", response={204: None}, auth=TokenAuth())
-def delete_user(request, user_id: str):
-    user = get_object_or_404(User, id=user_id)
-
-    if user != request.auth:
-        return 403, None
+@router.delete("/users/me/", response={204: None}, auth=TokenAuth())
+def delete_user(request):
+    user = request.auth
 
     user.delete()
     return 204, None
 
 
-@router.put("/users/{user_id}/", response=UserOut, auth=TokenAuth())
-def update_user(request, user_id: str, payload: UserUpdate):
-    user = get_object_or_404(User, id=user_id)
-
-    if user != request.auth:
-        return 403, None
+@router.put("/users/me/", response=UserOut, auth=TokenAuth())
+def update_user(request, payload: UserUpdate):
+    user = request.auth
 
     for field, value in payload.dict(exclude_unset=True).items():
         if field == "password":
