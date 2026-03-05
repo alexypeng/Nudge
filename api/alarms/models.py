@@ -7,7 +7,7 @@ class Group(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
     members = models.ManyToManyField(User, related_name="alarm_groups")
-    
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="owned_groups")
 
 
 class Alarm(models.Model):

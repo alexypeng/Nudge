@@ -13,6 +13,10 @@ class GroupCreate(Schema):
     name: str
 
 
+class GroupUpdate(Schema):
+    name: str
+
+
 class AlarmOut(Schema):
     id: uuid.UUID
     name: str
