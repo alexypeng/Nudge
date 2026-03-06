@@ -46,6 +46,26 @@ def update_group(request, group_id: str, payload: GroupUpdate):
     return group
 
 
+@router.post("/groups/{group_id}/join/", response=GroupOut, auth=TokenAuth())
+def join_group(request, group_id: str):
+    group = get_object_or_404(Group, id=group_id)
+
+    group.members.add(request.auth)
+
+    return group
+
+
+@router.post("/groups/{group_id}/leave/", response={204: None}, auth=TokenAuth())
+def leave_group(request, group_id: str):
+    group = get_object_or_404(Group, id=group_id)
+
+    if request.auth not in group.members.all():
+        return 403, None
+
+    group.members.remove(request.auth)
+    return 204, None
+
+
 @router.post("/alarms/", response=AlarmOut, auth=TokenAuth())
 def create_alarm(request, payload: AlarmCreate):
     clean_time = payload.time.replace(tzinfo=None)
