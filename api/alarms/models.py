@@ -20,3 +20,19 @@ class Alarm(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="alarms")
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
     is_active = models.BooleanField(default=True)
+
+
+class AlarmEvent(models.Model):
+    class Status(models.TextChoices):
+        RINGING = "RINGING", "Ringing"
+        SILENCED = "SILENCED", "Silenced"
+        COMPLETED = "COMPLETED", "Completed"
+        EXPIRED = "EXPIRED", "Expired"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    alarm = models.ForeignKey(Alarm, on_delete=models.CASCADE, related_name="events")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="alarm_events")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.RINGING)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    silenced_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
