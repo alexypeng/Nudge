@@ -15,6 +15,7 @@ def create_user(request, payload: UserCreate):
     user = User.objects.create_user(
         username=payload.username,
         display_name=payload.display_name,
+        timezone=payload.timezone,
         email=payload.email,
         password=payload.password,
     )

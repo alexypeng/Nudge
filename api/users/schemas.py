@@ -1,11 +1,13 @@
 from ninja import Schema
 import uuid
+from typing import Optional
 
 
 class UserOut(Schema):
     id: uuid.UUID
     username: str
     display_name: str
+    timezone: str
     email: str
     password: str
 
@@ -13,13 +15,15 @@ class UserOut(Schema):
 class UserCreate(Schema):
     username: str
     display_name: str
+    timezone: str = "UTC"
     email: str
     password: str
 
 
 class UserUpdate(Schema):
-    display_name: str
-    password: str
+    display_name: Optional[str] = None
+    password: Optional[str] = None
+    timezone: Optional[str] = None
 
 
 class UserLogin(Schema):
