@@ -18,10 +18,10 @@ class Alarm(models.Model):
     repeats = models.CharField(max_length=20)
     is_one_time = models.BooleanField(default=True)
     last_triggered_date = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="alarms")
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
-    is_active = models.BooleanField(default=True)
 
 
 class AlarmEvent(models.Model):

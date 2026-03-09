@@ -44,8 +44,8 @@ class AlarmConsumer(AsyncWebsocketConsumer):
         self.scope["user"] = user
         self.user_group_name = f"user_{str(self.scope['user'].id)}"
 
-        assert self.channel_layer is not None
-        await self.channel_layer.group_add(self.user_group_name, self.channel_name)
+        if self.channel_layer:
+            await self.channel_layer.group_add(self.user_group_name, self.channel_name)
 
         await self.accept()
 
@@ -91,8 +91,8 @@ class AlarmConsumer(AsyncWebsocketConsumer):
         result = await self.verify_and_expire_event(event_id)
 
         if result == ExpireResult.SUCCESS:
-            assert self.channel_layer is not None
-            await self.channel_layer.group_send(group_name, {"type": "ring.expired", "event_id": event_id})
+            if self.channel_layer:
+                await self.channel_layer.group_send(group_name, {"type": "ring.expired", "event_id": event_id})
         elif result == ExpireResult.ALREADY_EXPIRED:
             await self.send(text_data=json.dumps({"error": "This alarm is already expired"}))
         else:

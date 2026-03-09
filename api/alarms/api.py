@@ -71,7 +71,7 @@ def leave_group(request, group_id: str):
 
 @router.post("/alarms/", response=AlarmOut, auth=TokenAuth())
 def create_alarm(request, payload: AlarmCreate):
-    clean_time = payload.time.replace(tzinfo=None)
+    clean_time = payload.time.replace(second=0, microsecond=0, tzinfo=None)
     alarm = Alarm.objects.create(
         name=payload.name,
         time=clean_time,
@@ -109,7 +109,7 @@ def update_alarm(request, alarm_id: str, payload: AlarmUpdate):
 
     for field, value in payload.dict(exclude_unset=True).items():
         if field == "time":
-            value = value.replace(tzinfo=None)
+            value = value.replace(second=0, microsecond=0, tzinfo=None)
 
         setattr(alarm, field, value)
 
@@ -132,11 +132,11 @@ def trigger_alarm(request, alarm_id: str):
 
     channel_layer = get_channel_layer()
 
-    assert channel_layer is not None
-    async_to_sync(channel_layer.group_send)(
-        f"user_{alarm.user.id}",
-        {"type": "ring.alarm", "event_id": str(event.id), "ringer_name": request.auth.display_name},
-    )
+    if channel_layer:
+        async_to_sync(channel_layer.group_send)(
+            f"user_{alarm.user.id}",
+            {"type": "ring.alarm", "event_id": str(event.id), "ringer_name": request.auth.display_name},
+        )
 
     return 200, event
 
@@ -158,11 +158,12 @@ def silence_alarm(request, event_id: str):
     event.save(update_fields=["status", "silenced_at"])
 
     channel_layer = get_channel_layer()
-    assert channel_layer is not None
 
-    async_to_sync(channel_layer.group_send)(
-        f"user_{event.user.id}", {"type": "start.timeout", "event_id": event_id, "group_name": f"user_{event.user.id}"}
-    )
+    if channel_layer:
+        async_to_sync(channel_layer.group_send)(
+            f"user_{event.user.id}",
+            {"type": "start.timeout", "event_id": event_id, "group_name": f"user_{event.user.id}"},
+        )
 
     return 200, event
 
