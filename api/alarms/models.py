@@ -24,10 +24,10 @@ class Alarm(models.Model):
 
 class AlarmEvent(models.Model):
     class Status(models.TextChoices):
-        RINGING = "RINGING", "Ringing"
-        SILENCED = "SILENCED", "Silenced"
-        COMPLETED = "COMPLETED", "Completed"
-        EXPIRED = "EXPIRED", "Expired"
+        RINGING = "RINGING", "ringing"
+        SILENCED = "SILENCED", "silenced"
+        COMPLETED = "COMPLETED", "completed"
+        EXPIRED = "EXPIRED", "expired"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     alarm = models.ForeignKey(Alarm, on_delete=models.CASCADE, related_name="events")
