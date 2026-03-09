@@ -1,8 +1,11 @@
+from django.utils import timezone
 from ninja import Router
-from .models import Group, Alarm
-from .schemas import GroupOut, GroupCreate, GroupUpdate, AlarmOut, AlarmCreate, AlarmUpdate
+from .models import Group, Alarm, AlarmEvent
+from .schemas import AlarmEventOut, GroupOut, GroupCreate, GroupUpdate, AlarmOut, AlarmCreate, AlarmUpdate
 from users.auth import TokenAuth
 from django.shortcuts import get_object_or_404
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 
 router = Router()
@@ -46,16 +49,16 @@ def update_group(request, group_id: str, payload: GroupUpdate):
     return group
 
 
-@router.post("/groups/{group_id}/join/", response=GroupOut, auth=TokenAuth())
+@router.post("/groups/{group_id}/join/", response={200: GroupOut, 403: None}, auth=TokenAuth())
 def join_group(request, group_id: str):
     group = get_object_or_404(Group, id=group_id)
 
     group.members.add(request.auth)
 
-    return group
+    return 200, group
 
 
-@router.post("/groups/{group_id}/leave/", response={204: None}, auth=TokenAuth())
+@router.post("/groups/{group_id}/leave/", response={204: None, 403: None}, auth=TokenAuth())
 def leave_group(request, group_id: str):
     group = get_object_or_404(Group, id=group_id)
 
@@ -112,3 +115,55 @@ def update_alarm(request, alarm_id: str, payload: AlarmUpdate):
 
     alarm.save()
     return alarm
+
+
+@router.post("/alarms/{alarm_id}/ring/", response={200: AlarmEventOut, 403: dict}, auth=TokenAuth())
+def trigger_alarm(request, alarm_id: str):
+    alarm = get_object_or_404(Alarm, id=alarm_id)
+
+    if not alarm.group.members.filter(id=request.auth.id).exists():
+        return 403, {"error", "You are not in this alarm's group"}
+
+    event = AlarmEvent.objects.create(
+        alarm=alarm,
+        user=alarm.user,
+        triggered_by=request.auth,
+    )
+
+    channel_layer = get_channel_layer()
+
+    assert channel_layer is not None
+    async_to_sync(channel_layer.group_send)(
+        f"user_{alarm.user.id}",
+        {"type": "ring.alarm", "event_id": str(event.id), "ringer_name": request.auth.display_name},
+    )
+
+    return 200, event
+
+
+@router.post(
+    "/events/{event_id}/silence/", response={200: AlarmEventOut, 403: dict, 404: None, 409: dict}, auth=TokenAuth()
+)
+def silence_alarm(request, event_id: str):
+    event = get_object_or_404(AlarmEvent, id=event_id)
+
+    if event.user != request.auth:
+        return 403, {"error": "You do not have access to this alarm"}
+
+    if event.status != AlarmEvent.Status.RINGING:
+        return 409, {"error": "Alarm is not currently ringing"}
+
+    event.status = AlarmEvent.Status.SILENCED
+    event.silenced_at = timezone.now()
+    event.save(update_fields=["status", "silenced_at"])
+
+    channel_layer = get_channel_layer()
+    assert channel_layer is not None
+
+    async_to_sync(channel_layer.group_send)(
+        f"user_{event.user.id}", {"type": "start.timeout", "event_id": event_id, "group_name": f"user_{event.user.id}"}
+    )
+
+    return 200, event
+
+

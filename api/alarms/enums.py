@@ -1,12 +1,6 @@
 import enum
 
 
-class ClientAction(enum.Enum):
-    MANUAL_RING = "manual_ring"
-    SILENCE = "silence"
-    CHECK_IN = "check_in"
-
-
 class ServerAction(enum.Enum):
     RING = "ring"
     EXPIRED = "expired"

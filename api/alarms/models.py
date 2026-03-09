@@ -32,6 +32,9 @@ class AlarmEvent(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     alarm = models.ForeignKey(Alarm, on_delete=models.CASCADE, related_name="events")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="alarm_events")
+    triggered_by = models.ForeignKey(
+        User, on_delete=models.CASCADE, null=True, blank=True, related_name="triggered_events"
+    )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.RINGING)
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
     silenced_at = models.DateTimeField(null=True, blank=True)
