@@ -122,7 +122,7 @@ def trigger_alarm(request, alarm_id: str):
     alarm = get_object_or_404(Alarm, id=alarm_id)
 
     if not alarm.group.members.filter(id=request.auth.id).exists():
-        return 403, {"error", "You are not in this alarm's group"}
+        return 403, {"error": "You are not in this alarm's group"}
 
     event = AlarmEvent.objects.create(
         alarm=alarm,
@@ -167,3 +167,21 @@ def silence_alarm(request, event_id: str):
     return 200, event
 
 
+@router.post(
+    "/events/{event_id}/check_in/", response={200: AlarmEventOut, 404: None, 403: dict, 409: dict}, auth=TokenAuth()
+)
+def check_in_alarm(request, event_id: str):
+    event = get_object_or_404(AlarmEvent, id=event_id)
+
+    if event.user != request.auth:
+        return 403, {"error": "You do not have access to this event!"}
+
+    if event.status != AlarmEvent.Status.RINGING and event.status != AlarmEvent.Status.SILENCED:
+        return 409, {"error": "You cannot check in for this alarm right now!"}
+
+    event.status = AlarmEvent.Status.CHECKED_IN
+    event.checked_in_at = timezone.now()
+
+    event.save(update_fields=["status", "checked_in_at"])
+
+    return 200, event
