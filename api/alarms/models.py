@@ -26,7 +26,7 @@ class AlarmEvent(models.Model):
     class Status(models.TextChoices):
         RINGING = "RINGING", "ringing"
         SILENCED = "SILENCED", "silenced"
-        COMPLETED = "COMPLETED", "completed"
+        CHECKED_IN = "CHECKED_IN", "checked_in"
         EXPIRED = "EXPIRED", "expired"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -38,4 +38,4 @@ class AlarmEvent(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.RINGING)
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
     silenced_at = models.DateTimeField(null=True, blank=True)
-    completed_at = models.DateTimeField(null=True, blank=True)
+    checked_in_at = models.DateTimeField(null=True, blank=True)
