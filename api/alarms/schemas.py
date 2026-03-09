@@ -53,4 +53,4 @@ class AlarmEventOut(Schema):
     status: str
     created_at: datetime
     silenced_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    checked_in_at: Optional[datetime] = None
