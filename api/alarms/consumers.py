@@ -1,13 +1,10 @@
 import json
 import urllib.parse
-import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from users.models import AuthToken
 from .models import AlarmEvent
-from .enums import ServerAction, ExpireResult
-
-EXPIRY_TIMER = 300
+from .enums import ServerAction
 
 
 class AlarmConsumer(AsyncWebsocketConsumer):
@@ -49,14 +46,14 @@ class AlarmConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        events = await self.get_active_events(user.id)
+        alarms = await self.get_active_alarms(user.id)
 
-        for event_id, status in events:
+        for alarm_id, status in alarms:
             action = (
                 ServerAction.RING.value if status == AlarmEvent.Status.RINGING else ServerAction.REQUIRE_CHECK_IN.value
             )
 
-            await self.send(text_data=json.dumps({"action": action, "event_id": str(event_id)}))
+            await self.send(text_data=json.dumps({"action": action, "alarm_id": str(alarm_id)}))
 
     async def disconnect(self, code):
         if hasattr(self, "user_group_name") and self.channel_layer is not None:
@@ -71,7 +68,7 @@ class AlarmConsumer(AsyncWebsocketConsumer):
             text_data=json.dumps(
                 {
                     "action": ServerAction.RING.value,
-                    "event_id": event["event_id"],
+                    "alarm_id": event["alarm_id"],
                     "message": f"{event['ringer_name']} is ringing your alarm!",
                 }
             )
@@ -79,47 +76,33 @@ class AlarmConsumer(AsyncWebsocketConsumer):
 
     async def ring_expired(self, event):
         await self.send(
-            text_data=json.dumps({"action": ServerAction.EXPIRED.value, "message": "Your alarm has expired!"})
+            text_data=json.dumps(
+                {
+                    "action": ServerAction.EXPIRED.value,
+                    "alarm_id": event.get("alarm_id"),
+                    "message": "Your alarm has expired!",
+                }
+            )
         )
 
-    async def start_timeout(self, event):
-        asyncio.create_task(self._run_timeout(event["event_id"], event["group_name"]))
-
-    async def _run_timeout(self, event_id, group_name):
-        await asyncio.sleep(EXPIRY_TIMER)
-
-        result = await self.verify_and_expire_event(event_id)
-
-        if result == ExpireResult.SUCCESS:
-            if self.channel_layer:
-                await self.channel_layer.group_send(group_name, {"type": "ring.expired", "event_id": event_id})
-        elif result == ExpireResult.ALREADY_EXPIRED:
-            await self.send(text_data=json.dumps({"error": "This alarm is already expired"}))
-        else:
-            await self.send(text_data=json.dumps({"error": "This event does not exist"}))
+    async def silence_alarm(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "action": ServerAction.SILENCED.value,
+                    "alarm_id": event["alarm_id"],
+                    "message": "Alarm silenced from another device.",
+                }
+            )
+        )
 
     # ==========================================
     # Database & Async helpers
     # ==========================================
     @database_sync_to_async
-    def get_active_events(self, user_id):
+    def get_active_alarms(self, user_id):
         events = AlarmEvent.objects.filter(
             user_id=user_id, status__in=[AlarmEvent.Status.RINGING, AlarmEvent.Status.SILENCED]
         )
 
-        return list(events.values_list("id", "status"))
-
-    @database_sync_to_async
-    def verify_and_expire_event(self, event_id):
-        try:
-            event = AlarmEvent.objects.get(id=event_id)
-
-            if event.status != AlarmEvent.Status.SILENCED:
-                return ExpireResult.ALREADY_EXPIRED
-
-            event.status = AlarmEvent.Status.EXPIRED
-
-            event.save(update_fields=["status"])
-            return ExpireResult.SUCCESS
-        except AlarmEvent.DoesNotExist:
-            return ExpireResult.NOT_FOUND
+        return list(events.values_list("alarm_id", "status"))
