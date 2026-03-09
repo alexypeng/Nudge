@@ -50,6 +50,22 @@ class AlarmConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
+        active_events = await self.get_active_events(user.id)
+
+        if active_events:
+            for event_id, status in active_events:
+                action = (
+                    ServerAction.RING.value
+                    if status == AlarmEvent.Status.RINGING
+                    else ServerAction.REQUIRE_CHECK_IN.value
+                )
+
+                await self.send(
+                    text_data=json.dumps(
+                        {"action": action, "event_id": str(event_id), "message": "You have an active alarm!"}
+                    )
+                )
+
     async def disconnect(self, code):
         if hasattr(self, "user_group_name") and self.channel_layer is not None:
             await self.channel_layer.group_discard(self.user_group_name, self.channel_name)
