@@ -117,7 +117,7 @@ def update_alarm(request, alarm_id: str, payload: AlarmUpdate):
     return alarm
 
 
-@router.post("/alarms/{alarm_id}/ring/", response={200: AlarmEventOut, 403: dict}, auth=TokenAuth())
+@router.post("/alarms/{alarm_id}/trigger/", response={200: AlarmEventOut, 403: dict}, auth=TokenAuth())
 def trigger_alarm(request, alarm_id: str):
     alarm = get_object_or_404(Alarm, id=alarm_id)
 

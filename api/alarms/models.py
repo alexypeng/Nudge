@@ -15,7 +15,7 @@ class Alarm(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
     time = models.TimeField()
-    repeats = models.CharField(max_length=20)
+    repeats = models.CharField(max_length=20, default="")
     is_one_time = models.BooleanField(default=True)
     last_triggered_date = models.DateField(null=True, blank=True)
     is_active = models.BooleanField(default=True)

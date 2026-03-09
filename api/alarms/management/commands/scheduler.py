@@ -29,7 +29,7 @@ class Command(BaseCommand):
             if now_user_tz.hour != alarm.time.hour or now_user_tz.minute != alarm.time.minute:
                 continue
 
-            if alarm.last_triggered_date != now_user_tz.date():
+            if alarm.last_triggered_date == now_user_tz.date():
                 continue
 
             day = now_user_tz.strftime("%a")

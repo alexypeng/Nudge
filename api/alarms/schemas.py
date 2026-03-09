@@ -32,7 +32,7 @@ class AlarmOut(Schema):
 class AlarmCreate(Schema):
     name: str
     time: Time
-    repeats: Optional[str] = None
+    repeats: str = ""
     is_one_time: bool
     group_id: uuid.UUID
 
