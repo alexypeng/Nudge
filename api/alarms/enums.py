@@ -10,15 +10,7 @@ class ServerAction(enum.Enum):
     ERROR = "error"
 
 
-class CheckInResult(enum.Enum):
-    SUCCESS = "success"
-    EXPIRED = "expired"
-    NOT_FOUND = "not_found"
-    ALREADY_COMPLETED = "already_completed"
-
-
-class SilenceResult(enum.Enum):
+class ExpireResult(enum.Enum):
     SUCCESS = "success"
     NOT_FOUND = "not_found"
-    ALREADY_SILENCED = "already_silenced"
-    CHECKED_IN = "checked_in"
+    ALREADY_EXPIRED = "already_expired"

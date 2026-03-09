@@ -3,17 +3,16 @@ import urllib.parse
 import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from django.utils import timezone
 from users.models import AuthToken
 from .models import AlarmEvent
-from .enums import ClientAction, CheckInResult, ServerAction, SilenceResult
+from .enums import ServerAction, ExpireResult
 
 EXPIRY_TIMER = 300
 
 
 class AlarmConsumer(AsyncWebsocketConsumer):
     # ==========================================
-    # 1. CONNECTION & ROUTING
+    # Connection & Routing
     # ==========================================
 
     @database_sync_to_async
@@ -50,127 +49,58 @@ class AlarmConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        active_events = await self.get_active_events(user.id)
+        events = await self.get_active_events(user.id)
 
-        if active_events:
-            for event_id, status in active_events:
-                action = (
-                    ServerAction.RING.value
-                    if status == AlarmEvent.Status.RINGING
-                    else ServerAction.REQUIRE_CHECK_IN.value
-                )
+        for event_id, status in events:
+            action = (
+                ServerAction.RING.value if status == AlarmEvent.Status.RINGING else ServerAction.REQUIRE_CHECK_IN.value
+            )
 
-                await self.send(
-                    text_data=json.dumps(
-                        {"action": action, "event_id": str(event_id), "message": "You have an active alarm!"}
-                    )
-                )
+            await self.send(text_data=json.dumps({"action": action, "event_id": str(event_id)}))
 
     async def disconnect(self, code):
         if hasattr(self, "user_group_name") and self.channel_layer is not None:
             await self.channel_layer.group_discard(self.user_group_name, self.channel_name)
 
-    async def receive(self, text_data=None, bytes_data=None):
-        if text_data:
-            text_data_json = json.loads(text_data)
-            action = text_data_json.get("action", "")
-
-            if action == ClientAction.MANUAL_RING.value:
-                await self.handle_manual_ring(text_data_json)
-            elif action == ClientAction.SILENCE.value:
-                await self.handle_silence_alarm(text_data_json)
-            elif action == ClientAction.CHECK_IN.value:
-                await self.handle_check_in(text_data_json)
-            return
-
     # ==========================================
-    # 2. INCOMING ACTION HANDLERS
-    # ==========================================
-
-    async def handle_manual_ring(self, text_data_json):
-        target_user_id = text_data_json.get("target_user_id")
-        target_group_name = f"user_{target_user_id}"
-        alarm_id = text_data_json.get("alarm_id")
-
-        assert self.channel_layer is not None
-        await self.channel_layer.group_send(
-            target_group_name,
-            {"type": "ring.alarm", "alarm_id": alarm_id, "ringer_name": self.scope["user"].display_name},
-        )
-
-    async def handle_silence_alarm(self, text_data_json):
-        event_id = text_data_json.get("event_id")
-
-        status = await self.update_event_to_silenced(event_id)
-        if status == SilenceResult.SUCCESS:
-            asyncio.create_task(self.enforce_timeout(event_id, self.user_group_name))
-
-            await self.send(text_data=json.dumps({"action": ServerAction.SILENCED.value}))
-        elif status == SilenceResult.ALREADY_SILENCED:
-            await self.send(text_data=json.dumps({"error": "Alarm already silenced"}))
-        else:
-            await self.send(text_data=json.dumps({"error": "Event not found"}))
-
-    async def handle_check_in(self, text_data_json):
-        event_id = text_data_json.get("event_id")
-
-        status = await self.verify_and_check_in_event(event_id)
-
-        if status == CheckInResult.SUCCESS:
-            await self.send(text_data=json.dumps({"action": ServerAction.CHECKED_IN.value}))
-
-            assert self.channel_layer is not None
-            await self.channel_layer.group_send(
-                self.user_group_name,
-                {"type": "ring.success", "checked_in_user": self.scope["user"].display_name},
-            )
-        elif status == CheckInResult.EXPIRED:
-            await self.send(text_data=json.dumps({"error": "Too late! The alarm expired before you checked in."}))
-        elif status == CheckInResult.NOT_FOUND:
-            await self.send(text_data=json.dumps({"error": "Event not found."}))
-        elif status == CheckInResult.ALREADY_COMPLETED:
-            await self.send(text_data=json.dumps({"error": "You already checked in!"}))
-        else:
-            await self.send(text_data=json.dumps({"error": "Invalid action."}))
-
-    # ==========================================
-    # 3. OUTGOING MESSAGE HANDLERS (CHANNEL LAYER)
+    # Outgoing handlers
     # ==========================================
 
     async def ring_alarm(self, event):
-        alarm_id = event["alarm_id"]
-        ringer_name = event["ringer_name"]
-
         await self.send(
             text_data=json.dumps(
                 {
                     "action": ServerAction.RING.value,
-                    "alarm_id": alarm_id,
-                    "message": f"{ringer_name} is ringing your alarm!",
+                    "event_id": event["event_id"],
+                    "message": f"{event['ringer_name']} is ringing your alarm!",
                 }
             )
         )
 
     async def ring_expired(self, event):
-        missed_user = event["missed_user"]
         await self.send(
-            text_data=json.dumps(
-                {"action": ServerAction.EXPIRED.value, "message": f"{missed_user} missed their alarm!"}
-            )
+            text_data=json.dumps({"action": ServerAction.EXPIRED.value, "message": "Your alarm has expired!"})
         )
 
-    async def ring_success(self, event):
-        checked_in_user = event["checked_in_user"]
-        await self.send(
-            text_data=json.dumps(
-                {"action": ServerAction.CHECKED_IN.value, "message": f"{checked_in_user} successfully checked in!"}
-            )
-        )
+    async def start_timeout(self, event):
+        asyncio.create_task(self._run_timeout(event["event_id"], event["group_name"]))
+
+    async def _run_timeout(self, event_id, group_name):
+        await asyncio.sleep(EXPIRY_TIMER)
+
+        result = await self.verify_and_expire_event(event_id)
+
+        if result == ExpireResult.SUCCESS:
+            assert self.channel_layer is not None
+            await self.channel_layer.group_send(group_name, {"type": "ring.expired", "event_id": event_id})
+        elif result == ExpireResult.ALREADY_EXPIRED:
+            await self.send(text_data=json.dumps({"error": "This alarm is already expired"}))
+        else:
+            await self.send(text_data=json.dumps({"error": "This event does not exist"}))
 
     # ==========================================
-    # 4. DATABASE & ASYNC HELPERS
+    # Database & Async helpers
     # ==========================================
-
     @database_sync_to_async
     def get_active_events(self, user_id):
         events = AlarmEvent.objects.filter(
@@ -180,61 +110,16 @@ class AlarmConsumer(AsyncWebsocketConsumer):
         return list(events.values_list("id", "status"))
 
     @database_sync_to_async
-    def update_event_to_silenced(self, event_id):
-        try:
-            event = AlarmEvent.objects.get(id=event_id)
-
-            if event.status == AlarmEvent.Status.RINGING:
-                event.status = AlarmEvent.Status.SILENCED
-                event.silenced_at = timezone.now()
-
-                event.save(update_fields=["status", "silenced_at"])
-                return SilenceResult.SUCCESS
-
-            return SilenceResult.ALREADY_SILENCED
-        except AlarmEvent.DoesNotExist:
-            return SilenceResult.NOT_FOUND
-
-    @database_sync_to_async
-    def verify_and_check_in_event(self, event_id):
-        try:
-            event = AlarmEvent.objects.get(id=event_id)
-
-            if event.status == AlarmEvent.Status.SILENCED or event.status == AlarmEvent.Status.RINGING:
-                event.status = AlarmEvent.Status.COMPLETED
-                event.completed_at = timezone.now()
-                event.save(update_fields=["status", "completed_at"])
-                return CheckInResult.SUCCESS
-
-            elif event.status == AlarmEvent.Status.EXPIRED:
-                return CheckInResult.EXPIRED
-
-            else:
-                return CheckInResult.ALREADY_COMPLETED
-
-        except AlarmEvent.DoesNotExist:
-            return CheckInResult.NOT_FOUND
-
-    @database_sync_to_async
     def verify_and_expire_event(self, event_id):
         try:
             event = AlarmEvent.objects.get(id=event_id)
-            if event.status == AlarmEvent.Status.SILENCED:
-                event.status = AlarmEvent.Status.EXPIRED
-                event.save(update_fields=["status"])
-                return SilenceResult.SUCCESS
-            return SilenceResult.CHECKED_IN
+
+            if event.status != AlarmEvent.Status.SILENCED:
+                return ExpireResult.ALREADY_EXPIRED
+
+            event.status = AlarmEvent.Status.EXPIRED
+
+            event.save(update_fields=["status"])
+            return ExpireResult.SUCCESS
         except AlarmEvent.DoesNotExist:
-            return SilenceResult.NOT_FOUND
-
-    async def enforce_timeout(self, event_id, target_group_name):
-        await asyncio.sleep(EXPIRY_TIMER)
-
-        status = await self.verify_and_expire_event(event_id)
-
-        if status == SilenceResult.SUCCESS:
-            assert self.channel_layer is not None
-            await self.channel_layer.group_send(
-                target_group_name,
-                {"type": "ring.expired", "missed_user": self.scope["user"].display_name},
-            )
+            return ExpireResult.NOT_FOUND
