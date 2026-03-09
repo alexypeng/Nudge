@@ -1,4 +1,4 @@
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from django.db import models
 from users.models import User
 import uuid
@@ -46,7 +46,11 @@ class Alarm(models.Model):
         super().save(*args, **kwargs)
 
     def calculate_next_trigger(self):
-        user_tz = ZoneInfo(self.user.timezone)
+        try:
+            tz_string = self.user.timezone if self.user.timezone else "UTC"
+            user_tz = ZoneInfo(tz_string)
+        except ZoneInfoNotFoundError:
+            user_tz = ZoneInfo("UTC")
         now_utc = timezone.now()
         now_user_time = now_utc.astimezone(user_tz)
 
