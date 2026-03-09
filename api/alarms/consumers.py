@@ -156,6 +156,14 @@ class AlarmConsumer(AsyncWebsocketConsumer):
     # ==========================================
 
     @database_sync_to_async
+    def get_active_events(self, user_id):
+        events = AlarmEvent.objects.filter(
+            user_id=user_id, status__in=[AlarmEvent.Status.RINGING, AlarmEvent.Status.SILENCED]
+        )
+
+        return list(events.values_list("id", "status"))
+
+    @database_sync_to_async
     def update_event_to_silenced(self, event_id):
         try:
             event = AlarmEvent.objects.get(id=event_id)
