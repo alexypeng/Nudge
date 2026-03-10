@@ -9,7 +9,6 @@ class UserOut(Schema):
     display_name: str
     timezone: str
     email: str
-    password: str
 
 
 class UserCreate(Schema):
