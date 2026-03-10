@@ -95,8 +95,14 @@ class AlarmEventOut(Schema):
     id: uuid.UUID
     alarm_id: uuid.UUID
     user_id: uuid.UUID
-    triggered_by_id: Optional[uuid.UUID] = None
     status: str
     created_at: datetime
     silenced_at: Optional[datetime] = None
     checked_in_at: Optional[datetime] = None
+
+
+class ManualRingOut(Schema):
+    id: uuid.UUID
+    alarm_id: uuid.UUID
+    ringer_id: Optional[uuid.UUID] = None
+    created_at: datetime
