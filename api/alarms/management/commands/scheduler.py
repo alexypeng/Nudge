@@ -23,36 +23,55 @@ class Command(BaseCommand):
         now = timezone.now()
         threshold = now - timedelta(minutes=5)
 
-        with transaction.atomic():
-            abandoned_events = (
-                AlarmEvent.objects.select_for_update(of=("self",))
-                .filter(status__in=[AlarmEvent.Status.RINGING, AlarmEvent.Status.SILENCED], created_at__lte=threshold)
-                .select_related("alarm__group", "user")
-            )
+        abandoned_event_ids = list(
+            AlarmEvent.objects.filter(
+                status__in=[AlarmEvent.Status.RINGING, AlarmEvent.Status.SILENCED], created_at__lte=threshold
+            ).values_list("id", flat=True)
+        )
 
-            for event in abandoned_events:
-                event.status = AlarmEvent.Status.EXPIRED
-                event.save(update_fields=["status"])
+        for event_id in abandoned_event_ids:
+            with transaction.atomic():
+                event = (
+                    AlarmEvent.objects.select_for_update(of=("self",))
+                    .select_related("alarm__group", "user")
+                    .get(id=event_id)
+                )
 
-                print(f"[{now}] Reaped abandoned event for {event.user.display_name}")
-                self.notify_group(channel_layer, event.alarm.group.id, str(event.id), event.user.display_name)
+                if event.status in [AlarmEvent.Status.RINGING, AlarmEvent.Status.SILENCED]:
+                    event.status = AlarmEvent.Status.EXPIRED
+                    event.save(update_fields=["status"])
 
-            missed_alarms = (
-                Alarm.objects.select_for_update(of=("self",))
-                .filter(is_active=True, next_trigger_utc__lte=threshold)
-                .select_related("group", "user")
-            )
+                    print(f"[{now}] Reaped abandoned event for {event.user.display_name}")
 
-        for alarm in missed_alarms:
-            event = AlarmEvent.objects.create(alarm=alarm, user=alarm.user, status=AlarmEvent.Status.EXPIRED)
+                    transaction.on_commit(
+                        lambda e=event: self.notify_group(
+                            channel_layer, e.alarm.group.id, str(e.id), e.user.display_name
+                        )
+                    )
 
-            if alarm.is_one_time:
-                alarm.is_active = False
+        missed_alarm_ids = list(
+            Alarm.objects.filter(is_active=True, next_trigger_utc__lte=threshold).values_list("id", flat=True)
+        )
 
-            alarm.save(update_fields=["is_active", "next_trigger_utc"])
+        for alarm_id in missed_alarm_ids:
+            with transaction.atomic():
+                alarm = Alarm.objects.select_for_update(of=("self",)).select_related("group", "user").get(id=alarm_id)
 
-            print(f"[{now}] Caught dead phone for {alarm.user.display_name}")
-            self.notify_group(channel_layer, alarm.group.id, str(event.id), alarm.user.display_name)
+                if alarm.is_active and alarm.next_trigger_utc and alarm.next_trigger_utc <= threshold:
+                    event = AlarmEvent.objects.create(alarm=alarm, user=alarm.user, status=AlarmEvent.Status.EXPIRED)
+
+                    if alarm.is_one_time:
+                        alarm.is_active = False
+
+                    alarm.save(update_fields=["is_active", "next_trigger_utc"])
+
+                    print(f"[{now}] Caught dead phone for {alarm.user.display_name}")
+
+                    transaction.on_commit(
+                        lambda a=alarm, ev_id=str(event.id): self.notify_group(
+                            channel_layer, a.group.id, ev_id, a.user.display_name
+                        )
+                    )
 
     def notify_group(self, channel_layer, group_id, event_id, user_display_name):
         if channel_layer:
