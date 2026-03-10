@@ -49,6 +49,11 @@ class Alarm(models.Model):
         else:
             self.next_trigger_utc = None
 
+        if "update_fields" in kwargs:
+            update_fields = set(kwargs["update_fields"])
+            update_fields.add("next_trigger_utc")
+            kwargs["update_fields"] = list(update_fields)
+
         super().save(*args, **kwargs)
 
     def calculate_next_trigger(self):
