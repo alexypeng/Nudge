@@ -165,39 +165,41 @@ def trigger_alarm(request, alarm_id: str):
 
 @router.post("/alarms/{alarm_id}/check_in/", response={200: dict, 404: None, 403: dict, 409: dict}, auth=TokenAuth())
 def check_in_alarm(request, alarm_id: str):
-    alarm = get_object_or_404(Alarm, id=alarm_id)
+    with transaction.atomic():
+        alarm = get_object_or_404(Alarm.objects.select_for_update(), id=alarm_id)
 
-    if alarm.user != request.auth:
-        return 403, {"error": "You do not have access to this event!"}
+        if alarm.user != request.auth:
+            return 403, {"error": "You do not have access to this event!"}
 
-    event = AlarmEvent.objects.filter(alarm=alarm).order_by("-created_at").first()
+        event = AlarmEvent.objects.filter(alarm=alarm).select_for_update().order_by("-created_at").first()
 
-    if not event:
-        return 404, None
-    if event.status == AlarmEvent.Status.CHECKED_IN:
-        return 409, {"error": "Already checked in"}
+        if not event:
+            return 404, None
+        if event.status == AlarmEvent.Status.CHECKED_IN:
+            return 409, {"error": "Already checked in"}
 
-    event.status = AlarmEvent.Status.CHECKED_IN
-    event.checked_in_at = timezone.now()
-    event.save(update_fields=["status", "checked_in_at"])
+        event.status = AlarmEvent.Status.CHECKED_IN
+        event.checked_in_at = timezone.now()
+        event.save(update_fields=["status", "checked_in_at"])
 
     return 200, {"message": f"Checked in for {event.alarm.name}"}
 
 
 @router.post("/alarms/{alarm_id}/silence/", response={200: dict, 403: dict, 404: None, 409: dict}, auth=TokenAuth())
 def silence_alarm(request, alarm_id: str):
-    alarm = get_object_or_404(Alarm, id=alarm_id)
+    with transaction.atomic():
+        alarm = get_object_or_404(Alarm.objects.select_for_update(), id=alarm_id)
 
-    if alarm.user != request.auth:
-        return 403, {"error": "You do not have access to this alarm"}
+        if alarm.user != request.auth:
+            return 403, {"error": "You do not have access to this alarm"}
 
-    event = AlarmEvent.objects.filter(alarm=alarm).order_by("-created_at").first()
-    if not event:
-        return 404, None
+        event = AlarmEvent.objects.filter(alarm=alarm).select_for_update().order_by("-created_at").first()
+        if not event:
+            return 404, None
 
-    event.status = AlarmEvent.Status.SILENCED
-    event.silenced_at = timezone.now()
-    event.save(update_fields=["status", "silenced_at"])
+        event.status = AlarmEvent.Status.SILENCED
+        event.silenced_at = timezone.now()
+        event.save(update_fields=["status", "silenced_at"])
 
     return 200, {"message": f"Silenced your {event.alarm.name} alarm"}
 
@@ -210,11 +212,15 @@ def ringing_alarm(request, alarm_id: str):
         if alarm.user != request.auth:
             return 403, {"error": "You do not have access to this alarm."}
 
-        recent_threshold = timezone.now() - timedelta(minutes=10)
-        existing_event = AlarmEvent.objects.filter(alarm=alarm, created_at__gte=recent_threshold).exists()
+        recent_threshold = timezone.now() - timedelta(minutes=2)
+        existing_event = AlarmEvent.objects.filter(
+            alarm=alarm,
+            created_at__gte=recent_threshold,
+            status__in=[AlarmEvent.Status.RINGING, AlarmEvent.Status.SILENCED],
+        ).exists()
 
         if existing_event:
-            return 409, {"error": "This alarm is already marked as ringing."}
+            return 409, {"error": "An active event already exists for this alarm."}
 
         event = AlarmEvent.objects.create(alarm=alarm, user=alarm.user)
 
