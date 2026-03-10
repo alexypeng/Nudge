@@ -1,7 +1,7 @@
 from django.utils import timezone
 from ninja import Router
-from .models import Group, Alarm, AlarmEvent
-from .schemas import AlarmEventOut, GroupOut, GroupCreate, GroupUpdate, AlarmOut, AlarmCreate, AlarmUpdate
+from .models import Group, Alarm, AlarmEvent, ManualRing
+from .schemas import ManualRingOut, GroupOut, GroupCreate, GroupUpdate, AlarmOut, AlarmCreate, AlarmUpdate
 from users.auth import TokenAuth
 from django.shortcuts import get_object_or_404
 from channels.layers import get_channel_layer
@@ -129,7 +129,7 @@ def update_alarm(request, alarm_id: str, payload: AlarmUpdate):
 
 
 @router.post(
-    "/alarms/{alarm_id}/trigger/", response={200: AlarmEventOut, 403: dict, 409: dict, 404: None}, auth=TokenAuth()
+    "/alarms/{alarm_id}/trigger/", response={200: ManualRingOut, 403: dict, 409: dict, 404: None}, auth=TokenAuth()
 )
 def trigger_alarm(request, alarm_id: str):
     with transaction.atomic():
@@ -138,31 +138,34 @@ def trigger_alarm(request, alarm_id: str):
         if not alarm.group.members.filter(id=request.auth.id).exists():
             return 403, {"error": "You are not in this alarm's group"}
 
-        latest_event = AlarmEvent.objects.filter(alarm=alarm).order_by("-created_at").first()
+        event = AlarmEvent.objects.filter(alarm=alarm).order_by("-created_at").first()
 
-        if not latest_event:
+        if not event:
             return 409, {"error": f"{alarm.user.display_name}'s alarm hasn't gone off yet!"}
-        elif latest_event.status == AlarmEvent.Status.CHECKED_IN:
+        elif event.status == AlarmEvent.Status.CHECKED_IN:
             return 409, {"error": f"{alarm.user.display_name} already checked in!"}
-        if latest_event.status == AlarmEvent.Status.RINGING:
+        if event.status == AlarmEvent.Status.RINGING:
             return 409, {"error": "They are currently being rung! Give them a second."}
-        if latest_event.status == AlarmEvent.Status.SILENCED and latest_event.triggered_by is None:
+        if event.status == AlarmEvent.Status.SILENCED:
             return 409, {"error": "The user is in their 5-minute grace period."}
 
-        event = AlarmEvent.objects.create(
+        manual_ring = ManualRing.objects.create(
             alarm=alarm,
-            user=alarm.user,
-            triggered_by=request.auth,
+            ringer=request.auth,
         )
 
     channel_layer = get_channel_layer()
     if channel_layer:
         async_to_sync(channel_layer.group_send)(
             f"user_{alarm.user.id}",
-            {"type": "ring.alarm", "alarm_id": str(alarm.id), "ringer_name": request.auth.display_name},
+            {
+                "type": "ring.alarm",
+                "alarm_id": str(alarm.id),
+                "message": f"{request.auth.display_name} is ringing your alarm!",
+            },
         )
 
-    return 200, event
+    return 200, manual_ring
 
 
 @router.post("/alarms/{alarm_id}/check_in/", response={200: dict, 404: None, 403: dict, 409: dict}, auth=TokenAuth())
@@ -172,16 +175,18 @@ def check_in_alarm(request, alarm_id: str):
     if alarm.user != request.auth:
         return 403, {"error": "You do not have access to this event!"}
 
-    unresolved_statuses = [AlarmEvent.Status.RINGING, AlarmEvent.Status.SILENCED, AlarmEvent.Status.EXPIRED]
+    event = AlarmEvent.objects.filter(alarm=alarm).order_by("-created_at").first()
 
-    updated = AlarmEvent.objects.filter(alarm=alarm, status__in=unresolved_statuses).update(
-        status=AlarmEvent.Status.CHECKED_IN, checked_in_at=timezone.now()
-    )
+    if not event:
+        return 404, None
+    if event.status == AlarmEvent.Status.CHECKED_IN:
+        return 409, {"error": "Already checked in"}
 
-    if updated == 0:
-        return 409, {"error": "No alarms to check in for at the moment"}
+    event.status = AlarmEvent.Status.CHECKED_IN
+    event.checked_in_at = timezone.now()
+    event.save(update_fields=["status", "checked_in_at"])
 
-    return 200, {"message": f"Checked in for {alarm.name}"}
+    return 200, {"message": f"Checked in for {event.alarm.name}"}
 
 
 @router.post("/alarms/{alarm_id}/silence/", response={200: dict, 403: dict, 404: None, 409: dict}, auth=TokenAuth())
@@ -191,18 +196,19 @@ def silence_alarm(request, alarm_id: str):
     if alarm.user != request.auth:
         return 403, {"error": "You do not have access to this alarm"}
 
-    silenced = AlarmEvent.objects.filter(alarm=alarm, status=AlarmEvent.Status.RINGING).update(
-        status=AlarmEvent.Status.SILENCED, silenced_at=timezone.now()
-    )
+    event = AlarmEvent.objects.filter(alarm=alarm).order_by("-created_at").first()
+    if not event:
+        return 404, None
 
-    if silenced == 0:
-        return 409, {"error": "The alarm is not currently ringing."}
+    event.status = AlarmEvent.Status.SILENCED
+    event.silenced_at = timezone.now()
+    event.save(update_fields=["status", "silenced_at"])
 
     channel_layer = get_channel_layer()
     if channel_layer:
         async_to_sync(channel_layer.group_send)(
-            f"user_{alarm.user.id}",
-            {"type": "silence.alarm", "alarm_id": alarm_id},
+            f"user_{event.user.id}",
+            {"type": "silence.alarm", "event_id": str(event.id)},
         )
 
-    return 200, {"message": f"Silenced your {alarm.name} alarm"}
+    return 200, {"message": f"Silenced your {event.alarm.name} alarm"}
