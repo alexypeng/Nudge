@@ -34,8 +34,12 @@ class Command(BaseCommand):
                 event = (
                     AlarmEvent.objects.select_for_update(of=("self",))
                     .select_related("alarm__group", "user")
-                    .get(id=event_id)
+                    .filter(id=event_id)
+                    .first()
                 )
+
+                if not event:
+                    continue
 
                 if event.status in [AlarmEvent.Status.RINGING, AlarmEvent.Status.SILENCED]:
                     event.status = AlarmEvent.Status.EXPIRED
@@ -55,7 +59,15 @@ class Command(BaseCommand):
 
         for alarm_id in missed_alarm_ids:
             with transaction.atomic():
-                alarm = Alarm.objects.select_for_update(of=("self",)).select_related("group", "user").get(id=alarm_id)
+                alarm = (
+                    Alarm.objects.select_for_update(of=("self",))
+                    .select_related("group", "user")
+                    .filter(id=alarm_id)
+                    .first()
+                )
+
+                if not alarm:
+                    continue
 
                 if alarm.is_active and alarm.next_trigger_utc and alarm.next_trigger_utc <= threshold:
                     event = AlarmEvent.objects.create(alarm=alarm, user=alarm.user, status=AlarmEvent.Status.EXPIRED)
