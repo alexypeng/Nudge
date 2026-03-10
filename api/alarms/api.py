@@ -53,14 +53,15 @@ def join_group(request, group_id: str):
 
 @router.post("/groups/{group_id}/leave/", response={204: None, 403: None}, auth=TokenAuth())
 def leave_group(request, group_id: str):
-    group = get_object_or_404(Group, id=group_id)
+    with transaction.atomic():
+        group = get_object_or_404(Group.objects.select_for_update(), id=group_id)
 
-    if request.auth not in group.members.all():
-        return 403, None
+        if request.auth not in group.members.all():
+            return 403, None
 
-    group.members.remove(request.auth)
-    if group.members.count() == 0:
-        group.delete()
+        group.members.remove(request.auth)
+        if group.members.count() == 0:
+            group.delete()
 
     return 204, None
 
