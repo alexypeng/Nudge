@@ -54,8 +54,9 @@ class Command(BaseCommand):
                 print(f"[{now}] Caught dead phone for {alarm.user.display_name}")
                 self.notify_group(channel_layer, alarm.group.id, str(event.id), alarm.user.display_name)
 
-    def notify_group(self, channel_layer, group_id, event_id, user_name):
+    def notify_group(self, channel_layer, group_id, event_id, user_display_name):
         if channel_layer:
             async_to_sync(channel_layer.group_send)(
-                f"group_{group_id}", {"type": "alarm.expired", "event_id": event_id, "name": user_name}
+                f"group_{group_id}",
+                {"type": "alarm.expired", "event_id": event_id, "user_display_name": user_display_name},
             )
