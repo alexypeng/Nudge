@@ -17,14 +17,14 @@ class AlarmConsumer(AsyncWebsocketConsumer):
             token = AuthToken.objects.select_related("user").get(id=token_id)
             groups = list(token.user.alarm_groups.values_list("id", flat=True))
             return token.user, groups
-        except AuthToken.DoesNotExist, ValueError:
+        except (AuthToken.DoesNotExist, ValueError):
             return None, []
 
     async def connect(self):
-        query_string = self.scope["query_string"].decode()
-        parse_qs = urllib.parse.parse_qs(query_string)
-        token_list = parse_qs.get("token")
-        token_id = token_list[0] if token_list else None
+        headers = dict(self.scope["headers"])
+        token_id = None
+        if b"sec-websocket-protocol" in headers:
+            token_id = headers[b"sec-websocket-protocol"].decode().split(",")[0].strip()
 
         if not token_id:
             await self.close()
