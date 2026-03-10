@@ -1,5 +1,20 @@
 from django.apps import AppConfig
+import firebase_admin
+from firebase_admin import credentials
+import os
 
 
 class CoreConfig(AppConfig):
-    name = 'core'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "core"
+
+    def ready(self):
+        if not firebase_admin._apps:
+            cred_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ringsync-firebase-adminsdk.json")
+
+            if os.path.exists(cred_path):
+                cred = credentials.Certificate(cred_path)
+                firebase_admin.initialize_app(cred)
+                print("Firebase Admin SDK Initialized.")
+            else:
+                print("WARNING: Firebase credentials not found. Push notifications will fail.")
