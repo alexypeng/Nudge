@@ -29,6 +29,7 @@ class AlarmOut(Schema):
     group_id: uuid.UUID
     is_active: bool
     next_trigger_utc: Optional[datetime] = None
+    sound_filename: str
 
 
 class AlarmCreate(Schema):
@@ -37,6 +38,7 @@ class AlarmCreate(Schema):
     repeats: str = ""
     is_one_time: bool
     group_id: uuid.UUID
+    sound_filename: str = "default_chime.wav"
 
     @classmethod
     @field_validator("repeats")
@@ -67,6 +69,7 @@ class AlarmUpdate(Schema):
     repeats: Optional[str] = None
     is_one_time: Optional[bool] = None
     is_active: Optional[bool] = None
+    sound_filename: Optional[str] = None
 
     @classmethod
     @field_validator("repeats")

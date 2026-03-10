@@ -12,14 +12,12 @@ from django.db.models import Count
 @receiver(pre_delete, sender=User)
 def nuke_empty_groups_on_user_exit(sender, instance, **kwargs):
     groups_to_delete = instance.alarm_groups.annotate(num_members=Count("members")).filter(num_members=1)
-
     groups_to_delete.delete()
 
 
 @receiver(post_save, sender=User)
 def update_alarms_on_timezone_change(sender, instance, **kwargs):
     active_alarms = instance.alarms.filter(is_active=True)
-
     for alarm in active_alarms:
         alarm.save(update_fields=["next_trigger_utc"])
 
@@ -27,7 +25,6 @@ def update_alarms_on_timezone_change(sender, instance, **kwargs):
 class Group(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
-
     members = models.ManyToManyField(User, related_name="alarm_groups")
 
 
@@ -38,6 +35,8 @@ class Alarm(models.Model):
     repeats = models.CharField(max_length=20, default="")
     is_one_time = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
+
+    sound_filename = models.CharField(max_length=255, default="default_chime.wav")
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="alarms")
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
@@ -98,6 +97,8 @@ class AlarmEvent(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
     silenced_at = models.DateTimeField(null=True, blank=True)
     checked_in_at = models.DateTimeField(null=True, blank=True)
+
+    sound_filename = models.CharField(max_length=255, default="default_chime.wav")
 
     alarm = models.ForeignKey(Alarm, on_delete=models.CASCADE, related_name="events")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="alarm_events")

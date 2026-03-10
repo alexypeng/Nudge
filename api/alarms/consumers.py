@@ -3,7 +3,6 @@ import urllib.parse
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from users.models import AuthToken
-from .models import AlarmEvent
 from .enums import ServerAction
 
 
@@ -13,14 +12,13 @@ class AlarmConsumer(AsyncWebsocketConsumer):
     # ==========================================
 
     @database_sync_to_async
-    def get_user_from_token(self, token_id):
+    def get_user_and_groups_from_token(self, token_id):
         try:
             token = AuthToken.objects.select_related("user").get(id=token_id)
-            return token.user
-        except AuthToken.DoesNotExist:
-            return None
-        except ValueError:
-            return None
+            groups = list(token.user.alarm_groups.values_list("id", flat=True))
+            return token.user, groups
+        except AuthToken.DoesNotExist, ValueError:
+            return None, []
 
     async def connect(self):
         query_string = self.scope["query_string"].decode()
@@ -32,78 +30,39 @@ class AlarmConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        user = await self.get_user_from_token(token_id=token_id)
+        user, group_ids = await self.get_user_and_groups_from_token(token_id=token_id)
 
         if user is None:
             await self.close()
             return
 
         self.scope["user"] = user
-        self.user_group_name = f"user_{str(self.scope['user'].id)}"
 
+        self.subscribed_groups = []
         if self.channel_layer:
-            await self.channel_layer.group_add(self.user_group_name, self.channel_name)
+            for group_id in group_ids:
+                group_name = f"group_{group_id}"
+                self.subscribed_groups.append(group_name)
+                await self.channel_layer.group_add(group_name, self.channel_name)
 
         await self.accept()
 
-        alarms = await self.get_active_events(user.id)
-
-        for event_id, status in alarms:
-            action = (
-                ServerAction.RING.value if status == AlarmEvent.Status.RINGING else ServerAction.REQUIRE_CHECK_IN.value
-            )
-
-            await self.send(text_data=json.dumps({"action": action, "event_id": str(event_id)}))
-
     async def disconnect(self, code):
-        if hasattr(self, "user_group_name") and self.channel_layer is not None:
-            await self.channel_layer.group_discard(self.user_group_name, self.channel_name)
+        if hasattr(self, "subscribed_groups") and self.channel_layer is not None:
+            for group_name in self.subscribed_groups:
+                await self.channel_layer.group_discard(group_name, self.channel_name)
 
     # ==========================================
     # Outgoing handlers
     # ==========================================
 
-    async def ring_alarm(self, data):
-        await self.send(
-            text_data=json.dumps(
-                {
-                    "action": ServerAction.RING.value,
-                    "alarm_id": data["alarm_id"],
-                    "message": data["message"],
-                }
-            )
-        )
-
-    async def ring_expired(self, data):
+    async def alarm_expired(self, data):
         await self.send(
             text_data=json.dumps(
                 {
                     "action": ServerAction.EXPIRED.value,
                     "event_id": data.get("event_id"),
-                    "message": "Your alarm has expired!",
+                    "message": f"{data.get('user_display_name')} missed their alarm!",
                 }
             )
         )
-
-    async def silence_alarm(self, data):
-        await self.send(
-            text_data=json.dumps(
-                {
-                    "action": ServerAction.SILENCED.value,
-                    "event_id": data["event_id"],
-                    "message": "Alarm silenced from another device.",
-                }
-            )
-        )
-
-    # ==========================================
-    # Database & Async helpers
-    # ==========================================
-
-    @database_sync_to_async
-    def get_active_events(self, user_id):
-        events = AlarmEvent.objects.filter(
-            user_id=user_id, status__in=[AlarmEvent.Status.RINGING, AlarmEvent.Status.SILENCED]
-        )
-
-        return list(events.values_list("id", "status"))

@@ -4,8 +4,6 @@ from .models import Group, Alarm, AlarmEvent, ManualRing
 from .schemas import ManualRingOut, GroupOut, GroupCreate, GroupUpdate, AlarmOut, AlarmCreate, AlarmUpdate
 from users.auth import TokenAuth
 from django.shortcuts import get_object_or_404
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
 from django.db import transaction
 
 
@@ -85,6 +83,7 @@ def create_alarm(request, payload: AlarmCreate):
         is_one_time=payload.is_one_time,
         user_id=request.auth.id,
         group_id=payload.group_id,
+        sound_filename=payload.sound_filename,
     )
     return alarm
 
@@ -154,17 +153,6 @@ def trigger_alarm(request, alarm_id: str):
             ringer=request.auth,
         )
 
-    channel_layer = get_channel_layer()
-    if channel_layer:
-        async_to_sync(channel_layer.group_send)(
-            f"user_{alarm.user.id}",
-            {
-                "type": "ring.alarm",
-                "alarm_id": str(alarm.id),
-                "message": f"{request.auth.display_name} is ringing your alarm!",
-            },
-        )
-
     return 200, manual_ring
 
 
@@ -203,12 +191,5 @@ def silence_alarm(request, alarm_id: str):
     event.status = AlarmEvent.Status.SILENCED
     event.silenced_at = timezone.now()
     event.save(update_fields=["status", "silenced_at"])
-
-    channel_layer = get_channel_layer()
-    if channel_layer:
-        async_to_sync(channel_layer.group_send)(
-            f"user_{event.user.id}",
-            {"type": "silence.alarm", "event_id": str(event.id)},
-        )
 
     return 200, {"message": f"Silenced your {event.alarm.name} alarm"}
