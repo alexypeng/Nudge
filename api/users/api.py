@@ -1,7 +1,7 @@
 from ninja import Router
 from .auth import TokenAuth
-from .models import User, AuthToken
-from .schemas import UserOut, UserCreate, UserLogin, TokenOut, UserUpdate
+from .models import User, AuthToken, UserDevice
+from .schemas import UserOut, UserCreate, UserLogin, TokenOut, UserUpdate, DeviceCreate
 from django.contrib.auth import authenticate
 from ninja.errors import HttpError
 import uuid
@@ -60,3 +60,13 @@ def login_user(request, payload: UserLogin):
         return {"token": token}
     else:
         raise HttpError(401, "Invalid username or password")
+
+
+@router.post("/devices/", response={200: dict}, auth=TokenAuth())
+def register_device(request, payload: DeviceCreate):
+    device, created = UserDevice.objects.update_or_create(
+        push_token=payload.push_token,
+        defaults={"user": request.auth, "device_type": payload.device_type, "is_active": True},
+    )
+
+    return 200, {"message": "Device registered successfully", "device_id": str(device.id), "created": created}

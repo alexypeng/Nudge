@@ -33,3 +33,8 @@ class UserLogin(Schema):
 
 class TokenOut(Schema):
     token: str
+
+
+class DeviceCreate(Schema):
+    push_token: str
+    device_type: str
