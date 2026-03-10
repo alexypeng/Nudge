@@ -1,63 +1,61 @@
-from channels.layers import get_channel_layer
-from channels.db import database_sync_to_async
-import asyncio
+import time
 from django.core.management import BaseCommand
 from django.utils import timezone
+from datetime import timedelta
+from django.db import transaction
 from alarms.models import Alarm, AlarmEvent
-
-EXPIRY_TIMER = 300
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 
 class Command(BaseCommand):
+    help = "Runs the background Reaper to catch missed alarms and dead phones."
+
     def handle(self, *args, **options):
-        asyncio.run(self.run_scheduler())
+        print("Starting the RingSync Reaper...")
+        channel_layer = get_channel_layer()
 
-    async def run_scheduler(self):
         while True:
-            await self.get_and_fire_alarms()
-            await asyncio.sleep(15)
+            self.reap_expired_alarms(channel_layer)
+            time.sleep(60)
 
-    @database_sync_to_async
-    def get_and_fire_alarms(self):
-        now_utc = timezone.now()
+    def reap_expired_alarms(self, channel_layer):
+        now = timezone.now()
+        threshold = now - timedelta(minutes=5)
 
-        alarms = Alarm.objects.filter(is_active=True, next_trigger_utc__lte=now_utc).select_related("user", "group")
-
-        for alarm in alarms:
-            print(f"Firing alarm {alarm.id} for {alarm.user.username}!")
-
-            event = AlarmEvent.objects.create(alarm=alarm, user=alarm.user)
-
-            if alarm.is_one_time:
-                alarm.is_active = False
-            alarm.save(update_fields=["is_active", "next_trigger_utc"])
-
-            asyncio.create_task(
-                self.expire_event_after_delay(str(event.id), f"group_{alarm.group.id}", alarm.user.display_name)
+        with transaction.atomic():
+            abandoned_events = (
+                AlarmEvent.objects.select_for_update()
+                .filter(status__in=[AlarmEvent.Status.RINGING, AlarmEvent.Status.SILENCED], created_at__lte=threshold)
+                .select_related("alarm__group", "user")
             )
 
-    async def expire_event_after_delay(self, event_id, group_name, user_display_name):
-        await asyncio.sleep(EXPIRY_TIMER)
+            for event in abandoned_events:
+                event.status = AlarmEvent.Status.EXPIRED
+                event.save(update_fields=["status"])
 
-        expired = await self.verify_and_expire_event(event_id)
+                print(f"[{now}] Reaped abandoned event for {event.user.display_name}")
+                self.notify_group(channel_layer, event.alarm.group.id, str(event.id), event.user.display_name)
 
-        if expired:
-            channel_layer = get_channel_layer()
-            if channel_layer:
-                await channel_layer.group_send(
-                    group_name,
-                    {"type": "alarm.expired", "event_id": event_id, "user_display_name": user_display_name},
-                )
+            missed_alarms = (
+                Alarm.objects.select_for_update()
+                .filter(is_active=True, next_trigger_utc__lte=threshold)
+                .select_related("group", "user")
+            )
 
-    @database_sync_to_async
-    def verify_and_expire_event(self, event_id):
-        event = AlarmEvent.objects.filter(
-            id=event_id, status__in=[AlarmEvent.Status.RINGING, AlarmEvent.Status.SILENCED]
-        ).first()
+            for alarm in missed_alarms:
+                event = AlarmEvent.objects.create(alarm=alarm, user=alarm.user, status=AlarmEvent.Status.EXPIRED)
 
-        if not event:
-            return False
+                if alarm.is_one_time:
+                    alarm.is_active = False
 
-        event.status = AlarmEvent.Status.EXPIRED
-        event.save(update_fields=["status"])
-        return True
+                alarm.save(update_fields=["is_active", "next_trigger_utc"])
+
+                print(f"[{now}] Caught dead phone for {alarm.user.display_name}")
+                self.notify_group(channel_layer, alarm.group.id, str(event.id), alarm.user.display_name)
+
+    def notify_group(self, channel_layer, group_id, event_id, user_name):
+        if channel_layer:
+            async_to_sync(channel_layer.group_send)(
+                f"group_{group_id}", {"type": "alarm.expired", "event_id": event_id, "name": user_name}
+            )

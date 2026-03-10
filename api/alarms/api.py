@@ -1,4 +1,3 @@
-from firebase_admin.messaging import send
 from django.utils import timezone
 from ninja import Router
 from .models import Group, Alarm, AlarmEvent, ManualRing
@@ -7,6 +6,7 @@ from users.auth import TokenAuth
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from .utils import send_wake_up_push
+from datetime import timedelta
 
 
 router = Router()
@@ -200,3 +200,27 @@ def silence_alarm(request, alarm_id: str):
     event.save(update_fields=["status", "silenced_at"])
 
     return 200, {"message": f"Silenced your {event.alarm.name} alarm"}
+
+
+@router.post("/alarms/{alarm_id}/ringing/", response={200: dict, 403: dict, 409: dict, 404: None}, auth=TokenAuth())
+def ringing_alarm(request, alarm_id: str):
+    with transaction.atomic():
+        alarm = get_object_or_404(Alarm.objects.select_for_update(), id=alarm_id)
+
+        if alarm.user != request.auth:
+            return 403, {"error": "You do not have access to this alarm."}
+
+        recent_threshold = timezone.now() - timedelta(minutes=10)
+        existing_event = AlarmEvent.objects.filter(alarm=alarm, created_at__gte=recent_threshold).exists()
+
+        if existing_event:
+            return 409, {"error": "This alarm is already marked as ringing."}
+
+        event = AlarmEvent.objects.create(alarm=alarm, user=alarm.user)
+
+        if alarm.is_one_time:
+            alarm.is_active = False
+
+        alarm.save(update_fields=["is_active", "next_trigger_utc"])
+
+    return 200, {"message": "Alarm event created. 5-minute countdown started.", "event_id": str(event.id)}
