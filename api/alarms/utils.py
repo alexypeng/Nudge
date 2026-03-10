@@ -5,7 +5,7 @@ from users.models import UserDevice
 def send_wake_up_push(user, ringer_name):
     devices = UserDevice.objects.filter(user=user, is_active=True)
 
-    if not devices.exists:
+    if not devices.exists():
         return False
 
     tokens = list(devices.values_list("push_token", flat=True))
