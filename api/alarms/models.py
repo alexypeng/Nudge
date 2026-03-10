@@ -4,7 +4,7 @@ from users.models import User
 import uuid
 from datetime import datetime, timedelta
 from django.utils import timezone
-from django.db.models.signals import pre_delete
+from django.db.models.signals import pre_delete, post_save
 from django.dispatch import receiver
 from django.db.models import Count
 
@@ -14,6 +14,14 @@ def nuke_empty_groups_on_user_exit(sender, instance, **kwargs):
     groups_to_delete = instance.alarm_groups.annotate(num_members=Count("members")).filter(num_members=1)
 
     groups_to_delete.delete()
+
+
+@receiver(post_save, sender=User)
+def update_alarms_on_timezone_change(sender, instance, **kwargs):
+    active_alarms = instance.alarms.filter(is_active=True)
+
+    for alarm in active_alarms:
+        alarm.save(update_fields=["next_trigger_utc"])
 
 
 class Group(models.Model):
@@ -29,7 +37,6 @@ class Alarm(models.Model):
     time = models.TimeField()
     repeats = models.CharField(max_length=20, default="")
     is_one_time = models.BooleanField(default=True)
-    last_triggered_date = models.DateField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="alarms")
@@ -51,10 +58,11 @@ class Alarm(models.Model):
             user_tz = ZoneInfo(tz_string)
         except ZoneInfoNotFoundError:
             user_tz = ZoneInfo("UTC")
-        now_utc = timezone.now()
-        now_user_time = now_utc.astimezone(user_tz)
 
-        target_time_today = datetime.combine(now_user_time.date(), self.time, tzinfo=user_tz)
+        now_user_time = timezone.now().astimezone(user_tz)
+        naive_target = datetime.combine(now_user_time.date(), self.time)
+
+        target_time_today = timezone.make_aware(naive_target, timezone=user_tz)
 
         if self.is_one_time:
             if target_time_today <= now_user_time:
@@ -93,6 +101,15 @@ class AlarmEvent(models.Model):
 
     alarm = models.ForeignKey(Alarm, on_delete=models.CASCADE, related_name="events")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="alarm_events")
-    triggered_by = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="triggered_events"
-    )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["alarm", "-created_at"]),
+        ]
+
+
+class ManualRing(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    alarm = models.ForeignKey(Alarm, on_delete=models.CASCADE, related_name="manual_rings")
+    ringer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="rings_sent")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
