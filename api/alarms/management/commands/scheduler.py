@@ -33,7 +33,7 @@ class Command(BaseCommand):
             alarm.save(update_fields=["is_active", "next_trigger_utc"])
 
             asyncio.create_task(
-                self.expire_event_after_delay(str(event.id), f"user_{alarm.user.id}", alarm.user.display_name)
+                self.expire_event_after_delay(str(event.id), f"group_{alarm.group.id}", alarm.user.display_name)
             )
 
     async def expire_event_after_delay(self, event_id, group_name, user_display_name):
