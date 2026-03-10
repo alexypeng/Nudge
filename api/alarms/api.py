@@ -1,3 +1,4 @@
+from firebase_admin.messaging import send
 from django.utils import timezone
 from ninja import Router
 from .models import Group, Alarm, AlarmEvent, ManualRing
@@ -5,6 +6,7 @@ from .schemas import ManualRingOut, GroupOut, GroupCreate, GroupUpdate, AlarmOut
 from users.auth import TokenAuth
 from django.shortcuts import get_object_or_404
 from django.db import transaction
+from .utils import send_wake_up_push
 
 
 router = Router()
@@ -152,6 +154,11 @@ def trigger_alarm(request, alarm_id: str):
             alarm=alarm,
             ringer=request.auth,
         )
+
+    success = send_wake_up_push(user=alarm.user, ringer_name=request.auth.display_name)
+
+    if not success:
+        print(f"Failed to ring {alarm.user.display_name}. They may be logged out or deleted the app.")
 
     return 200, manual_ring
 
