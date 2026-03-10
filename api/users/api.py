@@ -42,6 +42,7 @@ def update_user(request, payload: UserUpdate):
     for field, value in payload.dict(exclude_unset=True).items():
         if field == "password":
             user.set_password(value)
+            user.authtoken_set.all().delete()
         else:
             setattr(user, field, value)
 
