@@ -46,14 +46,14 @@ class AlarmConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        alarms = await self.get_active_alarms(user.id)
+        alarms = await self.get_active_events(user.id)
 
-        for alarm_id, status in alarms:
+        for event_id, status in alarms:
             action = (
                 ServerAction.RING.value if status == AlarmEvent.Status.RINGING else ServerAction.REQUIRE_CHECK_IN.value
             )
 
-            await self.send(text_data=json.dumps({"action": action, "alarm_id": str(alarm_id)}))
+            await self.send(text_data=json.dumps({"action": action, "event_id": str(event_id)}))
 
     async def disconnect(self, code):
         if hasattr(self, "user_group_name") and self.channel_layer is not None:
@@ -63,34 +63,34 @@ class AlarmConsumer(AsyncWebsocketConsumer):
     # Outgoing handlers
     # ==========================================
 
-    async def ring_alarm(self, event):
+    async def ring_alarm(self, data):
         await self.send(
             text_data=json.dumps(
                 {
                     "action": ServerAction.RING.value,
-                    "alarm_id": event["alarm_id"],
-                    "message": f"{event['ringer_name']} is ringing your alarm!",
+                    "alarm_id": data["alarm_id"],
+                    "message": data["message"],
                 }
             )
         )
 
-    async def ring_expired(self, event):
+    async def ring_expired(self, data):
         await self.send(
             text_data=json.dumps(
                 {
                     "action": ServerAction.EXPIRED.value,
-                    "alarm_id": event.get("alarm_id"),
+                    "event_id": data.get("event_id"),
                     "message": "Your alarm has expired!",
                 }
             )
         )
 
-    async def silence_alarm(self, event):
+    async def silence_alarm(self, data):
         await self.send(
             text_data=json.dumps(
                 {
                     "action": ServerAction.SILENCED.value,
-                    "alarm_id": event["alarm_id"],
+                    "event_id": data["event_id"],
                     "message": "Alarm silenced from another device.",
                 }
             )
@@ -99,10 +99,11 @@ class AlarmConsumer(AsyncWebsocketConsumer):
     # ==========================================
     # Database & Async helpers
     # ==========================================
+
     @database_sync_to_async
-    def get_active_alarms(self, user_id):
+    def get_active_events(self, user_id):
         events = AlarmEvent.objects.filter(
             user_id=user_id, status__in=[AlarmEvent.Status.RINGING, AlarmEvent.Status.SILENCED]
         )
 
-        return list(events.values_list("alarm_id", "status"))
+        return list(events.values_list("id", "status"))

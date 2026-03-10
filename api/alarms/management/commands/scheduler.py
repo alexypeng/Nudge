@@ -1,10 +1,9 @@
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from zoneinfo import ZoneInfo
-from datetime import datetime
 from channels.db import database_sync_to_async
 import asyncio
 from django.core.management import BaseCommand
+from django.utils import timezone
 from alarms.models import Alarm, AlarmEvent
 
 EXPIRY_TIMER = 300
@@ -21,43 +20,42 @@ class Command(BaseCommand):
 
     @database_sync_to_async
     def get_and_fire_alarms(self):
-        now_utc = datetime.now(ZoneInfo("UTC"))
+        now_utc = timezone.now()
 
-        alarms = Alarm.objects.filter(is_active=True, next_trigger_utc__lte=now_utc).select_related("user")
+        alarms = Alarm.objects.filter(is_active=True, next_trigger_utc__lte=now_utc)
 
         for alarm in alarms:
             print(f"Firing alarm {alarm.id} for {alarm.user.username}!")
 
-            alarm_event = AlarmEvent.objects.create(alarm=alarm, user=alarm.user, triggered_by=None)
+            event = AlarmEvent.objects.create(alarm=alarm, user=alarm.user)
 
             channel_layer = get_channel_layer()
             if channel_layer:
                 async_to_sync(channel_layer.group_send)(
                     f"user_{alarm.user.id}",
-                    {"type": "ring.alarm", "event_id": str(alarm_event.id), "ringer_name": "Scheduled"},
+                    {"type": "ring.alarm", "event_id": str(event.id), "message": f"{alarm.name} is ringing!"},
                 )
 
-            alarm.last_triggered_date = now_utc.astimezone(ZoneInfo(alarm.user.timezone)).date()
             if alarm.is_one_time:
                 alarm.is_active = False
-            alarm.save(update_fields=["last_triggered_date", "is_active", "next_trigger_utc"])
+            alarm.save(update_fields=["is_active", "next_trigger_utc"])
 
-            asyncio.create_task(self.expire_alarm_after_delay(str(alarm.id), f"user_{alarm.user.id}"))
+            asyncio.create_task(self.expire_event_after_delay(str(event.id), f"user_{event.user.id}"))
 
-    async def expire_alarm_after_delay(self, alarm_id, group_name):
+    async def expire_event_after_delay(self, event_id, group_name):
         await asyncio.sleep(EXPIRY_TIMER)
 
-        expired = self.verify_and_expire_alarm(alarm_id)
+        expired = self.verify_and_expire_event(event_id)
 
         if expired:
             channel_layer = get_channel_layer()
             if channel_layer:
-                await channel_layer.group_send(group_name, {"type": "ring.expired", "alarm_id": alarm_id})
+                await channel_layer.group_send(group_name, {"type": "ring.expired", "event_id": event_id})
 
     @database_sync_to_async
-    def verify_and_expire_alarm(self, alarm_id):
+    def verify_and_expire_event(self, event_id):
         event = AlarmEvent.objects.filter(
-            alarm_id=alarm_id, status__in=[AlarmEvent.Status.RINGING, AlarmEvent.Status.SILENCED]
+            id=event_id, status__in=[AlarmEvent.Status.RINGING, AlarmEvent.Status.SILENCED]
         ).first()
 
         if not event:
