@@ -1,5 +1,5 @@
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
-from django.db import models
+from django.db import models, transaction
 from users.models import User
 import uuid
 from datetime import datetime, timedelta
@@ -20,15 +20,16 @@ def update_alarms_on_timezone_change(sender, instance, **kwargs):
     if kwargs.get("update_fields") and "timezone" not in kwargs["update_fields"]:
         return
 
-    active_alarms = instance.alarms.filter(is_active=True)
-    for alarm in active_alarms:
-        alarm.save(update_fields=["next_trigger_utc"])
+    with transaction.atomic():
+        active_alarms = instance.alarms.select_for_update().filter(is_active=True)
+        for alarm in active_alarms:
+            alarm.save(update_fields=["next_trigger_utc"])
 
 
 class Group(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
-    members = models.ManyToManyField(User, related_name="alarm_groups")
+    members = models.ManyToManyField(User, related_name="group_members")
 
 
 class Alarm(models.Model):
@@ -74,14 +75,16 @@ class Alarm(models.Model):
         if self.is_one_time:
             if target_time_today <= now_user_time:
                 tomorrow_date = now_user_time.date() + timedelta(days=1)
-                target_time_today = datetime.combine(tomorrow_date, self.time, tzinfo=user_tz)
+                naive_target_time_today = datetime.combine(tomorrow_date, self.time)
+                target_time_today = timezone.make_aware(naive_target_time_today, timezone=user_tz)
             return target_time_today.astimezone(ZoneInfo("UTC"))
 
         valid_days = [day.strip() for day in self.repeats.split(",")]
 
         for i in range(8):
-            test_naive_date = now_user_time.date() + timedelta(days=i)
-            test_date = datetime.combine(test_naive_date, self.time, tzinfo=user_tz)
+            loop_date = now_user_time.date() + timedelta(days=i)
+            naive_test_date = datetime.combine(loop_date, self.time)
+            test_date = timezone.make_aware(naive_test_date, timezone=user_tz)
             day_name = test_date.strftime("%a")
 
             if day_name in valid_days:
