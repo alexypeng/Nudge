@@ -1,10 +1,9 @@
 import enum
 
 
-class ServerAction(enum.Enum):
-    RING = "ring"
-    EXPIRED = "expired"
+class Actions(enum.Enum):
+    RINGING = "alarm_ringing"
     SILENCED = "alarm_silenced"
-    REQUIRE_CHECK_IN = "require_check_in"
-    CHECKED_IN = "checked_in"
-    ERROR = "error"
+    CHECKED_IN = "alarm_checked_in"
+    EXPIRED = "alarm_expired"
+    MANUAL_RING = "manual_ring"

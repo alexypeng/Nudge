@@ -1,5 +1,6 @@
 from firebase_admin import messaging
 from users.models import UserDevice
+from alarms.enums import Actions
 
 
 def send_wake_up_push(user, ringer_name):
@@ -10,7 +11,7 @@ def send_wake_up_push(user, ringer_name):
 
     tokens = list(devices.values_list("push_token", flat=True))
 
-    data_payload = {"action": "manual_ring", "ringer_name": ringer_name}
+    data_payload = {"action": Actions.MANUAL_RING.value, "ringer_name": ringer_name}
 
     message = messaging.MulticastMessage(
         tokens=tokens,
@@ -27,7 +28,7 @@ def send_wake_up_push(user, ringer_name):
         android=messaging.AndroidConfig(
             priority="high",
             notification=messaging.AndroidNotification(
-                title="WAKE UP!",
+                title="RING!",
                 body=f"{ringer_name} is buzzing you!",
                 channel_id="high_priority_alarms",
             ),
@@ -36,6 +37,50 @@ def send_wake_up_push(user, ringer_name):
 
     try:
         response = messaging.send_each_for_multicast(message)
+        return response.success_count > 0
+    except Exception as e:
+        print(f"FCM Push Failed: {e}")
+        return False
+
+
+def send_group_push(users, action, data):
+    devices = UserDevice.objects.filter(user__in=users, is_active=True)
+
+    if not devices.exists():
+        return False
+
+    tokens = list(devices.values_list("push_token", flat=True))
+    stale_tokens = []
+
+    data_payload = {"action": action.value if isinstance(action, Actions) else action, **data}
+
+    message = messaging.MulticastMessage(
+        tokens=tokens,
+        data=data_payload,
+        apns=messaging.APNSConfig(
+            headers={"apns-priority": "10", "apns-push-type": "alert"},
+            payload=messaging.APNSPayload(
+                aps=messaging.Aps(
+                    alert=messaging.ApsAlert(title=data.get("title", "RingSync"), body=data.get("body", "")),
+                    sound="default",
+                )
+            ),
+        ),
+        android=messaging.AndroidConfig(
+            priority="high",
+            notification=messaging.AndroidNotification(title=data.get("title", "RingSync"), body=data.get("body", "")),
+        ),
+    )
+
+    try:
+        response = messaging.send_each_for_multicast(message)
+        for token, resp in zip(tokens, response.responses):
+            if isinstance(resp.exception, messaging.UnregisteredError):
+                stale_tokens.append(token)
+
+        if stale_tokens:
+            UserDevice.objects.filter(push_token__in=stale_tokens).update(is_active=False)
+
         return response.success_count > 0
     except Exception as e:
         print(f"FCM Push Failed: {e}")

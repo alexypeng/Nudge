@@ -4,8 +4,8 @@ from django.utils import timezone
 from datetime import timedelta
 from django.db import transaction
 from alarms.models import Alarm, AlarmEvent
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
+from alarms.utils import send_group_push
+from alarms.enums import Actions
 
 
 class Command(BaseCommand):
@@ -13,13 +13,12 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         print("Starting the RingSync Reaper...")
-        channel_layer = get_channel_layer()
 
         while True:
-            self.reap_expired_alarms(channel_layer)
+            self.reap_expired_alarms()
             time.sleep(60)
 
-    def reap_expired_alarms(self, channel_layer):
+    def reap_expired_alarms(self):
         now = timezone.now()
         threshold = now - timedelta(minutes=5)
 
@@ -47,11 +46,7 @@ class Command(BaseCommand):
 
                     print(f"[{now}] Reaped abandoned event for {event.user.display_name}")
 
-                    transaction.on_commit(
-                        lambda e=event: self.notify_group(
-                            channel_layer, e.alarm.group.id, str(e.id), e.user.display_name
-                        )
-                    )
+                    transaction.on_commit(lambda event=event: self.notify_group(str(event.id)))
 
         missed_alarm_ids = list(
             Alarm.objects.filter(is_active=True, next_trigger_utc__lte=threshold).values_list("id", flat=True)
@@ -79,15 +74,19 @@ class Command(BaseCommand):
 
                     print(f"[{now}] Caught dead phone for {alarm.user.display_name}")
 
-                    transaction.on_commit(
-                        lambda a=alarm, ev_id=str(event.id): self.notify_group(
-                            channel_layer, a.group.id, ev_id, a.user.display_name
-                        )
-                    )
+                    transaction.on_commit(lambda event_id=str(event.id): self.notify_group(event_id))
 
-    def notify_group(self, channel_layer, group_id, event_id, user_display_name):
-        if channel_layer:
-            async_to_sync(channel_layer.group_send)(
-                f"group_{group_id}",
-                {"type": "alarm.expired", "event_id": event_id, "user_display_name": user_display_name},
-            )
+    def notify_group(self, event_id):
+        try:
+            event = AlarmEvent.objects.select_related("alarm__group", "user").get(id=event_id)
+        except AlarmEvent.DoesNotExist:
+            return
+
+        data_payload = {
+            "title": "Alarm missed!",
+            "body": f"{event.user.display_name} missed their alarm!",
+            "event_id": str(event.id),
+            "alarm_id": str(event.alarm.id),
+        }
+
+        send_group_push(event.alarm.group.members.all(), Actions.EXPIRED, data_payload)

@@ -1,11 +1,13 @@
 from django.utils import timezone
 from ninja import Router
+
+from .enums import Actions
 from .models import Group, Alarm, AlarmEvent, ManualRing
 from .schemas import ManualRingOut, GroupOut, GroupCreate, GroupUpdate, AlarmOut, AlarmCreate, AlarmUpdate
 from users.auth import TokenAuth
 from django.shortcuts import get_object_or_404
 from django.db import transaction
-from .utils import send_wake_up_push
+from .utils import send_group_push, send_wake_up_push
 from datetime import timedelta
 
 
@@ -28,7 +30,7 @@ def list_groups(request):
     return list(Group.objects.filter(members=request.auth))
 
 
-@router.put("/groups/{group_id}/", response=GroupOut, auth=TokenAuth())
+@router.put("/groups/{group_id}/", response={200: GroupOut, 403: None, 404: None}, auth=TokenAuth())
 def update_group(request, group_id: str, payload: GroupUpdate):
     group = get_object_or_404(Group, id=group_id)
 
@@ -39,7 +41,7 @@ def update_group(request, group_id: str, payload: GroupUpdate):
         setattr(group, field, value)
 
     group.save()
-    return group
+    return 200, group
 
 
 @router.post("/groups/{group_id}/join/", response={200: GroupOut, 403: None}, auth=TokenAuth())
@@ -145,7 +147,7 @@ def trigger_alarm(request, alarm_id: str):
         if not alarm.group.members.filter(id=request.auth.id).exists():
             return 403, {"error": "You are not in this alarm's group"}
 
-        event = AlarmEvent.objects.filter(alarm=alarm).order_by("-created_at").first()
+        event = AlarmEvent.objects.filter(alarm=alarm).select_for_update().order_by("-created_at").first()
 
         if not event:
             return 409, {"error": f"{alarm.user.display_name}'s alarm hasn't gone off yet!"}
@@ -195,6 +197,16 @@ def check_in_alarm(request, alarm_id: str):
         event.checked_in_at = timezone.now()
         event.save(update_fields=["status", "checked_in_at"])
 
+    group_members = alarm.group.members.exclude(id=alarm.user.id)
+    data_payload = {
+        "title": "Locked in",
+        "body": f"{alarm.user.display_name} checked in!",
+        "event_id": str(event.id),
+        "alarm_id": str(alarm.id),
+    }
+
+    success = send_group_push(users=group_members, action=Actions.CHECKED_IN, data=data_payload)
+
     return 200, {"message": f"Checked in for {event.alarm.name}"}
 
 
@@ -209,16 +221,28 @@ def silence_alarm(request, alarm_id: str):
         event = AlarmEvent.objects.filter(alarm=alarm).select_for_update().order_by("-created_at").first()
         if not event:
             return 404, None
+        if event.status != AlarmEvent.Status.RINGING:
+            return 409, {"error": "The alarm is not ringing at the moment"}
 
         event.status = AlarmEvent.Status.SILENCED
         event.silenced_at = timezone.now()
         event.save(update_fields=["status", "silenced_at"])
 
+    group_members = alarm.group.members.exclude(id=alarm.user.id)
+    data_payload = {
+        "title": "Zzz",
+        "body": f"{alarm.user.display_name} snoozed their alarm!",
+        "event_id": str(event.id),
+        "alarm_id": str(alarm.id),
+    }
+
+    success = send_group_push(users=group_members, action=Actions.SILENCED, data=data_payload)
+
     return 200, {"message": f"Silenced your {event.alarm.name} alarm"}
 
 
-@router.post("/alarms/{alarm_id}/ringing/", response={200: dict, 403: dict, 409: dict, 404: None}, auth=TokenAuth())
-def ringing_alarm(request, alarm_id: str):
+@router.post("/alarms/{alarm_id}/ring/", response={200: dict, 403: dict, 409: dict, 404: None}, auth=TokenAuth())
+def ring_alarm(request, alarm_id: str):
     with transaction.atomic():
         alarm = get_object_or_404(Alarm.objects.select_for_update(), id=alarm_id)
 
@@ -239,15 +263,17 @@ def ringing_alarm(request, alarm_id: str):
 
         if alarm.is_one_time:
             alarm.is_active = False
+            alarm.save(update_fields=["is_active"])
 
-        alarm.save(update_fields=["is_active"])
+    group_members = alarm.group.members.exclude(id=alarm.user.id)
+    data_payload = {
+        "title": "Alarm Ringing!",
+        "body": f"{alarm.user.display_name}'s alarm is going off!",
+        "event_id": str(event.id),
+        "alarm_id": str(alarm.id),
+        "created_at": event.created_at.isoformat(),
+    }
 
-        if (
-            alarm.is_active
-            and alarm.next_trigger_utc
-            and alarm.next_trigger_utc <= timezone.now() + timedelta(minutes=1)
-        ):
-            alarm.next_trigger_utc = alarm.calculate_next_trigger(now_override=timezone.now() + timedelta(minutes=2))
-            alarm.save(update_fields=["next_trigger_utc"])
+    success = send_group_push(group_members, Actions.RINGING, data_payload)
 
     return 200, {"message": "Alarm event created. 5-minute countdown started.", "event_id": str(event.id)}
