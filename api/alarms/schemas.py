@@ -89,8 +89,10 @@ class AlarmUpdate(Schema):
 
     @model_validator(mode="after")
     def validate_repeating_alarm_has_days(self):
-        if not self.is_one_time and not self.repeats:
+        if self.is_one_time is False and not self.repeats:
             raise ValueError("Repeating alarms must specify at least one day in the 'repeats' field.")
+        if self.repeats == "" and self.is_one_time is not True:
+            raise ValueError("Cannot clear repeating days unless changing to a one-time alarm.")
         return self
 
 
