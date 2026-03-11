@@ -89,4 +89,4 @@ class Command(BaseCommand):
             "alarm_id": str(event.alarm.id),
         }
 
-        send_group_push(event.alarm.group.members.all(), Actions.EXPIRED, data_payload)
+        send_group_push(event.alarm.group.members.all(), Actions.EXPIRED, data_payload, silent=False)

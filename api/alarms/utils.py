@@ -43,7 +43,7 @@ def send_wake_up_push(user, ringer_name):
         return False
 
 
-def send_group_push(users, action, data):
+def send_group_push(users, action, data, silent=True):
     devices = UserDevice.objects.filter(user__in=users, is_active=True)
 
     if not devices.exists():
@@ -54,23 +54,31 @@ def send_group_push(users, action, data):
 
     data_payload = {"action": action.value if isinstance(action, Actions) else action, **data}
 
-    message = messaging.MulticastMessage(
-        tokens=tokens,
-        data=data_payload,
-        apns=messaging.APNSConfig(
-            headers={"apns-priority": "10", "apns-push-type": "alert"},
-            payload=messaging.APNSPayload(
-                aps=messaging.Aps(
-                    alert=messaging.ApsAlert(title=data.get("title", "RingSync"), body=data.get("body", "")),
-                    sound="default",
-                )
+    if silent:
+        message = messaging.MulticastMessage(
+            tokens=tokens,
+            data=data_payload,
+        )
+    else:
+        message = messaging.MulticastMessage(
+            tokens=tokens,
+            data=data_payload,
+            apns=messaging.APNSConfig(
+                headers={"apns-priority": "10", "apns-push-type": "alert"},
+                payload=messaging.APNSPayload(
+                    aps=messaging.Aps(
+                        alert=messaging.ApsAlert(title=data.get("title", "RingSync"), body=data.get("body", "")),
+                        sound="default",
+                    )
+                ),
             ),
-        ),
-        android=messaging.AndroidConfig(
-            priority="high",
-            notification=messaging.AndroidNotification(title=data.get("title", "RingSync"), body=data.get("body", "")),
-        ),
-    )
+            android=messaging.AndroidConfig(
+                priority="high",
+                notification=messaging.AndroidNotification(
+                    title=data.get("title", "RingSync"), body=data.get("body", "")
+                ),
+            ),
+        )
 
     try:
         response = messaging.send_each_for_multicast(message)

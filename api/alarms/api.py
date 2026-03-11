@@ -199,8 +199,6 @@ def check_in_alarm(request, alarm_id: str):
 
     group_members = alarm.group.members.exclude(id=alarm.user.id)
     data_payload = {
-        "title": "Locked in",
-        "body": f"{alarm.user.display_name} checked in!",
         "event_id": str(event.id),
         "alarm_id": str(alarm.id),
     }
@@ -230,8 +228,6 @@ def silence_alarm(request, alarm_id: str):
 
     group_members = alarm.group.members.exclude(id=alarm.user.id)
     data_payload = {
-        "title": "Zzz",
-        "body": f"{alarm.user.display_name} snoozed their alarm!",
         "event_id": str(event.id),
         "alarm_id": str(alarm.id),
     }
@@ -267,8 +263,6 @@ def ring_alarm(request, alarm_id: str):
 
     group_members = alarm.group.members.exclude(id=alarm.user.id)
     data_payload = {
-        "title": "Alarm Ringing!",
-        "body": f"{alarm.user.display_name}'s alarm is going off!",
         "event_id": str(event.id),
         "alarm_id": str(alarm.id),
         "created_at": event.created_at.isoformat(),
