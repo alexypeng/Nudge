@@ -260,6 +260,9 @@ def ring_alarm(request, alarm_id: str):
         if alarm.is_one_time:
             alarm.is_active = False
             alarm.save(update_fields=["is_active"])
+        else:
+            new_trigger = alarm.calculate_next_trigger(now_override=timezone.now() + timedelta(minutes=2))
+            Alarm.objects.filter(pk=alarm.pk).update(next_trigger_utc=new_trigger)
 
     group_members = alarm.group.members.exclude(id=alarm.user.id)
     data_payload = {
