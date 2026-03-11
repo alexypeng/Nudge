@@ -11,7 +11,7 @@ from django.db.models import Count
 
 @receiver(pre_delete, sender=User)
 def nuke_empty_groups_on_user_exit(sender, instance, **kwargs):
-    groups_to_delete = instance.alarm_groups.annotate(num_members=Count("members")).filter(num_members__lte=1)
+    groups_to_delete = instance.group_members.annotate(num_members=Count("members")).filter(num_members__lte=1)
     groups_to_delete.delete()
 
 
