@@ -60,6 +60,9 @@ def leave_group(request, group_id: str):
             return 403, None
 
         group.members.remove(request.auth)
+
+        Alarm.objects.filter(user=request.auth, group=group).delete()
+
         if group.members.count() == 0:
             group.delete()
 
@@ -131,7 +134,9 @@ def update_alarm(request, alarm_id: str, payload: AlarmUpdate):
 
 
 @router.post(
-    "/alarms/{alarm_id}/trigger/", response={200: ManualRingOut, 403: dict, 409: dict, 404: None}, auth=TokenAuth()
+    "/alarms/{alarm_id}/trigger/",
+    response={200: ManualRingOut, 403: dict, 409: dict, 404: None, 429: dict},
+    auth=TokenAuth(),
 )
 def trigger_alarm(request, alarm_id: str):
     with transaction.atomic():
@@ -150,6 +155,13 @@ def trigger_alarm(request, alarm_id: str):
             return 409, {"error": "They are currently being rung! Give them a second."}
         if event.status == AlarmEvent.Status.SILENCED:
             return 409, {"error": "The user is in their 5-minute grace period."}
+
+        recent_ring = ManualRing.objects.filter(
+            alarm=alarm, created_at__gte=timezone.now() - timedelta(seconds=10)
+        ).exists()
+
+        if recent_ring:
+            return 429, {"error": "This user is already being rung! Give them a second."}
 
         manual_ring = ManualRing.objects.create(
             alarm=alarm,
