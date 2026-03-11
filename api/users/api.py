@@ -5,6 +5,7 @@ from .schemas import UserOut, UserCreate, UserLogin, TokenOut, UserUpdate, Devic
 from django.contrib.auth import authenticate
 from ninja.errors import HttpError
 import uuid
+from django.db import transaction
 
 
 router = Router()
@@ -40,15 +41,16 @@ def update_user(request, payload: UserUpdate):
     user = request.auth
     updated_fields = []
 
-    for field, value in payload.dict(exclude_unset=True).items():
-        if field == "password":
-            user.set_password(value)
-            user.authtoken_set.all().delete()
-        else:
-            setattr(user, field, value)
-        updated_fields.append(field)
-    if updated_fields:
-        user.save(update_fields=updated_fields)
+    with transaction.atomic():
+        for field, value in payload.dict(exclude_unset=True).items():
+            if field == "password":
+                user.set_password(value)
+                user.authtoken_set.all().delete()
+            else:
+                setattr(user, field, value)
+            updated_fields.append(field)
+        if updated_fields:
+            user.save(update_fields=updated_fields)
 
     return user
 
