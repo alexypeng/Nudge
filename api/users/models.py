@@ -5,8 +5,12 @@ import uuid
 
 class User(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    email = models.EmailField(max_length=254, unique=True, blank=False)
     display_name = models.CharField(max_length=50)
     timezone = models.CharField(max_length=50, default="UTC")
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["username", "display_name"]
 
 
 class AuthToken(models.Model):

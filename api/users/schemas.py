@@ -20,13 +20,14 @@ class UserCreate(Schema):
 
 
 class UserUpdate(Schema):
+    email: Optional[str] = None
     display_name: Optional[str] = None
     password: Optional[str] = None
     timezone: Optional[str] = None
 
 
 class UserLogin(Schema):
-    username: str
+    email: str
     password: str
 
 

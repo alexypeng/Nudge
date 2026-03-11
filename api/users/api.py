@@ -52,14 +52,14 @@ def update_user(request, payload: UserUpdate):
 
 @router.post("/login/", response=TokenOut)
 def login_user(request, payload: UserLogin):
-    user = authenticate(username=payload.username, password=payload.password)
+    user = authenticate(username=payload.email, password=payload.password)
 
     if user is not None:
         token = str(uuid.uuid4())
         AuthToken.objects.create(id=token, user=user)
         return {"token": token}
     else:
-        raise HttpError(401, "Invalid username or password")
+        raise HttpError(401, "Invalid email or password")
 
 
 @router.post("/devices/", response={200: dict}, auth=TokenAuth())
