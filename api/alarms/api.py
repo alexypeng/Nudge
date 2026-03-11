@@ -240,6 +240,12 @@ def ringing_alarm(request, alarm_id: str):
         if alarm.is_one_time:
             alarm.is_active = False
 
-        alarm.save(update_fields=["is_active", "next_trigger_utc"])
+        if (
+            alarm.is_active
+            and alarm.next_trigger_utc
+            and alarm.next_trigger_utc <= timezone.now() + timedelta(minutes=1)
+        ):
+            alarm.next_trigger_utc = alarm.calculate_next_trigger(now_override=timezone.now() + timedelta(minutes=2))
+            alarm.save(update_fields=["is_active", "next_trigger_utc"])
 
     return 200, {"message": "Alarm event created. 5-minute countdown started.", "event_id": str(event.id)}

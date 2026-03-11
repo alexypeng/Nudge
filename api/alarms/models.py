@@ -17,6 +17,9 @@ def nuke_empty_groups_on_user_exit(sender, instance, **kwargs):
 
 @receiver(post_save, sender=User)
 def update_alarms_on_timezone_change(sender, instance, **kwargs):
+    if kwargs.get("update_fields") and "timezone" not in kwargs["update_fields"]:
+        return
+
     active_alarms = instance.alarms.filter(is_active=True)
     for alarm in active_alarms:
         alarm.save(update_fields=["next_trigger_utc"])
@@ -56,14 +59,14 @@ class Alarm(models.Model):
 
         super().save(*args, **kwargs)
 
-    def calculate_next_trigger(self):
+    def calculate_next_trigger(self, now_override=None):
         try:
             tz_string = self.user.timezone if self.user.timezone else "UTC"
             user_tz = ZoneInfo(tz_string)
         except ZoneInfoNotFoundError:
             user_tz = ZoneInfo("UTC")
 
-        now_user_time = timezone.now().astimezone(user_tz)
+        now_user_time = now_override if now_override else timezone.now().astimezone(user_tz)
         naive_target = datetime.combine(now_user_time.date(), self.time)
 
         target_time_today = timezone.make_aware(naive_target, timezone=user_tz)

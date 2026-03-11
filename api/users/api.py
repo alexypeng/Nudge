@@ -38,6 +38,7 @@ def delete_user(request):
 @router.put("/users/me/", response=UserOut, auth=TokenAuth())
 def update_user(request, payload: UserUpdate):
     user = request.auth
+    updated_fields = []
 
     for field, value in payload.dict(exclude_unset=True).items():
         if field == "password":
@@ -45,8 +46,9 @@ def update_user(request, payload: UserUpdate):
             user.authtoken_set.all().delete()
         else:
             setattr(user, field, value)
+            updated_fields.append(field)
 
-    user.save()
+    user.save(update_fields=updated_fields)
     return user
 
 

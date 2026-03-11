@@ -1,3 +1,4 @@
+from django.forms import ValidationError
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
@@ -16,7 +17,7 @@ class AlarmConsumer(AsyncWebsocketConsumer):
             token = AuthToken.objects.select_related("user").get(id=token_id)
             groups = list(token.user.alarm_groups.values_list("id", flat=True))
             return token.user, groups
-        except (AuthToken.DoesNotExist, ValueError):
+        except (AuthToken.DoesNotExist, ValueError, ValidationError):
             return None, []
 
     async def connect(self):
