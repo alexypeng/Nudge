@@ -46,9 +46,10 @@ def update_user(request, payload: UserUpdate):
             user.authtoken_set.all().delete()
         else:
             setattr(user, field, value)
-            updated_fields.append(field)
+        updated_fields.append(field)
+    if updated_fields:
+        user.save(update_fields=updated_fields)
 
-    user.save(update_fields=updated_fields)
     return user
 
 
