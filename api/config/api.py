@@ -1,5 +1,5 @@
-from ninja import NinjaAPI
 from alarms.api import router as alarms_router
+from ninja import NinjaAPI
 from users.api import router as users_router
 
 api = NinjaAPI()
