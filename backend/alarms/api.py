@@ -1,15 +1,23 @@
-from django.utils import timezone
-from ninja import Router
-
-from .enums import Actions
-from .models import Group, Alarm, AlarmEvent, ManualRing
-from .schemas import ManualRingOut, GroupOut, GroupCreate, GroupUpdate, AlarmOut, AlarmCreate, AlarmUpdate
-from users.auth import TokenAuth
-from django.shortcuts import get_object_or_404
-from django.db import transaction
-from .utils import send_group_push, send_wake_up_push
 from datetime import timedelta
 
+from django.db import transaction
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from ninja import Router
+from users.auth import TokenAuth
+
+from .enums import Actions
+from .models import Alarm, AlarmEvent, Group, ManualRing
+from .schemas import (
+    AlarmCreate,
+    AlarmOut,
+    AlarmUpdate,
+    GroupCreate,
+    GroupOut,
+    GroupUpdate,
+    ManualRingOut,
+)
+from .utils import send_group_push, send_wake_up_push
 
 router = Router()
 
@@ -18,19 +26,23 @@ router = Router()
 # ==========================================
 
 
-@router.post("/groups/", response=GroupOut, auth=TokenAuth())
+@router.post("/group/", response=GroupOut, auth=TokenAuth())
 def create_group(request, payload: GroupCreate):
     group = Group.objects.create(name=payload.name)
     group.members.add(request.auth)
     return group
 
 
-@router.get("/groups/", response=list[GroupOut], auth=TokenAuth())
+@router.get("/group/", response=list[GroupOut], auth=TokenAuth())
 def list_groups(request):
     return list(Group.objects.filter(members=request.auth))
 
 
-@router.put("/groups/{group_id}/", response={200: GroupOut, 403: None, 404: None}, auth=TokenAuth())
+@router.put(
+    "/group/{group_id}/",
+    response={200: GroupOut, 403: None, 404: None},
+    auth=TokenAuth(),
+)
 def update_group(request, group_id: str, payload: GroupUpdate):
     group = get_object_or_404(Group, id=group_id)
 
@@ -44,7 +56,9 @@ def update_group(request, group_id: str, payload: GroupUpdate):
     return 200, group
 
 
-@router.post("/groups/{group_id}/join/", response={200: GroupOut, 403: None}, auth=TokenAuth())
+@router.post(
+    "/group/{group_id}/join/", response={200: GroupOut, 403: None}, auth=TokenAuth()
+)
 def join_group(request, group_id: str):
     group = get_object_or_404(Group, id=group_id)
 
@@ -53,7 +67,9 @@ def join_group(request, group_id: str):
     return 200, group
 
 
-@router.post("/groups/{group_id}/leave/", response={204: None, 403: None}, auth=TokenAuth())
+@router.post(
+    "/group/{group_id}/leave/", response={204: None, 403: None}, auth=TokenAuth()
+)
 def leave_group(request, group_id: str):
     with transaction.atomic():
         group = get_object_or_404(Group.objects.select_for_update(), id=group_id)
@@ -76,12 +92,14 @@ def leave_group(request, group_id: str):
 # ==========================================
 
 
-@router.post("/alarms/", response=AlarmOut, auth=TokenAuth())
+@router.post("/alarm/", response=AlarmOut, auth=TokenAuth())
 def create_alarm(request, payload: AlarmCreate):
     group = get_object_or_404(Group, id=payload.group_id)
 
     if not group.members.filter(id=request.auth.id).exists():
-        return 403, {"error": "You cannot assign an alarm to a group you are not a member of."}
+        return 403, {
+            "error": "You cannot assign an alarm to a group you are not a member of."
+        }
 
     clean_time = payload.time.replace(second=0, microsecond=0, tzinfo=None)
     alarm = Alarm.objects.create(
@@ -96,12 +114,15 @@ def create_alarm(request, payload: AlarmCreate):
     return alarm
 
 
-@router.get("/alarms/", response=list[AlarmOut], auth=TokenAuth())
-def list_alarms(request):
-    return list(Alarm.objects.filter(user=request.auth))
+@router.get("/alarm/", response=list[AlarmOut], auth=TokenAuth())
+def list_alarms(request, group_id: str | None = None):
+    qs = Alarm.objects.filter(user=request.auth)
+    if group_id:
+        qs = qs.filter(group_id=group_id)
+    return list(qs)
 
 
-@router.delete("/alarms/{alarm_id}/", response={204: None}, auth=TokenAuth())
+@router.delete("/alarm/{alarm_id}/", response={204: None}, auth=TokenAuth())
 def delete_alarm(request, alarm_id: str):
     alarm = get_object_or_404(Alarm, id=alarm_id)
 
@@ -113,7 +134,7 @@ def delete_alarm(request, alarm_id: str):
     return 204, None
 
 
-@router.put("/alarms/{alarm_id}/", response=AlarmOut, auth=TokenAuth())
+@router.put("/alarm/{alarm_id}/", response=AlarmOut, auth=TokenAuth())
 def update_alarm(request, alarm_id: str, payload: AlarmUpdate):
     alarm = get_object_or_404(Alarm, id=alarm_id)
 
@@ -136,7 +157,7 @@ def update_alarm(request, alarm_id: str, payload: AlarmUpdate):
 
 
 @router.post(
-    "/alarms/{alarm_id}/trigger/",
+    "/alarm/{alarm_id}/trigger/",
     response={200: ManualRingOut, 403: dict, 409: dict, 404: None, 429: dict},
     auth=TokenAuth(),
 )
@@ -147,10 +168,17 @@ def trigger_alarm(request, alarm_id: str):
         if not alarm.group.members.filter(id=request.auth.id).exists():
             return 403, {"error": "You are not in this alarm's group"}
 
-        event = AlarmEvent.objects.filter(alarm=alarm).select_for_update().order_by("-created_at").first()
+        event = (
+            AlarmEvent.objects.filter(alarm=alarm)
+            .select_for_update()
+            .order_by("-created_at")
+            .first()
+        )
 
         if not event:
-            return 409, {"error": f"{alarm.user.display_name}'s alarm hasn't gone off yet!"}
+            return 409, {
+                "error": f"{alarm.user.display_name}'s alarm hasn't gone off yet!"
+            }
         elif event.status == AlarmEvent.Status.CHECKED_IN:
             return 409, {"error": f"{alarm.user.display_name} already checked in!"}
         if event.status == AlarmEvent.Status.RINGING:
@@ -163,7 +191,9 @@ def trigger_alarm(request, alarm_id: str):
         ).exists()
 
         if recent_ring:
-            return 429, {"error": "This user is already being rung! Give them a second."}
+            return 429, {
+                "error": "This user is already being rung! Give them a second."
+            }
 
         manual_ring = ManualRing.objects.create(
             alarm=alarm,
@@ -173,12 +203,18 @@ def trigger_alarm(request, alarm_id: str):
     success = send_wake_up_push(user=alarm.user, ringer_name=request.auth.display_name)
 
     if not success:
-        print(f"Failed to ring {alarm.user.display_name}. They may be logged out or deleted the app.")
+        print(
+            f"Failed to ring {alarm.user.display_name}. They may be logged out or deleted the app."
+        )
 
     return 200, manual_ring
 
 
-@router.post("/alarms/{alarm_id}/check_in/", response={200: dict, 404: None, 403: dict, 409: dict}, auth=TokenAuth())
+@router.post(
+    "/alarm/{alarm_id}/check_in/",
+    response={200: dict, 404: None, 403: dict, 409: dict},
+    auth=TokenAuth(),
+)
 def check_in_alarm(request, alarm_id: str):
     with transaction.atomic():
         alarm = get_object_or_404(Alarm.objects.select_for_update(), id=alarm_id)
@@ -186,7 +222,12 @@ def check_in_alarm(request, alarm_id: str):
         if alarm.user != request.auth:
             return 403, {"error": "You do not have access to this event!"}
 
-        event = AlarmEvent.objects.filter(alarm=alarm).select_for_update().order_by("-created_at").first()
+        event = (
+            AlarmEvent.objects.filter(alarm=alarm)
+            .select_for_update()
+            .order_by("-created_at")
+            .first()
+        )
 
         if not event:
             return 404, None
@@ -203,12 +244,18 @@ def check_in_alarm(request, alarm_id: str):
         "alarm_id": str(alarm.id),
     }
 
-    success = send_group_push(users=group_members, action=Actions.CHECKED_IN, data=data_payload)
+    success = send_group_push(
+        users=group_members, action=Actions.CHECKED_IN, data=data_payload
+    )
 
     return 200, {"message": f"Checked in for {event.alarm.name}"}
 
 
-@router.post("/alarms/{alarm_id}/silence/", response={200: dict, 403: dict, 404: None, 409: dict}, auth=TokenAuth())
+@router.post(
+    "/alarm/{alarm_id}/silence/",
+    response={200: dict, 403: dict, 404: None, 409: dict},
+    auth=TokenAuth(),
+)
 def silence_alarm(request, alarm_id: str):
     with transaction.atomic():
         alarm = get_object_or_404(Alarm.objects.select_for_update(), id=alarm_id)
@@ -216,7 +263,12 @@ def silence_alarm(request, alarm_id: str):
         if alarm.user != request.auth:
             return 403, {"error": "You do not have access to this alarm"}
 
-        event = AlarmEvent.objects.filter(alarm=alarm).select_for_update().order_by("-created_at").first()
+        event = (
+            AlarmEvent.objects.filter(alarm=alarm)
+            .select_for_update()
+            .order_by("-created_at")
+            .first()
+        )
         if not event:
             return 404, None
         if event.status != AlarmEvent.Status.RINGING:
@@ -232,12 +284,18 @@ def silence_alarm(request, alarm_id: str):
         "alarm_id": str(alarm.id),
     }
 
-    success = send_group_push(users=group_members, action=Actions.SILENCED, data=data_payload)
+    success = send_group_push(
+        users=group_members, action=Actions.SILENCED, data=data_payload
+    )
 
     return 200, {"message": f"Silenced your {event.alarm.name} alarm"}
 
 
-@router.post("/alarms/{alarm_id}/ring/", response={200: dict, 403: dict, 409: dict, 404: None}, auth=TokenAuth())
+@router.post(
+    "/alarm/{alarm_id}/ring/",
+    response={200: dict, 403: dict, 409: dict, 404: None},
+    auth=TokenAuth(),
+)
 def ring_alarm(request, alarm_id: str):
     with transaction.atomic():
         alarm = get_object_or_404(Alarm.objects.select_for_update(), id=alarm_id)
@@ -261,7 +319,9 @@ def ring_alarm(request, alarm_id: str):
             alarm.is_active = False
             alarm.save(update_fields=["is_active"])
         else:
-            new_trigger = alarm.calculate_next_trigger(now_override=timezone.now() + timedelta(minutes=2))
+            new_trigger = alarm.calculate_next_trigger(
+                now_override=timezone.now() + timedelta(minutes=2)
+            )
             Alarm.objects.filter(pk=alarm.pk).update(next_trigger_utc=new_trigger)
 
     group_members = alarm.group.members.exclude(id=alarm.user.id)
@@ -273,4 +333,7 @@ def ring_alarm(request, alarm_id: str):
 
     success = send_group_push(group_members, Actions.RINGING, data_payload)
 
-    return 200, {"message": "Alarm event created. 5-minute countdown started.", "event_id": str(event.id)}
+    return 200, {
+        "message": "Alarm event created. 5-minute countdown started.",
+        "event_id": str(event.id),
+    }

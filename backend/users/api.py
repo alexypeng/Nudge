@@ -11,7 +11,7 @@ from django.db import transaction
 router = Router()
 
 
-@router.post("/register/", response=UserOut)
+@router.post("/user/", response=UserOut)
 def create_user(request, payload: UserCreate):
     user = User.objects.create_user(
         username=payload.username,
@@ -23,12 +23,12 @@ def create_user(request, payload: UserCreate):
     return user
 
 
-@router.get("/me/", response=UserOut, auth=TokenAuth())
+@router.get("/user/", response=UserOut, auth=TokenAuth())
 def list_user(request):
     return request.auth
 
 
-@router.delete("/delete/", response={204: None}, auth=TokenAuth())
+@router.delete("/user/", response={204: None}, auth=TokenAuth())
 def delete_user(request):
     user = request.auth
 
@@ -36,7 +36,7 @@ def delete_user(request):
     return 204, None
 
 
-@router.put("/update/", response=UserOut, auth=TokenAuth())
+@router.put("/user/", response=UserOut, auth=TokenAuth())
 def update_user(request, payload: UserUpdate):
     user = request.auth
     updated_fields = []
