@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { api, UserOut, RegisterIn, LoginIn } from "../api/client";
+import { api, UserOut, RegisterIn, LoginIn } from "@/src/api/client";
 
 const TOKEN_KEY = "ringsync_token";
 
