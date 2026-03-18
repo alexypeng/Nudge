@@ -1,8 +1,7 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "@/constants/Config";
 
 // Users
-interface UserOut {
+export interface UserOut {
     id: string;
     username: string;
     display_name: string;
@@ -10,7 +9,7 @@ interface UserOut {
     email: string;
 }
 
-interface RegisterIn {
+export interface RegisterIn {
     username: string;
     display_name: string;
     timezone: string;
@@ -18,16 +17,16 @@ interface RegisterIn {
     password: string;
 }
 
-interface LoginIn {
+export interface LoginIn {
     email: string;
     password: string;
 }
 
-interface TokenOut {
+export interface TokenOut {
     token: string;
 }
 
-interface UserUpdate {
+export interface UserUpdate {
     email?: string;
     display_name?: string;
     password?: string;
@@ -35,23 +34,23 @@ interface UserUpdate {
 }
 
 // Devices
-interface DeviceCreate {
+export interface DeviceCreate {
     push_token: string;
     device_type: "ios" | "android";
 }
 
 //  Groups
-interface GroupOut {
+export interface GroupOut {
     id: string;
     name: string;
 }
 
-interface GroupCreate {
+export interface GroupCreate {
     name: string;
 }
 
 // Alarms
-interface AlarmOut {
+export interface AlarmOut {
     id: string;
     name: string;
     time: string;
@@ -63,7 +62,8 @@ interface AlarmOut {
     next_trigger_utc: string | null;
     sound_filename: string;
 }
-interface AlarmCreate {
+
+export interface AlarmCreate {
     name: string;
     time: string;
     repeats: string;
@@ -71,7 +71,8 @@ interface AlarmCreate {
     group_id: string;
     sound_filename?: string;
 }
-interface AlarmUpdate {
+
+export interface AlarmUpdate {
     name?: string;
     time?: string;
     repeats?: string;
@@ -80,12 +81,18 @@ interface AlarmUpdate {
 }
 
 // Events
-type AlarmEventStatus = "RINGING" | "SILENCED" | "CHECKED_IN" | "EXPIRED";
-interface RingOut {
+export type AlarmEventStatus =
+    | "RINGING"
+    | "SILENCED"
+    | "CHECKED_IN"
+    | "EXPIRED";
+
+export interface RingOut {
     message: string;
     event_id: string;
 }
-interface ManualRingOut {
+
+export interface ManualRingOut {
     id: string;
     alarm_id: string;
     ringer_id: string | null;
@@ -93,38 +100,97 @@ interface ManualRingOut {
 }
 
 async function request<T>(
-    path: string,
     method: "GET" | "POST" | "PUT" | "DELETE",
-    body?: object,
-    auth?: boolean,
+    path: string,
+    token?: string,
+    body?: unknown,
 ): Promise<T> {
     const headers: Record<string, string> = {
         "Content-Type": "application/json",
     };
 
-    if (auth) {
-        const token = await AsyncStorage.getItem("auth_token");
+    if (token) {
         headers["Authorization"] = `Bearer ${token}`;
     }
 
-    const response = await fetch(API_URL + path, {
+    const response = await fetch(`${API_URL}${path}`, {
         method,
         headers,
-        body: body ? JSON.stringify(body) : undefined,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
     });
+
+    if (!response.ok) {
+        let message = `HTTP ${response.status}`;
+        try {
+            const error = await response.json();
+            message = error.detail ?? error.message ?? JSON.stringify(error);
+        } catch {}
+        throw new Error(message);
+    }
 
     if (response.status === 204) return undefined as T;
 
-    if (!response.ok) {
-        const error = await response.json();
-        throw error;
-    }
-
-    return await response.json();
+    return (await response.json()) as T;
 }
 
-export const login = (data: LoginIn) =>
-    request<TokenOut>("/api/users/login/", "POST", data, false);
+export const api = {
+    register: (data: RegisterIn) =>
+        request<UserOut>("POST", "/api/users/user/", undefined, data),
+    login: (data: LoginIn) =>
+        request<TokenOut>("POST", "/api/users/login/", undefined, data),
+    getMe: (token: string) =>
+        request<UserOut>("GET", "/api/users/user/", token),
+    updateMe: (token: string, data: UserUpdate) =>
+        request<UserOut>("PUT", "/api/users/user/", token, data),
 
-export const register = (data: RegisterIn) =>
-    request<UserOut>("/api/users/users/", "POST", data, false);
+    registerDevice: (token: string, data: DeviceCreate) =>
+        request<void>("POST", "/api/users/devices/", token, data),
+
+    createGroup: (token: string, data: GroupCreate) =>
+        request<GroupOut>("POST", "/api/alarms/group/", token, data),
+    listGroups: (token: string) =>
+        request<GroupOut[]>("GET", "/api/alarms/group/", token),
+    joinGroup: (token: string, groupId: string) =>
+        request<GroupOut>("POST", `/api/alarms/group/${groupId}/join/`, token),
+    leaveGroup: (token: string, groupId: string) =>
+        request<void>("POST", `/api/alarms/group/${groupId}/leave/`, token),
+
+    createAlarm: (token: string, data: AlarmCreate) =>
+        request<AlarmOut>("POST", "/api/alarms/alarm/", token, data),
+    listAlarms: (token: string, groupId?: string) =>
+        request<AlarmOut[]>(
+            "GET",
+            `/api/alarms/alarm/${groupId ? `?group_id=${groupId}` : ""}`,
+            token,
+        ),
+    updateAlarm: (token: string, alarmId: string, data: AlarmUpdate) =>
+        request<AlarmOut>("PUT", `/api/alarms/alarm/${alarmId}/`, token, data),
+    deleteAlarm: (token: string, alarmId: string) =>
+        request<void>("DELETE", `/api/alarms/alarm/${alarmId}/`, token),
+
+    ringAlarm: (token: string, alarmId: string) =>
+        request<{ message: string; event_id: string }>(
+            "POST",
+            `/api/alarms/alarm/${alarmId}/ring/`,
+            token,
+        ),
+    silenceAlarm: (token: string, alarmId: string) =>
+        request<{ message: string }>(
+            "POST",
+            `/api/alarms/alarm/${alarmId}/silence/`,
+            token,
+        ),
+    checkIn: (token: string, alarmId: string) =>
+        request<{ message: string }>(
+            "POST",
+            `/api/alarms/alarm/${alarmId}/check_in/`,
+            token,
+        ),
+    triggerAlarm: (token: string, alarmId: string) =>
+        request<{
+            id: string;
+            alarm_id: string;
+            ringer_id: string | null;
+            created_at: string;
+        }>("POST", `/api/alarms/alarm/${alarmId}/trigger/`, token),
+};
