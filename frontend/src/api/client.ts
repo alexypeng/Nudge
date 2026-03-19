@@ -49,6 +49,10 @@ export interface GroupCreate {
     name: string;
 }
 
+export interface GroupUpdate {
+    name: string;
+}
+
 // Alarms
 export interface AlarmOut {
     id: string;
@@ -150,6 +154,8 @@ export const api = {
         request<GroupOut>("POST", "/api/alarms/group/", token, data),
     listGroups: (token: string) =>
         request<GroupOut[]>("GET", "/api/alarms/group/", token),
+    updateGroup: (token: string, groupId: string, data: GroupUpdate) =>
+        request<GroupOut>("PUT", `/api/alarms/group/${groupId}/`, token, data),
     joinGroup: (token: string, groupId: string) =>
         request<GroupOut>("POST", `/api/alarms/group/${groupId}/join/`, token),
     leaveGroup: (token: string, groupId: string) =>
