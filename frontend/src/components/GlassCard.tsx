@@ -7,11 +7,12 @@ import { Colors } from '../theme/colors';
 interface GlassCardProps {
   children: React.ReactNode;
   style?: ViewStyle;
+  className?: string;
 }
 
-export function GlassCard({ children, style }: GlassCardProps) {
+export function GlassCard({ children, style, className }: GlassCardProps) {
   return (
-    <View style={[styles.outer, style]}>
+    <View className={className} style={[styles.outer, style]}>
       <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
       <View style={[StyleSheet.absoluteFill, styles.tint]} />
       <LinearGradient

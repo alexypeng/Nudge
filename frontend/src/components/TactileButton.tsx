@@ -15,6 +15,7 @@ interface TactileButtonProps {
   style?: ViewStyle;
   textStyle?: TextStyle;
   disabled?: boolean;
+  className?: string;
 }
 
 const SPRING = { damping: 15, stiffness: 120 };
@@ -32,6 +33,7 @@ export function TactileButton({
   style,
   textStyle,
   disabled = false,
+  className,
 }: TactileButtonProps) {
   const translateY = useSharedValue(0);
 
@@ -54,6 +56,7 @@ export function TactileButton({
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         onPress();
       }}
+      className={className}
       style={[styles.wrapper, style, disabled && styles.disabled]}
     >
       <Animated.View style={[styles.shadow, { backgroundColor: shadow }]} />

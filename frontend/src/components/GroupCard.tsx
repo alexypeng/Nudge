@@ -7,11 +7,12 @@ import { GlassCard } from './GlassCard';
 interface GroupCardProps {
   group: GroupOut;
   onPress?: () => void;
+  className?: string;
 }
 
-export function GroupCard({ group, onPress }: GroupCardProps) {
+export function GroupCard({ group, onPress, className }: GroupCardProps) {
   return (
-    <Pressable onPress={onPress}>
+    <Pressable className={className} onPress={onPress}>
       <GlassCard>
         <Text style={styles.name}>{group.name}</Text>
       </GlassCard>

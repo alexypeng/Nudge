@@ -14,11 +14,12 @@ interface AlarmCardProps {
   alarm: AlarmOut;
   isRinging?: boolean;
   onPress?: () => void;
+  className?: string;
 }
 
 const SPRING = { damping: 15, stiffness: 120 };
 
-export function AlarmCard({ alarm, isRinging = false, onPress }: AlarmCardProps) {
+export function AlarmCard({ alarm, isRinging = false, onPress, className }: AlarmCardProps) {
   const pulse = useSharedValue(1);
 
   React.useEffect(() => {
@@ -40,7 +41,7 @@ export function AlarmCard({ alarm, isRinging = false, onPress }: AlarmCardProps)
   const timeDisplay = alarm.time.slice(0, 5); // "HH:MM"
 
   return (
-    <Pressable onPress={onPress}>
+    <Pressable className={className} onPress={onPress}>
       <Animated.View style={pulseStyle}>
         <GlassCard style={isRinging ? styles.ringingBorder : undefined}>
           <View style={styles.row}>
