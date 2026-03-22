@@ -6,46 +6,129 @@ RingSync is a social alarm clock built with Expo (React Native) and Django. It f
 
 ## 🛠 Tech Stack
 
-- **Frontend:** React Native (Expo), Tamagui (UI), Lucide-React-Native (Icons).
+- **Frontend:** React Native (Expo), NativeWind v4 (utility classes), Lucide-React-Native (Icons).
+- **Styling:** Unistyles v3 (typed theme system, replaces bare StyleSheet) — **not yet installed, must be set up before use.**
 - **Backend:** Django, Django Ninja (API), Supabase (Postgres), Redis (Caching).
-- **Animations:** React Native Reanimated (Spring-based physics).
+- **Animations:** React Native Reanimated v4 (Spring-based physics).
+- **Visual Effects:** `expo-blur` (BlurView), `expo-linear-gradient` (LinearGradient).
+- **Haptics:** `expo-haptics`.
 - **Push:** Firebase Cloud Messaging (FCM).
+- **State:** Zustand.
+- **Routing:** Expo Router.
 
-## 🎨 Visual Identity: "Tactile Midnight"
+## ⚙️ Unistyles Setup (Do This Before Writing Any Styled Components)
 
-Claude MUST follow these styling rules for ALL components and screens. Do not use generic Tailwind or Material UI defaults.
+Unistyles v3 is the intended styling foundation but is **not yet installed**. When asked to set it up:
 
-### 1. Typography
+1. Install: `npx expo install react-native-unistyles`
+2. Requires a custom dev build — will not work in Expo Go.
+3. Define the theme in `src/theme/unistyles.ts`, registering the `arcade` theme with all color tokens, spacing, radii, and typography.
+4. Wrap the app root with `UnistylesRegistry` in `app/_layout.tsx`.
+5. Replace existing bare `StyleSheet.create` calls screen-by-screen as you touch them — do not do a big-bang migration.
+6. NativeWind can coexist with Unistyles; use NativeWind for layout utilities and Unistyles for themed component styles.
 
-- **Header Font:** 'Inter-Bold' (or system bold equivalent).
-- **Letter Spacing:** Always set to `-0.5px` for headers to create a premium look.
-- **Hierarchy:** Headers use pure white (`#FFFFFF`), Body text uses translucent white (`rgba(255, 255, 255, 0.6)`).
+## 🎨 Visual Identity: "Midnight Arcade"
 
-### 2. Component Styling (The "BetterSleep" Glass Vibe)
+The app feels competitive, motivating, and alive — like a game you want to win every morning. Tone is playful and social, never edgy, punishing, or dark. Copy should be encouraging and light, not dramatic.
 
-- **Containers:** 24px corner radius (Continuous Curve/Squircle).
-- **Backgrounds:** `rgba(255, 255, 255, 0.05)` with 20px background blur (Glassmorphism).
-- **Borders:** 1px solid. Use a linear gradient for the border color: `top-left: rgba(255, 255, 255, 0.2)` to `bottom-right: transparent`.
-- **Layout:** Use **Bento Grids** for the dashboard. Tiles should be asymmetric (mix of 1x1 squares and 2x1 rectangles).
+Claude MUST follow these styling rules for ALL components and screens. Do not use generic defaults or unstyled RN primitives.
 
-### 3. Interaction Logic (The "Duolingo" Tactile Vibe)
+### Design Thinking (Before Writing Any UI Code)
 
-- **Buttons:** MUST be 3D. They are not flat.
-- **The "Sink" Effect:** Implement a physical press animation using Reanimated. On press, `translateY` moves `4px` down.
-- **Physics:** Never use `withTiming`. Use `withSpring` with `damping: 15` and `stiffness: 120`.
-- **Haptics:** Trigger `ImpactFeedbackStyle.Light` using `expo-haptics` on every successful button interaction.
+Before coding any screen or component, answer:
+- **Purpose:** What problem does this screen solve? What is the user's emotional state here?
+- **Differentiation:** What's the ONE thing a user will remember about this screen?
+- **Constraints:** Does it need haptics, animation, accessibility, or real-time updates?
+
+### 1. Color Tokens
+
+All values live in `src/theme/colors.ts` — never hardcode hex values outside that file.
+
+```ts
+// src/theme/colors.ts
+export const colors = {
+  background:   '#0b1120',   // deep navy — page background
+  surface:      '#0d1424',   // card background
+  surfaceHover: '#111d30',   // slightly lifted surface
+  border:       'rgba(96, 165, 250, 0.15)',  // default card border
+  borderHot:    'rgba(96, 165, 250, 0.45)',  // active/focused border
+
+  accent:       '#60a5fa',   // primary blue — buttons, highlights, big numbers
+  accentPress:  '#1d4ed8',   // button shadow / pressed state
+  accentSubtle: 'rgba(96, 165, 250, 0.1)',   // tinted backgrounds
+
+  textPrimary:   '#ffffff',
+  textSecondary: 'rgba(255, 255, 255, 0.5)',
+  textDim:       'rgba(255, 255, 255, 0.3)',
+
+  statusUp:     '#34d399',   // on time / success
+  statusLate:   '#ff4444',   // missed
+  statusSnooze: '#fbbf24',   // snoozing / pending
+
+  avatarBlue:   '#60a5fa',
+  avatarPurple: '#a78bfa',
+  avatarGreen:  '#34d399',
+}
+```
+
+### 2. Typography
+
+- **Header font:** `DM Sans` Bold/Black (weight 700–900) — always `letterSpacing: -0.5` for headers.
+- **Body font:** `DM Sans` Regular (weight 400).
+- **Hierarchy:**
+  - Big numbers (time, streaks, scores): 40–56px, weight 900, `color: colors.accent`.
+  - Screen titles: 15–16px, weight 900, `color: colors.textPrimary`, `letterSpacing: -0.5`.
+  - Labels / metadata: 10px, weight 400, `letterSpacing: 2.5`, `textTransform: uppercase`, `color: colors.textDim`.
+  - Body: 13px, weight 400, `color: colors.textSecondary`.
+- Never leave a text element unstyled.
+
+### 3. Component Styling
+
+- **Cards:** `backgroundColor: colors.surface`, `borderRadius: 18`, `borderWidth: 1.5`, `borderColor: colors.border`. Active/focused cards use `colors.borderHot`.
+- **No outer framing or decorative wrappers** — cards sit directly on the page background with no additional container borders or section frames.
+- **Spacing:** 20px internal padding on cards. 8px gap between cards.
+- **Shadows:** Colored, not black. Use `shadowColor: colors.accent` at low opacity (`shadowOpacity: 0.2, shadowRadius: 12, elevation: 6`) on focused cards.
+- **Avatars:** 28px circles, colored per user, `borderWidth: 2, borderColor: colors.surface`. Overlap with `marginRight: -5` in groups.
+- **Pills / badges:** `backgroundColor: colors.accentSubtle`, `borderWidth: 1`, `borderColor: rgba(96,165,250,0.25)`, `borderRadius: 99`, `paddingHorizontal: 9`, `paddingVertical: 3`. Text: 10px, weight 700, `color: colors.accent`.
+- **Progress bars:** 6px height, `borderRadius: 99`, `backgroundColor: rgba(255,255,255,0.06)`. Fill: `colors.accent`.
+- **Dividers:** 1px, `backgroundColor: rgba(255,255,255,0.05)`.
+
+### 4. Buttons
+
+- **Primary:** `backgroundColor: colors.accent`, `borderRadius: 12`, `paddingVertical: 12`, `fontWeight: 900`, `color: colors.surface`, `shadowColor: colors.accentPress`, `shadowOffset: {width:0, height:4}`, `shadowOpacity: 1`, `shadowRadius: 0` — gives a 3D raised look.
+- **Ghost:** transparent background, `borderWidth: 1.5`, `borderColor: colors.borderHot`, text `color: colors.accent`.
+- Buttons are NEVER flat. Always include the bottom shadow for depth.
+
+### 5. Interaction & Motion
+
+- **The "Sink" Effect:** On press, `translateY: 4` + reduce shadow offset to 0 using `withSpring`.
+- **Physics:** Never use `withTiming`. Always `withSpring` with `{ damping: 15, stiffness: 120 }`.
+- **Haptics:** `ImpactFeedbackStyle.Light` via `expo-haptics` on every successful interaction.
+- **Staggered Reveals:** On screen mount, stagger children with increasing `delay`. One orchestrated entrance beats many scattered micro-animations.
+- **Hero Interactions:** Every screen has one key moment (dismissing an alarm, locking in a time, seeing the leaderboard update). Make it feel rewarding — spring overshoot, haptic, accent color flash.
+
+### 6. Copy & Tone
+
+- Motivating and social, never punishing or edgy.
+- Missed alarm: "You missed this one — tomorrow's another shot" not "You were reaped."
+- Late: "Running late" not "Failed."
+- Points deducted: "−2 pts (snooze)" — matter-of-fact, not dramatic.
+- Keep labels short. Screen titles are max 3 words.
 
 ## 🏗 Coding Patterns
 
-- **API Calls:** Use a centralized `api.ts` client. Reference `EXPO_PUBLIC_API_URL` from `.env`.
-- **State:** Prefer `Zustand` for global UI state (e.g., active alarm status).
-- **File Structure:** - `/src/components` - Small, reusable atoms.
-    - `/src/features` - Feature-specific logic and screens.
-    - `/src/theme` - Global color tokens and layout constants.
+- **API Calls:** Centralized `api.ts` client using `EXPO_PUBLIC_API_URL` from `.env`.
+- **State:** Zustand for all global UI state (active alarm, group status, user session).
+- **File Structure:**
+  - `src/components` — Small, reusable atoms.
+  - `src/features` — Feature-specific screens and logic.
+  - `src/theme` — `colors.ts`, `spacing.ts`, `unistyles.ts` (once set up).
 
 ## 🤖 Claude Commands & Workflow
 
-- **Plan First:** Always use Plan Mode (`Shift + Tab`) to describe the UI hierarchy before writing code.
-- **Verification:** After writing a component, provide a summary of the `StyleSheet` to ensure it adheres to the -0.5px letter spacing and 24px radius rules.
-- **File References:** When editing, always check `@src/theme/colors.ts` to ensure consistency.
-- **You are to act as a mentor:** do not write all the code for me unless explicitly told to
+- **Plan First:** Always use Plan Mode (`Shift + Tab`) to describe UI hierarchy, aesthetic intent, and motion plan before writing code.
+- **Unistyles Check:** Before styling anything, confirm whether Unistyles is set up. If not, use bare `StyleSheet` with a `// TODO: migrate to Unistyles` comment.
+- **Verification:** After writing a component, summarize the styles confirming: correct color tokens used, `letterSpacing: -0.5` on headers, `borderRadius: 18`, spring physics (no `withTiming`), 3D button shadows.
+- **File References:** Always check `src/theme/colors.ts` before introducing any color value.
+- **Design Critique:** Flag anything that risks looking generic — flat buttons, unstyled text, black shadows, missing motion, edgy copy.
+- **Mentor Mode:** Do not write all the code unless explicitly told to. Guide with structure, patterns, and targeted snippets.
