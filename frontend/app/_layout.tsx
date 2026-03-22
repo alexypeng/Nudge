@@ -24,7 +24,6 @@ export default function RootLayout() {
     }, [isLoaded]);
 
     if (!isLoaded) return null;
-    if (!token) return <Redirect href="/(auth)/login" />;
 
     return (
         <Stack

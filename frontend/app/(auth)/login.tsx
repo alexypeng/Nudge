@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Text, TextInput, KeyboardAvoidingView, Platform } from "react-native";
+import {
+    Text,
+    TextInput,
+    KeyboardAvoidingView,
+    Platform,
+    Keyboard,
+    TouchableWithoutFeedback,
+} from "react-native";
 import { useRouter, Link } from "expo-router";
 import { useAuthStore } from "@/src/stores/authStore";
 import { TactileButton } from "@/src/components/TactileButton";
@@ -25,22 +32,36 @@ export default function LoginScreen() {
     };
 
     return (
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             className="flex-1 px-6 pt-16"
             style={{ backgroundColor: Colors.background }}
         >
             <Text
-                className="text-3xl font-bold tracking-tight mb-8"
-                style={{ color: Colors.text.primary }}
+                className="text-3xl font-bold mb-2"
+                style={{
+                    color: Colors.text.primary,
+                    letterSpacing: -0.5,
+                    fontFamily: "Inter-Bold",
+                }}
             >
                 Sign In
             </Text>
+            <Text
+                className="text-base mb-8"
+                style={{ color: Colors.text.secondary }}
+            >
+                Welcome back to RingSync
+            </Text>
             <TextInput
-                className="rounded-2xl h-12 px-4 mb-3"
+                className="h-12 px-4 mb-3"
                 style={{
                     backgroundColor: Colors.surface,
                     color: Colors.text.primary,
+                    borderRadius: 24,
+                    borderWidth: 1,
+                    borderColor: Colors.border.top,
                 }}
                 value={email}
                 onChangeText={setEmail}
@@ -50,10 +71,13 @@ export default function LoginScreen() {
                 keyboardType="email-address"
             />
             <TextInput
-                className="rounded-2xl h-12 px-4 mb-4"
+                className="h-12 px-4 mb-4"
                 style={{
                     backgroundColor: Colors.surface,
                     color: Colors.text.primary,
+                    borderRadius: 24,
+                    borderWidth: 1,
+                    borderColor: Colors.border.top,
                 }}
                 value={password}
                 onChangeText={setPassword}
@@ -85,5 +109,6 @@ export default function LoginScreen() {
                 Don't have an account? Sign up
             </Link>
         </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
     );
 }
