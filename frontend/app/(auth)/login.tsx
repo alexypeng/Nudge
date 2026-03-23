@@ -33,81 +33,81 @@ export default function LoginScreen() {
 
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            className="flex-1 px-8 pt-40"
-            style={{ backgroundColor: Colors.background }}
-        >
-            <Text
-                className="text-3xl font-bold mb-2 text-center"
-                style={{
-                    color: Colors.textPrimary,
-                    letterSpacing: -0.5,
-                }}
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                className="flex-1 px-8 pt-40"
+                style={{ backgroundColor: Colors.background }}
             >
-                Sign In
-            </Text>
-            <Text
-                className="text-base mb-8 text-center"
-                style={{ color: Colors.textSecondary }}
-            >
-                Welcome back to RingSync
-            </Text>
-            <TextInput
-                className="h-12 px-4 mb-3"
-                style={{
-                    backgroundColor: Colors.surface,
-                    color: Colors.textPrimary,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: Colors.border,
-                }}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="Email"
-                placeholderTextColor={Colors.textDim}
-                autoCapitalize="none"
-                keyboardType="email-address"
-            />
-            <TextInput
-                className="h-12 px-4 mb-4"
-                style={{
-                    backgroundColor: Colors.surface,
-                    color: Colors.textPrimary,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: Colors.border,
-                }}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={true}
-                placeholder="Password"
-                placeholderTextColor={Colors.textDim}
-            />
-            {error ? (
                 <Text
-                    className="text-sm mb-3"
-                    style={{ color: Colors.statusLate }}
+                    className="text-3xl font-bold mb-2 text-center"
+                    style={{
+                        color: Colors.textPrimary,
+                        letterSpacing: -0.5,
+                    }}
                 >
-                    {error}
+                    Sign In
                 </Text>
-            ) : null}
-            <TactileButton
-                label="Sign In"
-                onPress={handleLogin}
-                disabled={isLoading}
-                className="mb-3"
-            />
-            <Link
-                href="/(auth)/register"
-                className="text-center mt-5"
-                style={{
-                    color: Colors.textSecondary,
-                }}
-            >
-                Don't have an account? Sign up
-            </Link>
-        </KeyboardAvoidingView>
+                <Text
+                    className="text-base mb-8 text-center"
+                    style={{ color: Colors.textSecondary }}
+                >
+                    Welcome back to RingSync
+                </Text>
+                <TextInput
+                    className="h-12 px-4 mb-3"
+                    style={{
+                        backgroundColor: Colors.surface,
+                        color: Colors.textPrimary,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: Colors.border,
+                    }}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="Email"
+                    placeholderTextColor={Colors.textDim}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                />
+                <TextInput
+                    className="h-12 px-4 mb-4"
+                    style={{
+                        backgroundColor: Colors.surface,
+                        color: Colors.textPrimary,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: Colors.border,
+                    }}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={true}
+                    placeholder="Password"
+                    placeholderTextColor={Colors.textDim}
+                />
+                {error ? (
+                    <Text
+                        className="text-sm mb-3"
+                        style={{ color: Colors.statusLate }}
+                    >
+                        {error}
+                    </Text>
+                ) : null}
+                <TactileButton
+                    label="Sign In"
+                    onPress={handleLogin}
+                    disabled={isLoading}
+                    className="mb-3"
+                />
+                <Link
+                    href="/(auth)/register"
+                    className="text-center mt-5"
+                    style={{
+                        color: Colors.textSecondary,
+                    }}
+                >
+                    Don't have an account? Sign up
+                </Link>
+            </KeyboardAvoidingView>
         </TouchableWithoutFeedback>
     );
 }

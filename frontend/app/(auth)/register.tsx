@@ -54,13 +54,13 @@ export default function RegisterPage() {
                         letterSpacing: -0.5,
                     }}
                 >
-                    Create Account
+                    Get Started
                 </Text>
                 <Text
                     className="text-base mb-8 text-center"
                     style={{ color: Colors.textSecondary }}
                 >
-                    Join RingSync and never miss another alarm
+                    Your crew's got your back
                 </Text>
                 <TextInput
                     className="h-12 px-4 mb-3"
