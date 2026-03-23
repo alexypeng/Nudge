@@ -35,11 +35,11 @@ export default function LoginScreen() {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
-            className="flex-1 px-6 pt-16"
+            className="flex-1 px-8 pt-40"
             style={{ backgroundColor: Colors.background }}
         >
             <Text
-                className="text-3xl font-bold mb-2"
+                className="text-3xl font-bold mb-2 text-center"
                 style={{
                     color: Colors.textPrimary,
                     letterSpacing: -0.5,
@@ -48,7 +48,7 @@ export default function LoginScreen() {
                 Sign In
             </Text>
             <Text
-                className="text-base mb-8"
+                className="text-base mb-8 text-center"
                 style={{ color: Colors.textSecondary }}
             >
                 Welcome back to RingSync
