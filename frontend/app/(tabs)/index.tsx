@@ -13,7 +13,7 @@ export default function HomeScreen() {
             className="flex-1 items-center justify-center"
             style={{ backgroundColor: Colors.background }}
         >
-            <Text style={{ color: Colors.text.primary }}>Home</Text>
+            <Text style={{ color: Colors.textPrimary }}>Home</Text>
         </View>
     );
 }

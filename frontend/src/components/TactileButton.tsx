@@ -21,9 +21,9 @@ interface TactileButtonProps {
 const SPRING = { damping: 15, stiffness: 120 };
 
 const variantColors = {
-  primary: { bg: '#6366F1', shadow: '#4338CA' },
-  danger: { bg: Colors.status.RINGING, shadow: '#B91C1C' },
-  ghost: { bg: 'rgba(255,255,255,0.1)', shadow: 'rgba(255,255,255,0.05)' },
+  primary: { bg: Colors.accent, shadow: Colors.accentPress },
+  danger: { bg: Colors.statusLate, shadow: '#B91C1C' },
+  ghost: { bg: 'transparent', shadow: 'transparent' },
 };
 
 export function TactileButton({
@@ -42,6 +42,7 @@ export function TactileButton({
   }));
 
   const { bg, shadow } = variantColors[variant];
+  const isGhost = variant === 'ghost';
 
   return (
     <Pressable
@@ -59,14 +60,32 @@ export function TactileButton({
       className={className}
       style={[styles.wrapper, style, disabled && styles.disabled]}
     >
-      <Animated.View style={[styles.shadow, { backgroundColor: shadow }]} />
-      <Animated.View style={[styles.surface, { backgroundColor: bg }, animatedStyle]}>
-        <Text style={[styles.label, textStyle]}>{label}</Text>
+      {!isGhost && (
+        <Animated.View style={[styles.shadow, { backgroundColor: shadow }]} />
+      )}
+      <Animated.View
+        style={[
+          styles.surface,
+          { backgroundColor: bg },
+          isGhost && styles.ghostBorder,
+          animatedStyle,
+        ]}
+      >
+        <Text
+          style={[
+            styles.label,
+            isGhost && { color: Colors.accent },
+            textStyle,
+          ]}
+        >
+          {label}
+        </Text>
       </Animated.View>
     </Pressable>
   );
 }
 
+// TODO: migrate to Unistyles
 const styles = StyleSheet.create({
   wrapper: {
     position: 'relative',
@@ -78,7 +97,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 52,
-    borderRadius: 16,
+    borderRadius: 12,
   },
   surface: {
     position: 'absolute',
@@ -86,15 +105,19 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 52,
-    borderRadius: 16,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   label: {
-    color: Colors.text.primary,
+    color: Colors.surface,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '900',
     letterSpacing: -0.5,
+  },
+  ghostBorder: {
+    borderWidth: 1.5,
+    borderColor: Colors.borderHot,
   },
   disabled: {
     opacity: 0.5,

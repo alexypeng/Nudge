@@ -3,6 +3,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { Stack, Redirect } from "expo-router";
 import { useAuthStore } from "@/src/stores/authStore";
+import { Colors } from "@/src/theme/colors";
 
 export {
     // Catch any errors thrown by the Layout component.
@@ -28,9 +29,9 @@ export default function RootLayout() {
     return (
         <Stack
             screenOptions={{
-                headerStyle: { backgroundColor: "#0A0A0F" },
-                headerTintColor: "#FFFFFF",
-                contentStyle: { backgroundColor: "#0A0A0F" },
+                headerStyle: { backgroundColor: Colors.background },
+                headerTintColor: Colors.textPrimary,
+                contentStyle: { backgroundColor: Colors.background },
             }}
         >
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

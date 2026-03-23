@@ -1,7 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../theme/colors';
 
 interface GlassCardProps {
@@ -15,33 +14,24 @@ export function GlassCard({ children, style, className }: GlassCardProps) {
     <View className={className} style={[styles.outer, style]}>
       <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
       <View style={[StyleSheet.absoluteFill, styles.tint]} />
-      <LinearGradient
-        colors={[Colors.border.top, Colors.border.bottom]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[StyleSheet.absoluteFill, styles.borderOverlay]}
-        pointerEvents="none"
-      />
       <View style={styles.content}>{children}</View>
     </View>
   );
 }
 
+// TODO: migrate to Unistyles
 const styles = StyleSheet.create({
   outer: {
-    borderRadius: 24,
+    borderRadius: 18,
     overflow: 'hidden',
     backgroundColor: Colors.surface,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
   },
   tint: {
     backgroundColor: Colors.surface,
   },
-  borderOverlay: {
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
   content: {
-    padding: 16,
+    padding: 20,
   },
 });

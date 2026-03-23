@@ -10,8 +10,8 @@ export default function TabLayout() {
                     backgroundColor: Colors.background,
                     borderTopColor: "rgba(255,255,255,0.08)",
                 },
-                tabBarActiveTintColor: "#6C63FF",
-                tabBarInactiveTintColor: Colors.text.secondary,
+                tabBarActiveTintColor: Colors.accent,
+                tabBarInactiveTintColor: Colors.textSecondary,
             }}
         >
             <Tabs.Screen name="index" options={{ title: "Home" }} />

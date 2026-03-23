@@ -11,7 +11,7 @@ export default function NotFoundScreen() {
             <Text
                 className="text-2xl font-bold mb-4"
                 style={{
-                    color: Colors.text.primary,
+                    color: Colors.textPrimary,
                 }}
             >
                 Page not found

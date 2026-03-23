@@ -50,16 +50,15 @@ export default function RegisterPage() {
             <Text
                 className="text-3xl font-bold mb-2"
                 style={{
-                    color: Colors.text.primary,
+                    color: Colors.textPrimary,
                     letterSpacing: -0.5,
-                    fontFamily: "Inter-Bold",
                 }}
             >
                 Create Account
             </Text>
             <Text
                 className="text-base mb-8"
-                style={{ color: Colors.text.secondary }}
+                style={{ color: Colors.textSecondary }}
             >
                 Join RingSync and never oversleep
             </Text>
@@ -67,29 +66,29 @@ export default function RegisterPage() {
                 className="h-12 px-4 mb-3"
                 style={{
                     backgroundColor: Colors.surface,
-                    color: Colors.text.primary,
-                    borderRadius: 24,
+                    color: Colors.textPrimary,
+                    borderRadius: 12,
                     borderWidth: 1,
-                    borderColor: Colors.border.top,
+                    borderColor: Colors.border,
                 }}
                 value={displayName}
                 onChangeText={setDisplayName}
                 placeholder="Display Name"
-                placeholderTextColor={Colors.text.tertiary}
+                placeholderTextColor={Colors.textDim}
             />
             <TextInput
                 className="h-12 px-4 mb-3"
                 style={{
                     backgroundColor: Colors.surface,
-                    color: Colors.text.primary,
-                    borderRadius: 24,
+                    color: Colors.textPrimary,
+                    borderRadius: 12,
                     borderWidth: 1,
-                    borderColor: Colors.border.top,
+                    borderColor: Colors.border,
                 }}
                 value={email}
                 onChangeText={setEmail}
                 placeholder="Email"
-                placeholderTextColor={Colors.text.tertiary}
+                placeholderTextColor={Colors.textDim}
                 autoCapitalize="none"
                 keyboardType="email-address"
             />
@@ -97,21 +96,21 @@ export default function RegisterPage() {
                 className="h-12 px-4 mb-3"
                 style={{
                     backgroundColor: Colors.surface,
-                    color: Colors.text.primary,
-                    borderRadius: 24,
+                    color: Colors.textPrimary,
+                    borderRadius: 12,
                     borderWidth: 1,
-                    borderColor: Colors.border.top,
+                    borderColor: Colors.border,
                 }}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={true}
                 placeholder="Password"
-                placeholderTextColor={Colors.text.tertiary}
+                placeholderTextColor={Colors.textDim}
             />
             {error ? (
                 <Text
                     className="text-sm mb-3"
-                    style={{ color: Colors.status.RINGING }}
+                    style={{ color: Colors.statusLate }}
                 >
                     {error}
                 </Text>
@@ -125,7 +124,7 @@ export default function RegisterPage() {
             <Link
                 href="/(auth)/login"
                 className="text-center mt-5"
-                style={{ color: Colors.text.secondary }}
+                style={{ color: Colors.textSecondary }}
             >
                 Already have an account? Sign in
             </Link>

@@ -41,16 +41,15 @@ export default function LoginScreen() {
             <Text
                 className="text-3xl font-bold mb-2"
                 style={{
-                    color: Colors.text.primary,
+                    color: Colors.textPrimary,
                     letterSpacing: -0.5,
-                    fontFamily: "Inter-Bold",
                 }}
             >
                 Sign In
             </Text>
             <Text
                 className="text-base mb-8"
-                style={{ color: Colors.text.secondary }}
+                style={{ color: Colors.textSecondary }}
             >
                 Welcome back to RingSync
             </Text>
@@ -58,15 +57,15 @@ export default function LoginScreen() {
                 className="h-12 px-4 mb-3"
                 style={{
                     backgroundColor: Colors.surface,
-                    color: Colors.text.primary,
-                    borderRadius: 24,
+                    color: Colors.textPrimary,
+                    borderRadius: 12,
                     borderWidth: 1,
-                    borderColor: Colors.border.top,
+                    borderColor: Colors.border,
                 }}
                 value={email}
                 onChangeText={setEmail}
                 placeholder="Email"
-                placeholderTextColor={Colors.text.tertiary}
+                placeholderTextColor={Colors.textDim}
                 autoCapitalize="none"
                 keyboardType="email-address"
             />
@@ -74,21 +73,21 @@ export default function LoginScreen() {
                 className="h-12 px-4 mb-4"
                 style={{
                     backgroundColor: Colors.surface,
-                    color: Colors.text.primary,
-                    borderRadius: 24,
+                    color: Colors.textPrimary,
+                    borderRadius: 12,
                     borderWidth: 1,
-                    borderColor: Colors.border.top,
+                    borderColor: Colors.border,
                 }}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={true}
                 placeholder="Password"
-                placeholderTextColor={Colors.text.tertiary}
+                placeholderTextColor={Colors.textDim}
             />
             {error ? (
                 <Text
                     className="text-sm mb-3"
-                    style={{ color: Colors.status.RINGING }}
+                    style={{ color: Colors.statusLate }}
                 >
                     {error}
                 </Text>
@@ -103,7 +102,7 @@ export default function LoginScreen() {
                 href="/(auth)/register"
                 className="text-center mt-5"
                 style={{
-                    color: Colors.text.secondary,
+                    color: Colors.textSecondary,
                 }}
             >
                 Don't have an account? Sign up

@@ -7,34 +7,34 @@ interface StatusBadgeProps {
   status: AlarmEventStatus;
 }
 
-const labels: Record<AlarmEventStatus, string> = {
-  RINGING: 'Ringing',
-  SILENCED: 'Silenced',
-  CHECKED_IN: 'Checked In',
-  EXPIRED: 'Expired',
+const statusConfig: Record<AlarmEventStatus, { label: string; color: string }> = {
+  RINGING: { label: 'Ringing', color: Colors.statusLate },
+  SILENCED: { label: 'Snoozed', color: Colors.statusSnooze },
+  CHECKED_IN: { label: 'On Time', color: Colors.statusUp },
+  EXPIRED: { label: 'Expired', color: Colors.statusExpired },
 };
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-  const color = Colors.status[status];
+  const { label, color } = statusConfig[status];
 
   return (
-    <View style={[styles.pill, { backgroundColor: `${color}22`, borderColor: color }]}>
-      <Text style={[styles.label, { color }]}>{labels[status]}</Text>
+    <View style={[styles.pill, { backgroundColor: `${color}1A`, borderColor: `${color}40` }]}>
+      <Text style={[styles.label, { color }]}>{label}</Text>
     </View>
   );
 }
 
+// TODO: migrate to Unistyles
 const styles = StyleSheet.create({
   pill: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 9,
     paddingVertical: 3,
     borderRadius: 99,
     borderWidth: 1,
     alignSelf: 'flex-start',
   },
   label: {
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: -0.5,
+    fontSize: 10,
+    fontWeight: '700',
   },
 });

@@ -20,11 +20,12 @@ export function GroupCard({ group, onPress, className }: GroupCardProps) {
   );
 }
 
+// TODO: migrate to Unistyles
 const styles = StyleSheet.create({
   name: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.text.primary,
+    fontSize: 15,
+    fontWeight: '900',
+    color: Colors.textPrimary,
     letterSpacing: -0.5,
   },
 });

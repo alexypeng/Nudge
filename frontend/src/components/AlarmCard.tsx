@@ -48,21 +48,20 @@ export function AlarmCard({ alarm, isRinging = false, onPress, className }: Alar
             <Text style={styles.time}>{timeDisplay}</Text>
             <View style={[
               styles.activeDot,
-              { backgroundColor: alarm.is_active ? Colors.status.CHECKED_IN : Colors.status.EXPIRED },
+              { backgroundColor: alarm.is_active ? Colors.statusUp : Colors.statusExpired },
             ]} />
           </View>
           <Text style={styles.name}>{alarm.name}</Text>
-          {alarm.repeats ? (
-            <Text style={styles.repeats}>{alarm.repeats}</Text>
-          ) : (
-            <Text style={styles.repeats}>One-time</Text>
-          )}
+          <Text style={styles.repeats}>
+            {alarm.repeats || 'One-time'}
+          </Text>
         </GlassCard>
       </Animated.View>
     </Pressable>
   );
 }
 
+// TODO: migrate to Unistyles
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
@@ -70,22 +69,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   time: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: Colors.text.primary,
+    fontSize: 40,
+    fontWeight: '900',
+    color: Colors.accent,
     letterSpacing: -0.5,
   },
   name: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.text.primary,
+    fontSize: 15,
+    fontWeight: '900',
+    color: Colors.textPrimary,
     marginTop: 8,
     letterSpacing: -0.5,
   },
   repeats: {
-    fontSize: 13,
-    color: Colors.text.secondary,
+    fontSize: 10,
+    fontWeight: '400',
+    color: Colors.textDim,
     marginTop: 4,
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
   },
   activeDot: {
     width: 10,
@@ -93,7 +95,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   ringingBorder: {
-    borderColor: Colors.status.RINGING,
-    borderWidth: 1,
+    borderColor: Colors.statusLate,
+    borderWidth: 1.5,
   },
 });

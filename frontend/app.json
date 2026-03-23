@@ -38,6 +38,13 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "owner": "alexypeng",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d85b4f5c-2cf1-46bd-b6a3-db2418dc9b51"
+      }
     }
   }
 }
