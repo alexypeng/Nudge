@@ -5,10 +5,12 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from ninja import Router
 from users.auth import TokenAuth
+from users.schemas import UserOut
 
 from .enums import Actions
 from .models import Alarm, AlarmEvent, Group, ManualRing
 from .schemas import (
+    AddMemberRequest,
     AlarmCreate,
     AlarmOut,
     AlarmUpdate,
@@ -17,6 +19,8 @@ from .schemas import (
     GroupUpdate,
     ManualRingOut,
 )
+from users.models import Friendship, User
+from django.db.models import Q
 from .utils import send_group_push, send_wake_up_push
 
 router = Router()
@@ -56,6 +60,20 @@ def update_group(request, group_id: str, payload: GroupUpdate):
     return 200, group
 
 
+@router.get(
+    "/group/{group_id}/members/",
+    response={200: list[UserOut], 403: None},
+    auth=TokenAuth(),
+)
+def list_group_members(request, group_id: str):
+    group = get_object_or_404(Group, id=group_id)
+
+    if request.auth not in group.members.all():
+        return 403, None
+
+    return 200, list(group.members.all())
+
+
 @router.post(
     "/group/{group_id}/join/", response={200: GroupOut, 403: None}, auth=TokenAuth()
 )
@@ -85,6 +103,35 @@ def leave_group(request, group_id: str):
             group.delete()
 
     return 204, None
+
+
+@router.post(
+    "/group/{group_id}/add-member/",
+    response={200: GroupOut, 403: dict, 404: dict},
+    auth=TokenAuth(),
+)
+def add_member_to_group(request, group_id: str, payload: AddMemberRequest):
+    group = get_object_or_404(Group, id=group_id)
+
+    if not group.members.filter(id=request.auth.id).exists():
+        return 403, {"error": "You are not a member of this group"}
+
+    target = User.objects.filter(id=payload.user_id).first()
+    if not target:
+        return 404, {"error": "User not found"}
+
+    # Verify they are friends
+    is_friend = Friendship.objects.filter(
+        Q(from_user=request.auth, to_user=target)
+        | Q(from_user=target, to_user=request.auth),
+        status=Friendship.Status.ACCEPTED,
+    ).exists()
+
+    if not is_friend:
+        return 403, {"error": "You can only add friends to groups"}
+
+    group.members.add(target)
+    return 200, group
 
 
 # ==========================================

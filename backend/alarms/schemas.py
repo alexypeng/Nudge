@@ -111,3 +111,7 @@ class ManualRingOut(Schema):
     alarm_id: uuid.UUID
     ringer_id: Optional[uuid.UUID] = None
     created_at: datetime
+
+
+class AddMemberRequest(Schema):
+    user_id: uuid.UUID
