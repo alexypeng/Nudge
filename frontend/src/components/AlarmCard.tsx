@@ -6,6 +6,7 @@ import Animated, {
   withSpring,
   withRepeat,
 } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import { Colors } from '../theme/colors';
 import { AlarmOut } from '../api/client';
 import { GlassCard } from './GlassCard';
@@ -14,13 +15,15 @@ interface AlarmCardProps {
   alarm: AlarmOut;
   isRinging?: boolean;
   onPress?: () => void;
+  onToggle?: (isActive: boolean) => void;
   className?: string;
 }
 
-const SPRING = { damping: 15, stiffness: 120 };
+const SPRING = { damping: 28, stiffness: 600 };
 
-export function AlarmCard({ alarm, isRinging = false, onPress, className }: AlarmCardProps) {
+export function AlarmCard({ alarm, isRinging = false, onPress, onToggle, className }: AlarmCardProps) {
   const pulse = useSharedValue(1);
+  const toggleX = useSharedValue(alarm.is_active ? 22 : 0);
 
   React.useEffect(() => {
     if (isRinging) {
@@ -34,27 +37,52 @@ export function AlarmCard({ alarm, isRinging = false, onPress, className }: Alar
     }
   }, [isRinging]);
 
+  React.useEffect(() => {
+    toggleX.value = withSpring(alarm.is_active ? 22 : 0, SPRING);
+  }, [alarm.is_active]);
+
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulse.value }],
   }));
 
-  const timeDisplay = alarm.time.slice(0, 5); // "HH:MM"
+  const thumbStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: toggleX.value }],
+  }));
+
+  const [h, m] = alarm.time.slice(0, 5).split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 || 12;
+  const timeDisplay = `${hour12}:${String(m).padStart(2, '0')}`;
+
+  const handleToggle = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onToggle?.(!alarm.is_active);
+  };
 
   return (
     <Pressable className={className} onPress={onPress}>
       <Animated.View style={pulseStyle}>
         <GlassCard style={isRinging ? styles.ringingBorder : undefined}>
-          <View style={styles.row}>
-            <Text style={styles.time}>{timeDisplay}</Text>
-            <View style={[
-              styles.activeDot,
-              { backgroundColor: alarm.is_active ? Colors.statusUp : Colors.statusExpired },
-            ]} />
+          <View style={styles.cardRow}>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                <Text style={[styles.time, !alarm.is_active && styles.dimmed]}>{timeDisplay}</Text>
+                <Text style={[styles.period, !alarm.is_active && styles.dimmed]}>{period}</Text>
+              </View>
+              <Text style={[styles.name, !alarm.is_active && styles.dimmed]}>{alarm.name}</Text>
+              <Text style={styles.repeats}>
+                {alarm.repeats || 'One-time'}
+              </Text>
+            </View>
+            <Pressable onPress={handleToggle} hitSlop={8}>
+              <View style={[
+                styles.track,
+                { backgroundColor: alarm.is_active ? Colors.accent : 'rgba(255,255,255,0.08)' },
+              ]}>
+                <Animated.View style={[styles.thumb, thumbStyle]} />
+              </View>
+            </Pressable>
           </View>
-          <Text style={styles.name}>{alarm.name}</Text>
-          <Text style={styles.repeats}>
-            {alarm.repeats || 'One-time'}
-          </Text>
         </GlassCard>
       </Animated.View>
     </Pressable>
@@ -63,7 +91,7 @@ export function AlarmCard({ alarm, isRinging = false, onPress, className }: Alar
 
 // TODO: migrate to Unistyles
 const styles = StyleSheet.create({
-  row: {
+  cardRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -73,6 +101,12 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: Colors.accent,
     letterSpacing: -0.5,
+  },
+  period: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.accent,
+    marginLeft: 4,
   },
   name: {
     fontSize: 15,
@@ -89,10 +123,20 @@ const styles = StyleSheet.create({
     letterSpacing: 2.5,
     textTransform: 'uppercase',
   },
-  activeDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  track: {
+    width: 52,
+    height: 30,
+    borderRadius: 15,
+    padding: 2,
+  },
+  thumb: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#ffffff',
+  },
+  dimmed: {
+    opacity: 0.35,
   },
   ringingBorder: {
     borderColor: Colors.statusLate,

@@ -18,7 +18,7 @@ interface TactileButtonProps {
   className?: string;
 }
 
-const SPRING = { damping: 15, stiffness: 120 };
+const SPRING = { damping: 28, stiffness: 600 };
 
 const variantColors = {
   primary: { bg: Colors.accent, shadow: Colors.accentPress },
