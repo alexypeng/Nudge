@@ -5,7 +5,7 @@ import { useAuthStore } from "./authStore";
 interface AlarmState {
     alarms: AlarmOut[];
 
-    fetch: () => Promise<void>;
+    fetch: (groupId?: string) => Promise<void>;
     create: (data: AlarmCreate) => Promise<void>;
     update: (id: string, data: AlarmUpdate) => Promise<void>;
     delete: (id: string) => Promise<void>;
@@ -14,11 +14,11 @@ interface AlarmState {
 export const useAlarmStore = create<AlarmState>((set, get) => ({
     alarms: [],
 
-    fetch: async () => {
+    fetch: async (groupId?: string) => {
         const token = useAuthStore.getState().token;
         if (!token) return;
 
-        const alarms = await api.listAlarms(token);
+        const alarms = await api.listAlarms(token, groupId);
         set({ alarms });
     },
     create: async (data) => {
