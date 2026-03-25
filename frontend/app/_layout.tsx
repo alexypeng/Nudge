@@ -31,6 +31,7 @@ export default function RootLayout() {
             screenOptions={{
                 headerStyle: { backgroundColor: Colors.background },
                 headerTintColor: Colors.textPrimary,
+                headerBackButtonDisplayMode: "minimal",
                 contentStyle: { backgroundColor: Colors.background },
             }}
         >
@@ -41,13 +42,25 @@ export default function RootLayout() {
                 options={{ title: "New Alarm", presentation: "modal" }}
             />
             <Stack.Screen name="alarm/[id]" options={{ title: "Edit Alarm" }} />
-            <Stack.Screen
+            {/* <Stack.Screen
                 name="alarm/active"
                 options={{
                     headerShown: false,
                 }}
+            /> */}
+            <Stack.Screen
+                name="group/create"
+                options={{ title: "New Group", presentation: "modal" }}
             />
             <Stack.Screen name="group/[id]" options={{ title: "Group" }} />
+            <Stack.Screen
+                name="friends/search"
+                options={{ title: "Add Friends", presentation: "modal" }}
+            />
+            <Stack.Screen
+                name="friends/add-to-group"
+                options={{ title: "Add to Group", presentation: "modal" }}
+            />
         </Stack>
     );
 }
