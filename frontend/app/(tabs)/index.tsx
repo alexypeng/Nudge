@@ -1,13 +1,20 @@
-import { View, Text, ScrollView } from "react-native";
-import { Redirect } from "expo-router";
+import { View, Text, ScrollView, Pressable } from "react-native";
+import { Redirect, useRouter } from "expo-router";
 import { Colors } from "@/src/theme/colors";
 import { useAuthStore } from "@/src/stores/authStore";
 import { useEffect } from "react";
 import { useAlarmStore } from "@/src/stores/alarmStore";
 import { useGroupStore } from "@/src/stores/groupStore";
 import { AlarmCard } from "@/src/components/AlarmCard";
-import { GroupCard } from "@/src/components/GroupCard";
 import { GlassCard } from "@/src/components/GlassCard";
+
+function formatTime12h(time24: string) {
+    const [h, m] = time24.split(":");
+    const hour = parseInt(h, 10);
+    const period = hour >= 12 ? "PM" : "AM";
+    const hour12 = hour % 12 || 12;
+    return { time: `${hour12}:${m}`, period };
+}
 
 function getGreeting() {
     const hour = new Date().getHours();
@@ -17,10 +24,12 @@ function getGreeting() {
 }
 
 export default function HomeScreen() {
+    const router = useRouter();
     const token = useAuthStore((s) => s.token);
     const user = useAuthStore((s) => s.user);
     const alarms = useAlarmStore((s) => s.alarms);
     const alarmFetch = useAlarmStore((s) => s.fetch);
+    const alarmUpdate = useAlarmStore((s) => s.update);
     const groups = useGroupStore((s) => s.groups);
     const groupFetch = useGroupStore((s) => s.fetch);
 
@@ -73,16 +82,28 @@ export default function HomeScreen() {
             </Text>
             {nextAlarm ? (
                 <GlassCard style={{ borderColor: Colors.borderHot }}>
-                    <Text
-                        style={{
-                            fontSize: 48,
-                            fontWeight: "900",
-                            color: Colors.accent,
-                            letterSpacing: -0.5,
-                        }}
-                    >
-                        {nextAlarm.time.slice(0, 5)}
-                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "baseline" }}>
+                        <Text
+                            style={{
+                                fontSize: 48,
+                                fontWeight: "900",
+                                color: Colors.accent,
+                                letterSpacing: -0.5,
+                            }}
+                        >
+                            {formatTime12h(nextAlarm.time).time}
+                        </Text>
+                        <Text
+                            style={{
+                                fontSize: 17,
+                                fontWeight: "700",
+                                color: Colors.accent,
+                                marginLeft: 4,
+                            }}
+                        >
+                            {formatTime12h(nextAlarm.time).period}
+                        </Text>
+                    </View>
                     <Text
                         className="mt-1"
                         style={{
@@ -128,6 +149,13 @@ export default function HomeScreen() {
                             key={alarm.id}
                             alarm={alarm}
                             className="mb-2"
+                            onPress={() =>
+                                router.push({
+                                    pathname: "/alarm/[id]",
+                                    params: { id: alarm.id },
+                                })
+                            }
+                            onToggle={(isActive) => alarmUpdate(alarm.id, { is_active: isActive })}
                         />
                     ))}
                 </>
@@ -147,13 +175,41 @@ export default function HomeScreen() {
                 MY GROUPS
             </Text>
             {groups.length > 0 ? (
-                groups.map((group) => (
-                    <GroupCard
-                        key={group.id}
-                        group={group}
-                        className="mb-2"
-                    />
-                ))
+                <View className="flex-row flex-wrap" style={{ gap: 8 }}>
+                    {groups.map((group) => (
+                        <Pressable
+                            key={group.id}
+                            onPress={() =>
+                                router.push({
+                                    pathname: "/group/[id]",
+                                    params: { id: group.id },
+                                })
+                            }
+                            style={{
+                                backgroundColor: Colors.surface,
+                                borderWidth: 1.5,
+                                borderColor: Colors.border,
+                                borderRadius: 18,
+                                padding: 16,
+                                width: "48%",
+                                aspectRatio: 1,
+                                justifyContent: "flex-end",
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    fontSize: 15,
+                                    fontWeight: "900",
+                                    color: Colors.textPrimary,
+                                    letterSpacing: -0.5,
+                                }}
+                                numberOfLines={2}
+                            >
+                                {group.name}
+                            </Text>
+                        </Pressable>
+                    ))}
+                </View>
             ) : (
                 <GlassCard>
                     <Text
