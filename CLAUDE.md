@@ -6,9 +6,9 @@ RingSync is a social alarm clock built with Expo (React Native) and Django. It f
 
 ## 🛠 Tech Stack
 
-- **Frontend:** React Native (Expo), NativeWind v4 (utility classes), Lucide-React-Native (Icons).
+- **Frontend:** React Native (Expo), NativeWind v4 (utility classes), Lucide-React-Native (Icons). Uses bun as the dependency manager
 - **Styling:** Unistyles v3 (typed theme system, replaces bare StyleSheet) — **not yet installed, must be set up before use.**
-- **Backend:** Django, Django Ninja (API), Supabase (Postgres), Redis (Caching).
+- **Backend:** Django, Django Ninja (API), Supabase (Postgres), Redis (Caching). Uses uv as the dependency manager
 - **Animations:** React Native Reanimated v4 (Spring-based physics).
 - **Visual Effects:** `expo-blur` (BlurView), `expo-linear-gradient` (LinearGradient).
 - **Haptics:** `expo-haptics`.
@@ -36,6 +36,7 @@ Claude MUST follow these styling rules for ALL components and screens. Do not us
 ### Design Thinking (Before Writing Any UI Code)
 
 Before coding any screen or component, answer:
+
 - **Purpose:** What problem does this screen solve? What is the user's emotional state here?
 - **Differentiation:** What's the ONE thing a user will remember about this screen?
 - **Constraints:** Does it need haptics, animation, accessibility, or real-time updates?
@@ -47,28 +48,28 @@ All values live in `src/theme/colors.ts` — never hardcode hex values outside t
 ```ts
 // src/theme/colors.ts
 export const colors = {
-  background:   '#0b1120',   // deep navy — page background
-  surface:      '#0d1424',   // card background
-  surfaceHover: '#111d30',   // slightly lifted surface
-  border:       'rgba(96, 165, 250, 0.15)',  // default card border
-  borderHot:    'rgba(96, 165, 250, 0.45)',  // active/focused border
+    background: "#0b1120", // deep navy — page background
+    surface: "#0d1424", // card background
+    surfaceHover: "#111d30", // slightly lifted surface
+    border: "rgba(96, 165, 250, 0.15)", // default card border
+    borderHot: "rgba(96, 165, 250, 0.45)", // active/focused border
 
-  accent:       '#60a5fa',   // primary blue — buttons, highlights, big numbers
-  accentPress:  '#1d4ed8',   // button shadow / pressed state
-  accentSubtle: 'rgba(96, 165, 250, 0.1)',   // tinted backgrounds
+    accent: "#60a5fa", // primary blue — buttons, highlights, big numbers
+    accentPress: "#1d4ed8", // button shadow / pressed state
+    accentSubtle: "rgba(96, 165, 250, 0.1)", // tinted backgrounds
 
-  textPrimary:   '#ffffff',
-  textSecondary: 'rgba(255, 255, 255, 0.5)',
-  textDim:       'rgba(255, 255, 255, 0.3)',
+    textPrimary: "#ffffff",
+    textSecondary: "rgba(255, 255, 255, 0.5)",
+    textDim: "rgba(255, 255, 255, 0.3)",
 
-  statusUp:     '#34d399',   // on time / success
-  statusLate:   '#ff4444',   // missed
-  statusSnooze: '#fbbf24',   // snoozing / pending
+    statusUp: "#34d399", // on time / success
+    statusLate: "#ff4444", // missed
+    statusSnooze: "#fbbf24", // snoozing / pending
 
-  avatarBlue:   '#60a5fa',
-  avatarPurple: '#a78bfa',
-  avatarGreen:  '#34d399',
-}
+    avatarBlue: "#60a5fa",
+    avatarPurple: "#a78bfa",
+    avatarGreen: "#34d399",
+};
 ```
 
 ### 2. Typography
@@ -76,10 +77,10 @@ export const colors = {
 - **Header font:** `DM Sans` Bold/Black (weight 700–900) — always `letterSpacing: -0.5` for headers.
 - **Body font:** `DM Sans` Regular (weight 400).
 - **Hierarchy:**
-  - Big numbers (time, streaks, scores): 40–56px, weight 900, `color: colors.accent`.
-  - Screen titles: 15–16px, weight 900, `color: colors.textPrimary`, `letterSpacing: -0.5`.
-  - Labels / metadata: 10px, weight 400, `letterSpacing: 2.5`, `textTransform: uppercase`, `color: colors.textDim`.
-  - Body: 13px, weight 400, `color: colors.textSecondary`.
+    - Big numbers (time, streaks, scores): 40–56px, weight 900, `color: colors.accent`.
+    - Screen titles: 15–16px, weight 900, `color: colors.textPrimary`, `letterSpacing: -0.5`.
+    - Labels / metadata: 10px, weight 400, `letterSpacing: 2.5`, `textTransform: uppercase`, `color: colors.textDim`.
+    - Body: 13px, weight 400, `color: colors.textSecondary`.
 - Never leave a text element unstyled.
 
 ### 3. Component Styling
@@ -120,9 +121,9 @@ export const colors = {
 - **API Calls:** Centralized `api.ts` client using `EXPO_PUBLIC_API_URL` from `.env`.
 - **State:** Zustand for all global UI state (active alarm, group status, user session).
 - **File Structure:**
-  - `src/components` — Small, reusable atoms.
-  - `src/features` — Feature-specific screens and logic.
-  - `src/theme` — `colors.ts`, `spacing.ts`, `unistyles.ts` (once set up).
+    - `src/components` — Small, reusable atoms.
+    - `src/features` — Feature-specific screens and logic.
+    - `src/theme` — `colors.ts`, `spacing.ts`, `unistyles.ts` (once set up).
 
 ## 🤖 Claude Commands & Workflow
 
