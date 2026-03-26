@@ -7,9 +7,31 @@ import {
     TextInput,
     KeyboardAvoidingView,
     Platform,
+    ScrollView,
+    Pressable,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/src/theme/colors";
 import { TactileButton } from "@/src/components/TactileButton";
+
+const ICON_OPTIONS: (keyof typeof Ionicons.glyphMap)[] = [
+    "people",
+    "alarm",
+    "sunny",
+    "fitness",
+    "book",
+    "moon",
+    "trophy",
+    "flame",
+    "star",
+    "musical-notes",
+    "heart",
+    "rocket",
+    "football",
+    "cafe",
+    "code-slash",
+    "paw",
+];
 
 export default function GroupCreateScreen() {
     const router = useRouter();
@@ -17,6 +39,7 @@ export default function GroupCreateScreen() {
     const createGroup = useGroupStore((s) => s.create);
 
     const [name, setName] = useState("");
+    const [icon, setIcon] = useState<string>("people");
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -24,7 +47,7 @@ export default function GroupCreateScreen() {
         setError(null);
         setIsSubmitting(true);
         try {
-            await createGroup({ name });
+            await createGroup({ name, icon });
             router.back();
         } catch (err) {
             setError((err as Error).message);
@@ -39,6 +62,55 @@ export default function GroupCreateScreen() {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={{ backgroundColor: Colors.background }}
         >
+            <Text
+                style={{
+                    fontSize: 10,
+                    fontWeight: "400",
+                    color: Colors.textDim,
+                    letterSpacing: 2.5,
+                    textTransform: "uppercase",
+                    marginBottom: 6,
+                }}
+            >
+                ICON
+            </Text>
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
+                style={{ marginBottom: 16, flexGrow: 0 }}
+            >
+                {ICON_OPTIONS.map((name) => {
+                    const selected = icon === name;
+                    return (
+                        <Pressable
+                            key={name}
+                            onPress={() => setIcon(name)}
+                            style={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: 12,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                backgroundColor: selected
+                                    ? Colors.accentSubtle
+                                    : Colors.surface,
+                                borderWidth: 1.5,
+                                borderColor: selected
+                                    ? Colors.borderHot
+                                    : Colors.border,
+                            }}
+                        >
+                            <Ionicons
+                                name={name}
+                                size={22}
+                                color={selected ? Colors.accent : Colors.textSecondary}
+                            />
+                        </Pressable>
+                    );
+                })}
+            </ScrollView>
+
             <Text
                 style={{
                     fontSize: 10,

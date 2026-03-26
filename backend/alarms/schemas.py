@@ -9,14 +9,17 @@ from datetime import datetime
 class GroupOut(Schema):
     id: uuid.UUID
     name: str
+    icon: str
 
 
 class GroupCreate(Schema):
     name: str
+    icon: str = "people"
 
 
 class GroupUpdate(Schema):
-    name: str
+    name: Optional[str] = None
+    icon: Optional[str] = None
 
 
 class AlarmOut(Schema):

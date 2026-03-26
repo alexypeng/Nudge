@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, Pressable } from 'react-native';
+import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
 import { GroupOut } from '../api/client';
 import { GlassCard } from './GlassCard';
@@ -14,7 +15,15 @@ export function GroupCard({ group, onPress, className }: GroupCardProps) {
   return (
     <Pressable className={className} onPress={onPress}>
       <GlassCard>
-        <Text style={styles.name}>{group.name}</Text>
+        <View style={styles.row}>
+          <Ionicons
+            name={(group.icon as keyof typeof Ionicons.glyphMap) || 'people'}
+            size={20}
+            color={Colors.accent}
+            style={{ marginRight: 8 }}
+          />
+          <Text style={styles.name}>{group.name}</Text>
+        </View>
       </GlassCard>
     </Pressable>
   );
@@ -22,6 +31,10 @@ export function GroupCard({ group, onPress, className }: GroupCardProps) {
 
 // TODO: migrate to Unistyles
 const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   name: {
     fontSize: 15,
     fontWeight: '900',
