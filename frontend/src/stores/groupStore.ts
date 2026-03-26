@@ -12,6 +12,9 @@ interface GroupStore {
     leave: (id: string) => Promise<void>;
 }
 
+const sortGroups = (groups: GroupOut[]) =>
+    [...groups].sort((a, b) => a.name.localeCompare(b.name));
+
 export const useGroupStore = create<GroupStore>((set, get) => ({
     groups: [],
 
@@ -20,14 +23,14 @@ export const useGroupStore = create<GroupStore>((set, get) => ({
         if (!token) return;
 
         const groups = await api.listGroups(token);
-        set({ groups });
+        set({ groups: sortGroups(groups) });
     },
     create: async (data) => {
         const token = useAuthStore.getState().token;
         if (!token) return;
 
         const group = await api.createGroup(token, data);
-        set((state) => ({ groups: [...state.groups, group] }));
+        set((state) => ({ groups: sortGroups([...state.groups, group]) }));
     },
     update: async (id, data) => {
         const token = useAuthStore.getState().token;
@@ -35,7 +38,7 @@ export const useGroupStore = create<GroupStore>((set, get) => ({
 
         const updated = await api.updateGroup(token, id, data);
         set((state) => ({
-            groups: state.groups.map((g) => (g.id === id ? updated : g)),
+            groups: sortGroups(state.groups.map((g) => (g.id === id ? updated : g))),
         }));
     },
     join: async (id) => {
@@ -43,7 +46,7 @@ export const useGroupStore = create<GroupStore>((set, get) => ({
         if (!token) return;
 
         const group = await api.joinGroup(token, id);
-        set((state) => ({ groups: [...state.groups, group] }));
+        set((state) => ({ groups: sortGroups([...state.groups, group]) }));
     },
     leave: async (id) => {
         const token = useAuthStore.getState().token;
