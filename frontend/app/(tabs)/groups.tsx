@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, Pressable } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/src/theme/colors";
 import { useGroupStore } from "@/src/stores/groupStore";
 import { GroupCard } from "@/src/components/GroupCard";
@@ -52,11 +53,18 @@ export default function GroupsScreen() {
                                     borderColor: Colors.border,
                                     borderRadius: 18,
                                     padding: 16,
-                                    width: "48%",
+                                    width: "31%",
                                     aspectRatio: 1,
-                                    justifyContent: "flex-end",
+                                    justifyContent: "center",
+                                    alignItems: "center",
                                 }}
                             >
+                                <Ionicons
+                                    name={(group.icon as keyof typeof Ionicons.glyphMap) || "people"}
+                                    size={40}
+                                    color={Colors.accent}
+                                    style={{ marginBottom: 10 }}
+                                />
                                 <Text
                                     style={{
                                         fontSize: 15,
