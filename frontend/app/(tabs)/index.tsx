@@ -1,10 +1,14 @@
 import { View, Text, ScrollView, Pressable } from "react-native";
 import { Redirect, useRouter } from "expo-router";
+
+import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/src/theme/colors";
 import { useAuthStore } from "@/src/stores/authStore";
-import { useEffect } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useFocusEffect } from "expo-router";
 import { useAlarmStore } from "@/src/stores/alarmStore";
 import { useGroupStore } from "@/src/stores/groupStore";
+import { api, AlarmEventOut } from "@/src/api/client";
 import { AlarmCard } from "@/src/components/AlarmCard";
 import { GlassCard } from "@/src/components/GlassCard";
 
@@ -33,13 +37,42 @@ export default function HomeScreen() {
     const groups = useGroupStore((s) => s.groups);
     const groupFetch = useGroupStore((s) => s.fetch);
 
-    useEffect(() => {
-        alarmFetch();
-        groupFetch();
-    }, []);
+    const [visibleIds, setVisibleIds] = useState<Set<string>>(new Set());
+    const [activeEvents, setActiveEvents] = useState<Record<string, AlarmEventOut>>({});
+
+    const fetchEvents = async () => {
+        if (!token) return;
+        const currentAlarms = useAlarmStore.getState().alarms.filter((a) => a.is_active);
+        const events: Record<string, AlarmEventOut> = {};
+        await Promise.all(
+            currentAlarms.map(async (alarm) => {
+                try {
+                    const event = await api.getLatestEvent(token, alarm.id);
+                    if (event && (event.status === "RINGING" || event.status === "SILENCED")) {
+                        events[alarm.id] = event;
+                    }
+                } catch {}
+            })
+        );
+        setActiveEvents(events);
+    };
+
+    useFocusEffect(
+        useCallback(() => {
+            alarmFetch().then(fetchEvents);
+            groupFetch();
+            const activeIds = new Set(
+                useAlarmStore.getState().alarms
+                    .filter((a) => a.is_active)
+                    .map((a) => a.id)
+            );
+            setVisibleIds(activeIds);
+        }, [])
+    );
 
     if (!token) return <Redirect href="/(auth)/login" />;
 
+    const displayedAlarms = alarms.filter((a) => a.is_active || visibleIds.has(a.id));
     const activeAlarms = alarms.filter((a) => a.is_active);
     const nextAlarm = activeAlarms
         .filter((a) => a.next_trigger_utc)
@@ -66,6 +99,45 @@ export default function HomeScreen() {
             >
                 {getGreeting()}, {user?.display_name ?? "there"}
             </Text>
+
+            {/* Active Event Banner */}
+            {Object.keys(activeEvents).length > 0 && (
+                <Pressable
+                    onPress={() => {
+                        const alarmId = Object.keys(activeEvents)[0];
+                        router.push({
+                            pathname: "/alarm/active",
+                            params: { alarmId },
+                        });
+                    }}
+                    style={{
+                        backgroundColor: Colors.surface,
+                        borderWidth: 1.5,
+                        borderColor: Colors.statusLate,
+                        borderRadius: 18,
+                        padding: 16,
+                        marginTop: 12,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                    }}
+                >
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                        <Ionicons name="alarm" size={20} color={Colors.statusLate} />
+                        <Text
+                            style={{
+                                fontSize: 15,
+                                fontWeight: "900",
+                                color: Colors.textPrimary,
+                                letterSpacing: -0.5,
+                            }}
+                        >
+                            Alarm ringing
+                        </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={Colors.textSecondary} />
+                </Pressable>
+            )}
 
             {/* Next Alarm Hero */}
             <Text
@@ -129,8 +201,8 @@ export default function HomeScreen() {
                 </GlassCard>
             )}
 
-            {/* Active Alarms */}
-            {activeAlarms.length > 0 && (
+            {/* Alarms */}
+            {displayedAlarms.length > 0 && (
                 <>
                     <Text
                         className="mt-6 mb-2"
@@ -144,7 +216,7 @@ export default function HomeScreen() {
                     >
                         ACTIVE
                     </Text>
-                    {activeAlarms.map((alarm) => (
+                    {displayedAlarms.map((alarm) => (
                         <AlarmCard
                             key={alarm.id}
                             alarm={alarm}
@@ -191,11 +263,18 @@ export default function HomeScreen() {
                                 borderColor: Colors.border,
                                 borderRadius: 18,
                                 padding: 16,
-                                width: "48%",
+                                width: "31%",
                                 aspectRatio: 1,
-                                justifyContent: "flex-end",
+                                justifyContent: "center",
+                                alignItems: "center",
                             }}
                         >
+                            <Ionicons
+                                name={(group.icon as keyof typeof Ionicons.glyphMap) || "people"}
+                                size={40}
+                                color={Colors.accent}
+                                style={{ marginBottom: 10 }}
+                            />
                             <Text
                                 style={{
                                     fontSize: 15,

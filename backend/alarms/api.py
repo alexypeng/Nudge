@@ -12,6 +12,7 @@ from .models import Alarm, AlarmEvent, Group, ManualRing
 from .schemas import (
     AddMemberRequest,
     AlarmCreate,
+    AlarmEventOut,
     AlarmOut,
     AlarmUpdate,
     GroupCreate,
@@ -255,6 +256,29 @@ def trigger_alarm(request, alarm_id: str):
         )
 
     return 200, manual_ring
+
+
+@router.get(
+    "/alarm/{alarm_id}/event/",
+    response={200: AlarmEventOut, 204: None, 403: dict},
+    auth=TokenAuth(),
+)
+def get_latest_event(request, alarm_id: str):
+    alarm = get_object_or_404(Alarm, id=alarm_id)
+
+    if alarm.user != request.auth:
+        return 403, {"error": "You do not have access to this alarm"}
+
+    event = (
+        AlarmEvent.objects.filter(alarm=alarm)
+        .order_by("-created_at")
+        .first()
+    )
+
+    if not event:
+        return 204, None
+
+    return 200, event
 
 
 @router.post(
