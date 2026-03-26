@@ -56,7 +56,7 @@ export default function EditAlarmScreen() {
             await updateAlarm(id, {
                 name,
                 time: timeStr,
-                repeats: selectedDays.join(","),
+                repeats: DAYS.filter((d) => selectedDays.includes(d)).join(","),
                 is_one_time: isOneTime,
             });
             router.back();

@@ -3,12 +3,32 @@ import { useGroupStore } from "@/src/stores/groupStore";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { View, Text, TextInput, ScrollView, Pressable, Modal } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/src/theme/colors";
 import { AlarmCard } from "@/src/components/AlarmCard";
 import { GlassCard } from "@/src/components/GlassCard";
 import { TactileButton } from "@/src/components/TactileButton";
 import { api, UserOut } from "@/src/api/client";
 import { useAuthStore } from "@/src/stores/authStore";
+
+const ICON_OPTIONS: (keyof typeof Ionicons.glyphMap)[] = [
+    "people",
+    "alarm",
+    "sunny",
+    "fitness",
+    "book",
+    "moon",
+    "trophy",
+    "flame",
+    "star",
+    "musical-notes",
+    "heart",
+    "rocket",
+    "football",
+    "cafe",
+    "code-slash",
+    "paw",
+];
 
 export default function GroupScreen() {
     const router = useRouter();
@@ -30,6 +50,7 @@ export default function GroupScreen() {
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [groupName, setGroupName] = useState(group?.name ?? "");
+    const [groupIcon, setGroupIcon] = useState(group?.icon ?? "people");
 
     useEffect(() => {
         fetchAlarms();
@@ -41,7 +62,15 @@ export default function GroupScreen() {
     useEffect(() => {
         navigation.setOptions({
             headerTitle: () => (
-                <Pressable onPress={() => setIsEditing(true)}>
+                <Pressable
+                    onPress={() => setIsEditing(true)}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+                >
+                    <Ionicons
+                        name={(group?.icon as keyof typeof Ionicons.glyphMap) || "people"}
+                        size={18}
+                        color={Colors.accent}
+                    />
                     <Text
                         style={{
                             fontSize: 17,
@@ -54,19 +83,26 @@ export default function GroupScreen() {
                 </Pressable>
             ),
         });
-    }, [group?.name]);
+    }, [group?.name, group?.icon]);
 
-    const handleNameSave = async () => {
+    const handleEditSave = async () => {
         setIsEditing(false);
-        if (groupName === group?.name || !groupName) {
+        const nameChanged = groupName !== group?.name && !!groupName;
+        const iconChanged = groupIcon !== group?.icon;
+        if (!nameChanged && !iconChanged) {
             setGroupName(group?.name ?? "");
+            setGroupIcon(group?.icon ?? "people");
             return;
         }
         try {
-            await updateGroup(id, { name: groupName });
+            const updates: { name?: string; icon?: string } = {};
+            if (nameChanged) updates.name = groupName;
+            if (iconChanged) updates.icon = groupIcon;
+            await updateGroup(id, updates);
         } catch (err) {
             setError((err as Error).message);
             setGroupName(group?.name ?? "");
+            setGroupIcon(group?.icon ?? "people");
         }
     };
 
@@ -267,13 +303,14 @@ export default function GroupScreen() {
             />
         </ScrollView>
 
-            {/* Rename Modal */}
+            {/* Edit Modal */}
             <Modal
                 visible={isEditing}
                 transparent
                 animationType="fade"
                 onRequestClose={() => {
                     setGroupName(group?.name ?? "");
+                    setGroupIcon(group?.icon ?? "people");
                     setIsEditing(false);
                 }}
             >
@@ -282,6 +319,7 @@ export default function GroupScreen() {
                     style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
                     onPress={() => {
                         setGroupName(group?.name ?? "");
+                        setGroupIcon(group?.icon ?? "people");
                         setIsEditing(false);
                     }}
                 >
@@ -295,6 +333,55 @@ export default function GroupScreen() {
                             padding: 20,
                         }}
                     >
+                        <Text
+                            style={{
+                                fontSize: 10,
+                                fontWeight: "400",
+                                color: Colors.textDim,
+                                letterSpacing: 2.5,
+                                textTransform: "uppercase",
+                                marginBottom: 6,
+                            }}
+                        >
+                            ICON
+                        </Text>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
+                            style={{ marginBottom: 16, flexGrow: 0 }}
+                        >
+                            {ICON_OPTIONS.map((name) => {
+                                const selected = groupIcon === name;
+                                return (
+                                    <Pressable
+                                        key={name}
+                                        onPress={() => setGroupIcon(name)}
+                                        style={{
+                                            width: 44,
+                                            height: 44,
+                                            borderRadius: 12,
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            backgroundColor: selected
+                                                ? Colors.accentSubtle
+                                                : Colors.background,
+                                            borderWidth: 1.5,
+                                            borderColor: selected
+                                                ? Colors.borderHot
+                                                : Colors.border,
+                                        }}
+                                    >
+                                        <Ionicons
+                                            name={name}
+                                            size={20}
+                                            color={selected ? Colors.accent : Colors.textSecondary}
+                                        />
+                                    </Pressable>
+                                );
+                            })}
+                        </ScrollView>
+
                         <Text
                             style={{
                                 fontSize: 10,
@@ -319,12 +406,12 @@ export default function GroupScreen() {
                             }}
                             value={groupName}
                             onChangeText={setGroupName}
-                            onSubmitEditing={handleNameSave}
+                            onSubmitEditing={handleEditSave}
                             autoFocus
                         />
                         <TactileButton
                             label="Save"
-                            onPress={handleNameSave}
+                            onPress={handleEditSave}
                             disabled={!groupName}
                         />
                     </Pressable>

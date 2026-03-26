@@ -11,6 +11,7 @@ import {
     KeyboardAvoidingView,
     Platform,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Colors } from "@/src/theme/colors";
 import { TactileButton } from "@/src/components/TactileButton";
@@ -33,6 +34,7 @@ export default function AlarmCreateScreen() {
     const [selectedDays, setSelectedDays] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showAllGroups, setShowAllGroups] = useState(false);
 
     const isOneTime = selectedDays.length === 0;
     const needsGroupPicker = !paramGroupId;
@@ -55,7 +57,7 @@ export default function AlarmCreateScreen() {
             await createAlarm({
                 name,
                 time: timeStr,
-                repeats: selectedDays.join(","),
+                repeats: DAYS.filter((d) => selectedDays.includes(d)).join(","),
                 is_one_time: isOneTime,
                 group_id: selectedGroupId,
             });
@@ -187,44 +189,76 @@ export default function AlarmCreateScreen() {
                             GROUP
                         </Text>
                         {groups.length > 0 ? (
-                            <View
-                                className="flex-row flex-wrap mb-5"
-                                style={{ gap: 8 }}
-                            >
-                                {groups.map((group) => {
-                                    const active = selectedGroupId === group.id;
-                                    return (
-                                        <Pressable
-                                            key={group.id}
-                                            onPress={() => setSelectedGroupId(group.id)}
-                                            style={{
-                                                backgroundColor: active
-                                                    ? Colors.accentSubtle
-                                                    : Colors.surface,
-                                                borderWidth: 1,
-                                                borderColor: active
-                                                    ? "rgba(96, 165, 250, 0.25)"
-                                                    : Colors.border,
-                                                borderRadius: 99,
-                                                paddingHorizontal: 14,
-                                                paddingVertical: 8,
-                                            }}
-                                        >
-                                            <Text
+                            <>
+                                <View
+                                    className="flex-row flex-wrap mb-2"
+                                    style={{ gap: 8 }}
+                                >
+                                    {(showAllGroups ? groups : groups.slice(0, 3)).map((group) => {
+                                        const active = selectedGroupId === group.id;
+                                        return (
+                                            <Pressable
+                                                key={group.id}
+                                                onPress={() => setSelectedGroupId(group.id)}
                                                 style={{
-                                                    fontSize: 13,
-                                                    fontWeight: "700",
-                                                    color: active
+                                                    backgroundColor: active
                                                         ? Colors.accent
-                                                        : Colors.textSecondary,
+                                                        : Colors.surface,
+                                                    borderWidth: 1.5,
+                                                    borderColor: active
+                                                        ? Colors.accent
+                                                        : Colors.border,
+                                                    borderRadius: 18,
+                                                    padding: 16,
+                                                    width: "31%",
+                                                    aspectRatio: 1,
+                                                    justifyContent: "center",
+                                                    alignItems: "center",
                                                 }}
                                             >
-                                                {group.name}
-                                            </Text>
-                                        </Pressable>
-                                    );
-                                })}
-                            </View>
+                                                <Ionicons
+                                                    name={(group.icon as keyof typeof Ionicons.glyphMap) || "people"}
+                                                    size={40}
+                                                    color={active ? Colors.surface : Colors.accent}
+                                                    style={{ marginBottom: 10 }}
+                                                />
+                                                <Text
+                                                    style={{
+                                                        fontSize: 15,
+                                                        fontWeight: "900",
+                                                        color: active
+                                                            ? Colors.surface
+                                                            : Colors.textPrimary,
+                                                        letterSpacing: -0.5,
+                                                        textAlign: "center",
+                                                    }}
+                                                    numberOfLines={2}
+                                                >
+                                                    {group.name}
+                                                </Text>
+                                            </Pressable>
+                                        );
+                                    })}
+                                </View>
+                                {groups.length > 3 && (
+                                    <Pressable
+                                        onPress={() => setShowAllGroups((v) => !v)}
+                                        style={{ marginBottom: 12 }}
+                                    >
+                                        <Text
+                                            style={{
+                                                fontSize: 13,
+                                                fontWeight: "700",
+                                                color: Colors.accent,
+                                                textAlign: "center",
+                                            }}
+                                        >
+                                            {showAllGroups ? "Show less" : `Show all (${groups.length})`}
+                                        </Text>
+                                    </Pressable>
+                                )}
+                                <View style={{ marginBottom: 12 }} />
+                            </>
                         ) : (
                             <GlassCard className="mb-5">
                                 <Text
