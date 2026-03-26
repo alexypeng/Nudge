@@ -43,14 +43,17 @@ export interface DeviceCreate {
 export interface GroupOut {
     id: string;
     name: string;
+    icon: string;
 }
 
 export interface GroupCreate {
     name: string;
+    icon?: string;
 }
 
 export interface GroupUpdate {
-    name: string;
+    name?: string;
+    icon?: string;
 }
 
 // Alarms
@@ -107,6 +110,16 @@ export type AlarmEventStatus =
     | "SILENCED"
     | "CHECKED_IN"
     | "EXPIRED";
+
+export interface AlarmEventOut {
+    id: string;
+    alarm_id: string;
+    user_id: string;
+    status: AlarmEventStatus;
+    created_at: string;
+    silenced_at: string | null;
+    checked_in_at: string | null;
+}
 
 export interface RingOut {
     message: string;
@@ -218,6 +231,12 @@ export const api = {
             ringer_id: string | null;
             created_at: string;
         }>("POST", `/api/alarms/alarm/${alarmId}/trigger/`, token),
+    getLatestEvent: (token: string, alarmId: string) =>
+        request<AlarmEventOut | undefined>(
+            "GET",
+            `/api/alarms/alarm/${alarmId}/event/`,
+            token,
+        ),
 
     // Friends
     searchUsers: (token: string, query: string) =>
