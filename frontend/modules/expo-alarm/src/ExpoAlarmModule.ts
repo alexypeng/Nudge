@@ -1,12 +1,16 @@
-import { NativeModule, requireNativeModule } from 'expo';
-
-import { ExpoAlarmModuleEvents } from './ExpoAlarm.types';
+import { NativeModule, requireNativeModule } from "expo";
+import {
+    ExpoAlarmModuleEvents,
+    AlarmConfig,
+    AlarmCapability,
+} from "./ExpoAlarm.types";
 
 declare class ExpoAlarmModule extends NativeModule<ExpoAlarmModuleEvents> {
-  PI: number;
-  hello(): string;
-  setValueAsync(value: string): Promise<void>;
+    requestPermission(): Promise<boolean>;
+    checkCapability(): Promise<AlarmCapability>;
+    scheduleAlarm(config: AlarmConfig): Promise<void>;
+    cancelAlarm(id: string): Promise<void>;
+    cancelAllAlarms(): Promise<void>;
 }
 
-// This call loads the native module object from the JSI.
-export default requireNativeModule<ExpoAlarmModule>('ExpoAlarm');
+export default requireNativeModule<ExpoAlarmModule>("ExpoAlarm");

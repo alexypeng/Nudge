@@ -1,19 +1,24 @@
-import type { StyleProp, ViewStyle } from 'react-native';
+export interface AlarmConfig {
+    id: string;
+    hour: number;
+    minute: number;
+    date?: string;
+    daysOfWeek?: number[];
+    title: string;
+    body: string;
+    data?: Record<string, string>;
+}
 
-export type OnLoadEventPayload = {
-  url: string;
-};
+export interface AlarmCapability {
+    available: boolean;
+    reason: string;
+}
+
+export interface AlarmEvent {
+    alarmId: string;
+    action: "fired" | "dismissed" | "snoozed";
+}
 
 export type ExpoAlarmModuleEvents = {
-  onChange: (params: ChangeEventPayload) => void;
-};
-
-export type ChangeEventPayload = {
-  value: string;
-};
-
-export type ExpoAlarmViewProps = {
-  url: string;
-  onLoad: (event: { nativeEvent: OnLoadEventPayload }) => void;
-  style?: StyleProp<ViewStyle>;
+    onAlarmFired: (event: AlarmEvent) => void;
 };
