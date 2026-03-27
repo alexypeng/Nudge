@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Stack, Redirect } from "expo-router";
 import { useAuthStore } from "@/src/stores/authStore";
 import { Colors } from "@/src/theme/colors";
+import { requestAlarmPermission, setupAlarmListener } from "@/src/services/alarmScheduler";
 
 export {
     // Catch any errors thrown by the Layout component.
@@ -18,6 +19,9 @@ export default function RootLayout() {
 
     useEffect(() => {
         loadToken();
+        requestAlarmPermission().catch(() => {});
+        const subscription = setupAlarmListener();
+        return () => subscription.remove();
     }, []);
 
     useEffect(() => {
@@ -42,12 +46,12 @@ export default function RootLayout() {
                 options={{ title: "New Alarm", presentation: "modal" }}
             />
             <Stack.Screen name="alarm/[id]" options={{ title: "Edit Alarm" }} />
-            {/* <Stack.Screen
+            <Stack.Screen
                 name="alarm/active"
                 options={{
                     headerShown: false,
                 }}
-            /> */}
+            />
             <Stack.Screen
                 name="group/create"
                 options={{ title: "New Group", presentation: "modal" }}

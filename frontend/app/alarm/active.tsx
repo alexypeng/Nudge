@@ -30,7 +30,16 @@ export default function AlarmActiveScreen() {
     };
 
     useEffect(() => {
-        fetchEvent();
+        if (!token || !alarmId) return;
+
+        (async () => {
+            try {
+                await api.ringAlarm(token, alarmId);
+            } catch {
+                // 409 = already ringing, safe to ignore
+            }
+            await fetchEvent();
+        })();
     }, []);
 
     const handleSilence = async () => {

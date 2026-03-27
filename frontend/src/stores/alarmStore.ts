@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { api, AlarmCreate, AlarmOut, AlarmUpdate } from "@/src/api/client";
 import { useAuthStore } from "./authStore";
+import { syncAllAlarms, scheduleAlarm, cancelAlarm } from "@/src/services/alarmScheduler";
 
 interface AlarmState {
     alarms: AlarmOut[];
@@ -20,6 +21,7 @@ export const useAlarmStore = create<AlarmState>((set, get) => ({
 
         const alarms = await api.listAlarms(token, groupId);
         set({ alarms });
+        syncAllAlarms(alarms).catch(() => {});
     },
     create: async (data) => {
         const token = useAuthStore.getState().token;
@@ -27,6 +29,7 @@ export const useAlarmStore = create<AlarmState>((set, get) => ({
 
         const alarm = await api.createAlarm(token, data);
         set((state) => ({ alarms: [...state.alarms, alarm] }));
+        scheduleAlarm(alarm).catch(() => {});
     },
     update: async (id, data) => {
         const token = useAuthStore.getState().token;
@@ -36,12 +39,18 @@ export const useAlarmStore = create<AlarmState>((set, get) => ({
         set((state) => ({
             alarms: state.alarms.map((a) => (a.id === id ? updated : a)),
         }));
+        if (updated.is_active) {
+            scheduleAlarm(updated).catch(() => {});
+        } else {
+            cancelAlarm(id).catch(() => {});
+        }
     },
     delete: async (id) => {
         const token = useAuthStore.getState().token;
         if (!token) return;
 
         await api.deleteAlarm(token, id);
+        cancelAlarm(id).catch(() => {});
         set((state) => ({
             alarms: state.alarms.filter((a) => a.id !== id),
         }));
