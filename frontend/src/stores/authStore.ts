@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { api, UserOut, RegisterIn, LoginIn } from "@/src/api/client";
 import * as SecureStore from "expo-secure-store";
+import { registerForPushNotifications } from "../services/notificationService";
 
 const TOKEN_KEY = "ringsync_token";
 
@@ -30,6 +31,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             await SecureStore.setItemAsync(TOKEN_KEY, token);
             const user = await api.getMe(token);
             set({ token, user });
+            registerForPushNotifications(token).catch(() => {});
         } finally {
             set({ isLoading: false });
         }

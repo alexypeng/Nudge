@@ -4,7 +4,14 @@ import { useEffect } from "react";
 import { Stack, Redirect } from "expo-router";
 import { useAuthStore } from "@/src/stores/authStore";
 import { Colors } from "@/src/theme/colors";
-import { requestAlarmPermission, setupAlarmListener } from "@/src/services/alarmScheduler";
+import {
+    requestAlarmPermission,
+    setupAlarmListener,
+} from "@/src/services/alarmScheduler";
+import {
+    setupNotificationListeners,
+    setupNotifications,
+} from "@/src/services/notificationService";
 
 export {
     // Catch any errors thrown by the Layout component.
@@ -13,6 +20,7 @@ export {
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+setupNotifications();
 
 export default function RootLayout() {
     const { token, isLoaded, loadToken } = useAuthStore();
@@ -20,8 +28,12 @@ export default function RootLayout() {
     useEffect(() => {
         loadToken();
         requestAlarmPermission().catch(() => {});
-        const subscription = setupAlarmListener();
-        return () => subscription.remove();
+        const alarmSub = setupAlarmListener();
+        const cleanupNotifications = setupNotificationListeners();
+        return () => {
+            alarmSub.remove();
+            cleanupNotifications();
+        };
     }, []);
 
     useEffect(() => {
@@ -29,6 +41,7 @@ export default function RootLayout() {
     }, [isLoaded]);
 
     if (!isLoaded) return null;
+    if (!token) return <Redirect href="/(auth)/login" />;
 
     return (
         <Stack
