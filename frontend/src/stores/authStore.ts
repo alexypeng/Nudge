@@ -50,6 +50,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             if (token) {
                 const user = await api.getMe(token);
                 set({ token, user });
+                registerForPushNotifications(token).catch(() => {});
             }
         } catch {
             await SecureStore.deleteItemAsync(TOKEN_KEY);
