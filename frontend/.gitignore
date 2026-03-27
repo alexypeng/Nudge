@@ -8,6 +8,8 @@ nativewind-env.d.ts
 # Native builds (managed/prebuild workflow)
 ios/
 android/
+!modules/**/ios/
+!modules/**/android/
 
 # Metro
 .metro-health-check*
