@@ -21,6 +21,7 @@ function repeatsToDaysOfWeek(repeats: string): number[] {
 }
 
 export async function scheduleAlarm(alarm: AlarmOut) {
+  if (!ExpoAlarm) return;
   if (!alarm.is_active || !alarm.next_trigger_utc) return;
 
   const [hourStr, minuteStr] = alarm.time.split(":");
@@ -40,24 +41,29 @@ export async function scheduleAlarm(alarm: AlarmOut) {
 }
 
 export async function cancelAlarm(alarmId: string) {
+  if (!ExpoAlarm) return;
   await ExpoAlarm.cancelAlarm(alarmId);
 }
 
 export async function syncAllAlarms(alarms: AlarmOut[]) {
+  if (!ExpoAlarm) return;
   await ExpoAlarm.cancelAllAlarms();
   const active = alarms.filter((a) => a.is_active && a.next_trigger_utc);
   await Promise.all(active.map(scheduleAlarm));
 }
 
 export async function requestAlarmPermission(): Promise<boolean> {
+  if (!ExpoAlarm) return false;
   return ExpoAlarm.requestPermission();
 }
 
 export async function checkAlarmCapability() {
+  if (!ExpoAlarm) return { available: false, reason: "Native module not available" };
   return ExpoAlarm.checkCapability();
 }
 
 export function setupAlarmListener() {
+  if (!ExpoAlarm) return { remove: () => {} };
   return ExpoAlarm.addListener("onAlarmFired", (event: AlarmEvent) => {
     router.push({ pathname: "/alarm/active", params: { alarmId: event.alarmId } });
   });

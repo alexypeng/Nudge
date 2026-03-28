@@ -41,9 +41,14 @@ export default function FriendsTab() {
                                             {request.from_user.display_name.charAt(0).toUpperCase()}
                                         </Text>
                                     </View>
-                                    <Text style={styles.name} numberOfLines={1}>
-                                        {request.from_user.display_name}
-                                    </Text>
+                                    <View>
+                                        <Text style={styles.name} numberOfLines={1}>
+                                            {request.from_user.display_name}
+                                        </Text>
+                                        <Text style={styles.username} numberOfLines={1}>
+                                            @{request.from_user.username}
+                                        </Text>
+                                    </View>
                                 </View>
                                 <View className="flex-row" style={{ gap: 8 }}>
                                     <Pressable
@@ -84,9 +89,14 @@ export default function FriendsTab() {
                                             {friend.user.display_name.charAt(0).toUpperCase()}
                                         </Text>
                                     </View>
-                                    <Text style={styles.name} numberOfLines={1}>
-                                        {friend.user.display_name}
-                                    </Text>
+                                    <View>
+                                        <Text style={styles.name} numberOfLines={1}>
+                                            {friend.user.display_name}
+                                        </Text>
+                                        <Text style={styles.username} numberOfLines={1}>
+                                            @{friend.user.username}
+                                        </Text>
+                                    </View>
                                 </View>
                                 <Pressable
                                     onPress={() => {
@@ -148,6 +158,12 @@ const styles = StyleSheet.create({
         color: Colors.textPrimary,
         letterSpacing: -0.5,
         flexShrink: 1,
+    },
+    username: {
+        fontSize: 12,
+        fontWeight: "400",
+        color: Colors.textSecondary,
+        marginTop: 1,
     },
     acceptButton: {
         backgroundColor: Colors.accent,

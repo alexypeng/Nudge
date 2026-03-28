@@ -1,5 +1,7 @@
 from ninja import Schema
+from pydantic import field_validator
 import uuid
+import re
 from typing import Optional
 from datetime import datetime
 
@@ -18,6 +20,18 @@ class UserCreate(Schema):
     timezone: str = "UTC"
     email: str
     password: str
+
+    @classmethod
+    @field_validator("username")
+    def validate_username(cls, v):
+        v = v.strip().lower()
+        if len(v) < 3:
+            raise ValueError("Username must be at least 3 characters.")
+        if " " in v:
+            raise ValueError("Username cannot contain spaces.")
+        if not re.match(r"^[a-z0-9._]+$", v):
+            raise ValueError("Username can only contain letters, numbers, dots, and underscores.")
+        return v
 
 
 class UserUpdate(Schema):
@@ -43,6 +57,7 @@ class DeviceCreate(Schema):
 
 class UserSearchOut(Schema):
     id: uuid.UUID
+    username: str
     display_name: str
 
 

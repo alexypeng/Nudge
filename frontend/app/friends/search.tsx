@@ -68,7 +68,7 @@ export default function SearchFriendsScreen() {
                     borderColor: Colors.border,
                     fontSize: 15,
                 }}
-                placeholder="Search by name..."
+                placeholder="Search by username..."
                 placeholderTextColor={Colors.textDim}
                 value={query}
                 onChangeText={handleSearch}
@@ -104,9 +104,14 @@ export default function SearchFriendsScreen() {
                                             {user.display_name.charAt(0).toUpperCase()}
                                         </Text>
                                     </View>
-                                    <Text style={styles.name} numberOfLines={1}>
-                                        {user.display_name}
-                                    </Text>
+                                    <View>
+                                        <Text style={styles.name} numberOfLines={1}>
+                                            {user.display_name}
+                                        </Text>
+                                        <Text style={styles.username} numberOfLines={1}>
+                                            @{user.username}
+                                        </Text>
+                                    </View>
                                 </View>
 
                                 {status === "none" ? (
@@ -154,6 +159,12 @@ const styles = StyleSheet.create({
         color: Colors.textPrimary,
         letterSpacing: -0.5,
         flexShrink: 1,
+    },
+    username: {
+        fontSize: 12,
+        fontWeight: "400",
+        color: Colors.textSecondary,
+        marginTop: 1,
     },
     addButton: {
         backgroundColor: Colors.accent,

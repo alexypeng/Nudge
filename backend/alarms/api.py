@@ -1,10 +1,12 @@
 from datetime import timedelta
 
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from ninja import Router
 from users.auth import TokenAuth
+from users.models import Friendship, User
 from users.schemas import UserOut
 
 from .enums import Actions
@@ -20,8 +22,6 @@ from .schemas import (
     GroupUpdate,
     ManualRingOut,
 )
-from users.models import Friendship, User
-from django.db.models import Q
 from .utils import send_group_push, send_wake_up_push
 
 router = Router()
@@ -133,6 +133,20 @@ def add_member_to_group(request, group_id: str, payload: AddMemberRequest):
 
     group.members.add(target)
     return 200, group
+
+
+@router.get(
+    "/group/{group_id}/alarms/",
+    response={200: list[AlarmOut], 403: None},
+    auth=TokenAuth(),
+)
+def list_group_alarms(request, group_id: str):
+    group = get_object_or_404(Group, id=group_id)
+
+    if request.auth not in group.members.all():
+        return 403, None
+
+    return 200, list(Alarm.objects.filter(group=group, is_active=True))
 
 
 # ==========================================
@@ -269,11 +283,7 @@ def get_latest_event(request, alarm_id: str):
     if alarm.user != request.auth:
         return 403, {"error": "You do not have access to this alarm"}
 
-    event = (
-        AlarmEvent.objects.filter(alarm=alarm)
-        .order_by("-created_at")
-        .first()
-    )
+    event = AlarmEvent.objects.filter(alarm=alarm).order_by("-created_at").first()
 
     if not event:
         return 204, None

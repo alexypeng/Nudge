@@ -91,7 +91,7 @@ def search_users(request, q: str = ""):
     if len(q) < 2:
         return []
     return list(
-        User.objects.filter(display_name__icontains=q)
+        User.objects.filter(username__icontains=q)
         .exclude(id=request.auth.id)[:20]
     )
 

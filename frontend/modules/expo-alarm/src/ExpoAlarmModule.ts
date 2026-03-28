@@ -1,4 +1,4 @@
-import { NativeModule, requireNativeModule } from "expo";
+import { NativeModule, requireOptionalNativeModule } from "expo";
 import {
     ExpoAlarmModuleEvents,
     AlarmConfig,
@@ -13,4 +13,4 @@ declare class ExpoAlarmModule extends NativeModule<ExpoAlarmModuleEvents> {
     cancelAllAlarms(): Promise<void>;
 }
 
-export default requireNativeModule<ExpoAlarmModule>("ExpoAlarm");
+export default requireOptionalNativeModule<ExpoAlarmModule>("ExpoAlarm");

@@ -15,6 +15,7 @@ import { Colors } from "@/src/theme/colors";
 export default function RegisterPage() {
     const router = useRouter();
 
+    const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [displayName, setDisplayName] = useState("");
     const [password, setPassword] = useState("");
@@ -28,7 +29,7 @@ export default function RegisterPage() {
         setError(null);
         try {
             await register({
-                username: email,
+                username,
                 display_name: displayName,
                 email,
                 password,
@@ -71,9 +72,25 @@ export default function RegisterPage() {
                         borderWidth: 1,
                         borderColor: Colors.border,
                     }}
+                    value={username}
+                    onChangeText={(t) => setUsername(t.replace(/\s/g, "").toLowerCase())}
+                    placeholder="@username"
+                    placeholderTextColor={Colors.textDim}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                />
+                <TextInput
+                    className="h-12 px-4 mb-3"
+                    style={{
+                        backgroundColor: Colors.surface,
+                        color: Colors.textPrimary,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: Colors.border,
+                    }}
                     value={displayName}
                     onChangeText={setDisplayName}
-                    placeholder="Username"
+                    placeholder="Display Name"
                     placeholderTextColor={Colors.textDim}
                 />
                 <TextInput

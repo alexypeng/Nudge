@@ -90,6 +90,7 @@ export interface AlarmUpdate {
 // Friends
 export interface UserSearchOut {
     id: string;
+    username: string;
     display_name: string;
 }
 
@@ -187,11 +188,21 @@ export const api = {
     updateGroup: (token: string, groupId: string, data: GroupUpdate) =>
         request<GroupOut>("PUT", `/api/alarms/group/${groupId}/`, token, data),
     listGroupMembers: (token: string, groupId: string) =>
-        request<UserOut[]>("GET", `/api/alarms/group/${groupId}/members/`, token),
+        request<UserOut[]>(
+            "GET",
+            `/api/alarms/group/${groupId}/members/`,
+            token,
+        ),
     joinGroup: (token: string, groupId: string) =>
         request<GroupOut>("POST", `/api/alarms/group/${groupId}/join/`, token),
     leaveGroup: (token: string, groupId: string) =>
         request<void>("POST", `/api/alarms/group/${groupId}/leave/`, token),
+    listGroupAlarms: (token: string, groupId: string) =>
+        request<AlarmOut[]>(
+            "GET",
+            `/api/alarms/group/${groupId}/alarms/`,
+            token,
+        ),
 
     createAlarm: (token: string, data: AlarmCreate) =>
         request<AlarmOut>("POST", "/api/alarms/alarm/", token, data),
@@ -238,21 +249,46 @@ export const api = {
             token,
         ),
 
-    // Friends
     searchUsers: (token: string, query: string) =>
-        request<UserSearchOut[]>("GET", `/api/users/search/?q=${encodeURIComponent(query)}`, token),
+        request<UserSearchOut[]>(
+            "GET",
+            `/api/users/search/?q=${encodeURIComponent(query)}`,
+            token,
+        ),
     listFriends: (token: string) =>
         request<FriendOut[]>("GET", "/api/users/friends/", token),
     listPendingRequests: (token: string) =>
-        request<FriendRequestOut[]>("GET", "/api/users/friends/pending/", token),
+        request<FriendRequestOut[]>(
+            "GET",
+            "/api/users/friends/pending/",
+            token,
+        ),
     sendFriendRequest: (token: string, toUserId: string) =>
-        request<FriendRequestOut>("POST", "/api/users/friends/request/", token, { to_user_id: toUserId }),
+        request<FriendRequestOut>(
+            "POST",
+            "/api/users/friends/request/",
+            token,
+            { to_user_id: toUserId },
+        ),
     acceptFriendRequest: (token: string, friendshipId: string) =>
-        request<FriendOut>("POST", `/api/users/friends/${friendshipId}/accept/`, token),
+        request<FriendOut>(
+            "POST",
+            `/api/users/friends/${friendshipId}/accept/`,
+            token,
+        ),
     declineFriendRequest: (token: string, friendshipId: string) =>
-        request<void>("POST", `/api/users/friends/${friendshipId}/decline/`, token),
+        request<void>(
+            "POST",
+            `/api/users/friends/${friendshipId}/decline/`,
+            token,
+        ),
     removeFriend: (token: string, friendshipId: string) =>
         request<void>("DELETE", `/api/users/friends/${friendshipId}/`, token),
     addMemberToGroup: (token: string, groupId: string, userId: string) =>
-        request<GroupOut>("POST", `/api/alarms/group/${groupId}/add-member/`, token, { user_id: userId }),
+        request<GroupOut>(
+            "POST",
+            `/api/alarms/group/${groupId}/add-member/`,
+            token,
+            { user_id: userId },
+        ),
 };
