@@ -8,7 +8,7 @@ import { Colors } from "@/src/theme/colors";
 import { AlarmCard } from "@/src/components/AlarmCard";
 import { GlassCard } from "@/src/components/GlassCard";
 import { TactileButton } from "@/src/components/TactileButton";
-import { api, UserOut } from "@/src/api/client";
+import { api, UserOut, AlarmOut } from "@/src/api/client";
 import { useAuthStore } from "@/src/stores/authStore";
 
 const ICON_OPTIONS: (keyof typeof Ionicons.glyphMap)[] = [
@@ -46,7 +46,11 @@ export default function GroupScreen() {
     );
 
     const token = useAuthStore((s) => s.token);
+    const currentUserId = useAuthStore((s) => s.user?.id);
     const [members, setMembers] = useState<UserOut[]>([]);
+    const [groupAlarms, setGroupAlarms] = useState<AlarmOut[]>([]);
+    const [alarmStatuses, setAlarmStatuses] = useState<Record<string, string>>({});
+    const [ringStatus, setRingStatus] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [groupName, setGroupName] = useState(group?.name ?? "");
@@ -56,6 +60,19 @@ export default function GroupScreen() {
         fetchAlarms();
         if (token) {
             api.listGroupMembers(token, id).then(setMembers).catch(() => {});
+            api.listGroupAlarms(token, id).then(async (alarms) => {
+                setGroupAlarms(alarms);
+                const statuses: Record<string, string> = {};
+                await Promise.all(
+                    alarms.map(async (alarm) => {
+                        try {
+                            const event = await api.getLatestEvent(token, alarm.id);
+                            if (event) statuses[alarm.id] = event.status;
+                        } catch {}
+                    })
+                );
+                setAlarmStatuses(statuses);
+            }).catch(() => {});
         }
     }, []);
 
@@ -113,6 +130,17 @@ export default function GroupScreen() {
         } catch (err) {
             setError((err as Error).message);
         }
+    };
+
+    const handleRing = async (alarmId: string) => {
+        if (!token) return;
+        try {
+            await api.triggerAlarm(token, alarmId);
+            setRingStatus("Ringing!");
+        } catch (err) {
+            setRingStatus((err as Error).message);
+        }
+        setTimeout(() => setRingStatus(null), 3000);
     };
 
     if (!group) {
@@ -202,55 +230,201 @@ export default function GroupScreen() {
             >
                 MEMBERS
             </Text>
+            {ringStatus && (
+                <Text
+                    style={{
+                        fontSize: 13,
+                        color: ringStatus === "Ringing!" ? Colors.statusUp : Colors.statusLate,
+                        marginBottom: 8,
+                    }}
+                >
+                    {ringStatus}
+                </Text>
+            )}
+
             {members.length > 0 ? (
-                <View className="flex-row flex-wrap" style={{ gap: 8 }}>
-                    {members.map((member) => (
-                        <View
-                            key={member.id}
-                            className="items-center"
-                            style={{
-                                backgroundColor: Colors.surface,
-                                borderWidth: 1.5,
-                                borderColor: Colors.border,
-                                borderRadius: 18,
-                                padding: 12,
-                                width: 80,
-                            }}
-                        >
+                <View style={{ gap: 8 }}>
+                    {members.map((member) => {
+                        const isMe = member.id === currentUserId;
+                        const memberAlarms = groupAlarms.filter(
+                            (a) => a.user_id === member.id
+                        );
+
+                        return (
                             <View
+                                key={member.id}
                                 style={{
-                                    width: 36,
-                                    height: 36,
+                                    backgroundColor: Colors.surface,
+                                    borderWidth: 1.5,
+                                    borderColor: Colors.border,
                                     borderRadius: 18,
-                                    backgroundColor: Colors.avatarBlue,
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    marginBottom: 6,
+                                    padding: 16,
                                 }}
                             >
-                                <Text
+                                <View
                                     style={{
-                                        fontSize: 14,
-                                        fontWeight: "900",
-                                        color: Colors.surface,
+                                        flexDirection: "row",
+                                        alignItems: "center",
+                                        gap: 10,
+                                        marginBottom: memberAlarms.length > 0 ? 12 : 0,
                                     }}
                                 >
-                                    {member.display_name.charAt(0).toUpperCase()}
-                                </Text>
+                                    <View
+                                        style={{
+                                            width: 32,
+                                            height: 32,
+                                            borderRadius: 16,
+                                            backgroundColor: isMe
+                                                ? Colors.avatarGreen
+                                                : Colors.avatarBlue,
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                        }}
+                                    >
+                                        <Text
+                                            style={{
+                                                fontSize: 13,
+                                                fontWeight: "900",
+                                                color: Colors.surface,
+                                            }}
+                                        >
+                                            {member.display_name
+                                                .charAt(0)
+                                                .toUpperCase()}
+                                        </Text>
+                                    </View>
+                                    <Text
+                                        style={{
+                                            fontSize: 15,
+                                            fontWeight: "900",
+                                            color: Colors.textPrimary,
+                                            letterSpacing: -0.5,
+                                        }}
+                                    >
+                                        {member.display_name}
+                                        {isMe && (
+                                            <Text
+                                                style={{
+                                                    fontWeight: "400",
+                                                    color: Colors.textDim,
+                                                }}
+                                            >
+                                                {" "}
+                                                (You)
+                                            </Text>
+                                        )}
+                                    </Text>
+                                </View>
+
+                                {memberAlarms.length > 0 ? (
+                                    <View style={{ gap: 8 }}>
+                                        {memberAlarms.map((alarm) => {
+                                            const [h, m] = alarm.time
+                                                .slice(0, 5)
+                                                .split(":")
+                                                .map(Number);
+                                            const period = h >= 12 ? "PM" : "AM";
+                                            const hour12 = h % 12 || 12;
+                                            const timeStr = `${hour12}:${String(m).padStart(2, "0")} ${period}`;
+                                            const showRing =
+                                                !isMe &&
+                                                alarmStatuses[alarm.id] === "EXPIRED";
+
+                                            return (
+                                                <View
+                                                    key={alarm.id}
+                                                    style={{
+                                                        flexDirection: "row",
+                                                        alignItems: "center",
+                                                        justifyContent:
+                                                            "space-between",
+                                                        backgroundColor:
+                                                            Colors.background,
+                                                        borderRadius: 12,
+                                                        paddingVertical: 10,
+                                                        paddingHorizontal: 14,
+                                                    }}
+                                                >
+                                                    <View>
+                                                        <Text
+                                                            style={{
+                                                                fontSize: 13,
+                                                                fontWeight: "700",
+                                                                color: Colors.textPrimary,
+                                                            }}
+                                                        >
+                                                            {alarm.name}
+                                                        </Text>
+                                                        <Text
+                                                            style={{
+                                                                fontSize: 11,
+                                                                color: Colors.textSecondary,
+                                                                marginTop: 2,
+                                                            }}
+                                                        >
+                                                            {timeStr}
+                                                        </Text>
+                                                    </View>
+                                                    {showRing && (
+                                                        <Pressable
+                                                            onPress={() =>
+                                                                handleRing(
+                                                                    alarm.id
+                                                                )
+                                                            }
+                                                            style={{
+                                                                backgroundColor:
+                                                                    Colors.accentSubtle,
+                                                                borderWidth: 1,
+                                                                borderColor:
+                                                                    "rgba(96,165,250,0.25)",
+                                                                borderRadius: 99,
+                                                                paddingHorizontal: 12,
+                                                                paddingVertical: 6,
+                                                                flexDirection:
+                                                                    "row",
+                                                                alignItems:
+                                                                    "center",
+                                                                gap: 4,
+                                                            }}
+                                                        >
+                                                            <Ionicons
+                                                                name="notifications"
+                                                                size={14}
+                                                                color={
+                                                                    Colors.accent
+                                                                }
+                                                            />
+                                                            <Text
+                                                                style={{
+                                                                    fontSize: 10,
+                                                                    fontWeight:
+                                                                        "700",
+                                                                    color: Colors.accent,
+                                                                }}
+                                                            >
+                                                                Ring
+                                                            </Text>
+                                                        </Pressable>
+                                                    )}
+                                                </View>
+                                            );
+                                        })}
+                                    </View>
+                                ) : (
+                                    <Text
+                                        style={{
+                                            fontSize: 12,
+                                            color: Colors.textDim,
+                                            marginTop: 4,
+                                        }}
+                                    >
+                                        No alarms
+                                    </Text>
+                                )}
                             </View>
-                            <Text
-                                style={{
-                                    fontSize: 11,
-                                    fontWeight: "700",
-                                    color: Colors.textPrimary,
-                                    textAlign: "center",
-                                }}
-                                numberOfLines={1}
-                            >
-                                {member.display_name}
-                            </Text>
-                        </View>
-                    ))}
+                        );
+                    })}
                 </View>
             ) : (
                 <GlassCard>
