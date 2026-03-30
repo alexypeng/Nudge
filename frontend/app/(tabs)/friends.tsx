@@ -1,26 +1,42 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useFriendStore } from "@/src/stores/friendStore";
 import { Colors } from "@/src/theme/colors";
 import { GlassCard } from "@/src/components/GlassCard";
 import { TactileButton } from "@/src/components/TactileButton";
+import { ArcadeSpinner } from "@/src/components/ArcadeSpinner";
+import { ErrorBanner } from "@/src/components/ErrorBanner";
 import * as Haptics from "expo-haptics";
 
 export default function FriendsTab() {
     const router = useRouter();
     const friends = useFriendStore((s) => s.friends);
     const pending = useFriendStore((s) => s.pendingRequests);
-    const fetch = useFriendStore((s) => s.fetch);
-    const fetchPending = useFriendStore((s) => s.fetchPending);
+    const fetchAll = useFriendStore((s) => s.fetchAll);
     const acceptRequest = useFriendStore((s) => s.acceptRequest);
     const declineRequest = useFriendStore((s) => s.declineRequest);
     const removeFriend = useFriendStore((s) => s.removeFriend);
+    const isLoading = useFriendStore((s) => s.isLoading);
+    const storeError = useFriendStore((s) => s.error);
+    const [actionError, setActionError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch();
-        fetchPending();
+        fetchAll();
     }, []);
+
+    const handleAction = async (fn: () => Promise<void>) => {
+        setActionError(null);
+        try {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            await fn();
+        } catch (err) {
+            setActionError((err as Error).message);
+            setTimeout(() => setActionError(null), 5000);
+        }
+    };
+
+    const isFirstLoad = isLoading && friends.length === 0 && pending.length === 0;
 
     return (
         <ScrollView
@@ -28,6 +44,25 @@ export default function FriendsTab() {
             contentContainerClassName="px-5 pt-14 pb-8"
             style={{ backgroundColor: Colors.background }}
         >
+            {storeError && (
+                <ErrorBanner
+                    message={storeError}
+                    onRetry={fetchAll}
+                    style={{ marginBottom: 12 }}
+                />
+            )}
+
+            {actionError && (
+                <Text style={{ fontSize: 13, color: Colors.statusLate, marginBottom: 8 }}>
+                    {actionError}
+                </Text>
+            )}
+
+            {isFirstLoad ? (
+                <ArcadeSpinner style={{ marginTop: 40 }} />
+            ) : (
+            <>
+
             {/* Pending Requests */}
             {pending.length > 0 && (
                 <View>
@@ -53,19 +88,13 @@ export default function FriendsTab() {
                                 <View className="flex-row" style={{ gap: 8 }}>
                                     <Pressable
                                         style={styles.acceptButton}
-                                        onPress={() => {
-                                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                            acceptRequest(request.id);
-                                        }}
+                                        onPress={() => handleAction(() => acceptRequest(request.id))}
                                     >
                                         <Text style={styles.acceptText}>Accept</Text>
                                     </Pressable>
                                     <Pressable
                                         style={styles.declineButton}
-                                        onPress={() => {
-                                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                            declineRequest(request.id);
-                                        }}
+                                        onPress={() => handleAction(() => declineRequest(request.id))}
                                     >
                                         <Text style={styles.declineText}>Decline</Text>
                                     </Pressable>
@@ -99,10 +128,7 @@ export default function FriendsTab() {
                                     </View>
                                 </View>
                                 <Pressable
-                                    onPress={() => {
-                                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                        removeFriend(friend.friendship_id);
-                                    }}
+                                    onPress={() => handleAction(() => removeFriend(friend.friendship_id))}
                                 >
                                     <Text style={styles.removeText}>Remove</Text>
                                 </Pressable>
@@ -117,6 +143,9 @@ export default function FriendsTab() {
                     </GlassCard>
                 )}
             </View>
+
+            </>
+            )}
 
             <View className="mt-4">
                 <TactileButton

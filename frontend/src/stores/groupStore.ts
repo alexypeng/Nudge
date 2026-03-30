@@ -4,6 +4,8 @@ import { useAuthStore } from "./authStore";
 
 interface GroupStore {
     groups: GroupOut[];
+    isLoading: boolean;
+    error: string | null;
 
     fetch: () => Promise<void>;
     create: (data: GroupCreate) => Promise<void>;
@@ -17,13 +19,22 @@ const sortGroups = (groups: GroupOut[]) =>
 
 export const useGroupStore = create<GroupStore>((set, get) => ({
     groups: [],
+    isLoading: false,
+    error: null,
 
     fetch: async () => {
         const token = useAuthStore.getState().token;
         if (!token) return;
 
-        const groups = await api.listGroups(token);
-        set({ groups: sortGroups(groups) });
+        set({ isLoading: true, error: null });
+        try {
+            const groups = await api.listGroups(token);
+            set({ groups: sortGroups(groups) });
+        } catch (err) {
+            set({ error: (err as Error).message });
+        } finally {
+            set({ isLoading: false });
+        }
     },
     create: async (data) => {
         const token = useAuthStore.getState().token;

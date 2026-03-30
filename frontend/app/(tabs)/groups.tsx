@@ -6,12 +6,16 @@ import { useGroupStore } from "@/src/stores/groupStore";
 import { GroupCard } from "@/src/components/GroupCard";
 import { GlassCard } from "@/src/components/GlassCard";
 import { TactileButton } from "@/src/components/TactileButton";
+import { ArcadeSpinner } from "@/src/components/ArcadeSpinner";
+import { ErrorBanner } from "@/src/components/ErrorBanner";
 import { useEffect } from "react";
 
 export default function GroupsScreen() {
     const router = useRouter();
     const groups = useGroupStore((s) => s.groups);
     const fetchGroups = useGroupStore((s) => s.fetch);
+    const isLoading = useGroupStore((s) => s.isLoading);
+    const error = useGroupStore((s) => s.error);
 
     useEffect(() => {
         fetchGroups();
@@ -35,8 +39,18 @@ export default function GroupsScreen() {
                 MY GROUPS
             </Text>
 
+            {error && (
+                <ErrorBanner
+                    message={error}
+                    onRetry={fetchGroups}
+                    style={{ marginTop: 8, marginBottom: 4 }}
+                />
+            )}
+
             <View className="mt-2">
-                {groups.length > 0 ? (
+                {isLoading && groups.length === 0 ? (
+                    <ArcadeSpinner />
+                ) : groups.length > 0 ? (
                     <View className="flex-row flex-wrap" style={{ gap: 8 }}>
                         {groups.map((group) => (
                             <Pressable

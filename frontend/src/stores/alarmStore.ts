@@ -5,6 +5,8 @@ import { syncAllAlarms, scheduleAlarm, cancelAlarm } from "@/src/services/alarmS
 
 interface AlarmState {
     alarms: AlarmOut[];
+    isLoading: boolean;
+    error: string | null;
 
     fetch: (groupId?: string) => Promise<void>;
     create: (data: AlarmCreate) => Promise<void>;
@@ -14,14 +16,23 @@ interface AlarmState {
 
 export const useAlarmStore = create<AlarmState>((set, get) => ({
     alarms: [],
+    isLoading: false,
+    error: null,
 
     fetch: async (groupId?: string) => {
         const token = useAuthStore.getState().token;
         if (!token) return;
 
-        const alarms = await api.listAlarms(token, groupId);
-        set({ alarms });
-        syncAllAlarms(alarms).catch(() => {});
+        set({ isLoading: true, error: null });
+        try {
+            const alarms = await api.listAlarms(token, groupId);
+            set({ alarms });
+            syncAllAlarms(alarms).catch(() => {});
+        } catch (err) {
+            set({ error: (err as Error).message });
+        } finally {
+            set({ isLoading: false });
+        }
     },
     create: async (data) => {
         const token = useAuthStore.getState().token;

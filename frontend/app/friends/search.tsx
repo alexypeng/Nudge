@@ -20,6 +20,7 @@ export default function SearchFriendsScreen() {
     const friendIds = new Set(friends.map((f) => f.user.id));
     const pendingIds = new Set(pending.map((r) => r.from_user.id));
     const [sentIds, setSentIds] = useState<Set<string>>(new Set());
+    const [requestError, setRequestError] = useState<string | null>(null);
 
     useEffect(() => {
         return () => {
@@ -37,10 +38,13 @@ export default function SearchFriendsScreen() {
 
     const handleSendRequest = async (userId: string) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setRequestError(null);
         try {
             await sendRequest(userId);
             setSentIds((prev) => new Set(prev).add(userId));
-        } catch {}
+        } catch (err) {
+            setRequestError((err as Error).message);
+        }
     };
 
     const getStatus = (userId: string) => {
@@ -79,6 +83,12 @@ export default function SearchFriendsScreen() {
 
             {/* Results */}
             <View className="mt-4">
+                {requestError && (
+                    <Text style={{ fontSize: 13, color: Colors.statusLate, marginBottom: 8 }}>
+                        {requestError}
+                    </Text>
+                )}
+
                 {isSearching && (
                     <Text style={{ fontSize: 13, color: Colors.textSecondary, marginBottom: 8 }}>
                         Searching...

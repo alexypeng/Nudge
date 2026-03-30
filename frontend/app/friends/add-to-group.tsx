@@ -7,6 +7,7 @@ import { api, UserOut } from "@/src/api/client";
 import { Colors } from "@/src/theme/colors";
 import { GlassCard } from "@/src/components/GlassCard";
 import { TactileButton } from "@/src/components/TactileButton";
+import { ErrorBanner } from "@/src/components/ErrorBanner";
 import * as Haptics from "expo-haptics";
 
 export default function AddToGroupScreen() {
@@ -19,11 +20,14 @@ export default function AddToGroupScreen() {
     const [members, setMembers] = useState<UserOut[]>([]);
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [isAdding, setIsAdding] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         fetchFriends();
         if (token && groupId) {
-            api.listGroupMembers(token, groupId).then(setMembers).catch(() => {});
+            api.listGroupMembers(token, groupId).then(setMembers).catch((err) => {
+                setError((err as Error).message);
+            });
         }
     }, []);
 
@@ -46,6 +50,7 @@ export default function AddToGroupScreen() {
     const handleAdd = async () => {
         if (!token || !groupId || selected.size === 0) return;
         setIsAdding(true);
+        setError(null);
         try {
             await Promise.all(
                 Array.from(selected).map((userId) =>
@@ -54,7 +59,8 @@ export default function AddToGroupScreen() {
             );
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.back();
-        } catch {
+        } catch (err) {
+            setError((err as Error).message);
             setIsAdding(false);
         }
     };
@@ -113,6 +119,14 @@ export default function AddToGroupScreen() {
                             : "All your friends are already in this group"}
                     </Text>
                 </GlassCard>
+            )}
+
+            {error && (
+                <ErrorBanner
+                    message={error}
+                    onDismiss={() => setError(null)}
+                    style={{ marginTop: 8 }}
+                />
             )}
 
             {selected.size > 0 && (

@@ -7,9 +7,12 @@ interface FriendStore {
     pendingRequests: FriendRequestOut[];
     searchResults: UserSearchOut[];
     isSearching: boolean;
+    isLoading: boolean;
+    error: string | null;
 
     fetch: () => Promise<void>;
     fetchPending: () => Promise<void>;
+    fetchAll: () => Promise<void>;
     searchUsers: (query: string) => Promise<void>;
     sendRequest: (toUserId: string) => Promise<void>;
     acceptRequest: (friendshipId: string) => Promise<void>;
@@ -23,6 +26,8 @@ export const useFriendStore = create<FriendStore>((set, get) => ({
     pendingRequests: [],
     searchResults: [],
     isSearching: false,
+    isLoading: false,
+    error: null,
 
     fetch: async () => {
         const token = useAuthStore.getState().token;
@@ -38,6 +43,24 @@ export const useFriendStore = create<FriendStore>((set, get) => ({
 
         const pendingRequests = await api.listPendingRequests(token);
         set({ pendingRequests });
+    },
+
+    fetchAll: async () => {
+        const token = useAuthStore.getState().token;
+        if (!token) return;
+
+        set({ isLoading: true, error: null });
+        try {
+            const [friends, pendingRequests] = await Promise.all([
+                api.listFriends(token),
+                api.listPendingRequests(token),
+            ]);
+            set({ friends, pendingRequests });
+        } catch (err) {
+            set({ error: (err as Error).message });
+        } finally {
+            set({ isLoading: false });
+        }
     },
 
     searchUsers: async (query: string) => {

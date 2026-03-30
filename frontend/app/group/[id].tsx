@@ -10,6 +10,7 @@ import { GlassCard } from "@/src/components/GlassCard";
 import { TactileButton } from "@/src/components/TactileButton";
 import { api, UserOut, AlarmOut } from "@/src/api/client";
 import { useAuthStore } from "@/src/stores/authStore";
+import { ErrorBanner } from "@/src/components/ErrorBanner";
 
 const ICON_OPTIONS: (keyof typeof Ionicons.glyphMap)[] = [
     "people",
@@ -52,28 +53,37 @@ export default function GroupScreen() {
     const [alarmStatuses, setAlarmStatuses] = useState<Record<string, string>>({});
     const [ringStatus, setRingStatus] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [fetchError, setFetchError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [groupName, setGroupName] = useState(group?.name ?? "");
     const [groupIcon, setGroupIcon] = useState(group?.icon ?? "people");
 
+    const loadGroupData = () => {
+        if (!token) return;
+        setFetchError(null);
+        api.listGroupMembers(token, id).then(setMembers).catch((err) => {
+            setFetchError((err as Error).message);
+        });
+        api.listGroupAlarms(token, id).then(async (alarms) => {
+            setGroupAlarms(alarms);
+            const statuses: Record<string, string> = {};
+            await Promise.all(
+                alarms.map(async (alarm) => {
+                    try {
+                        const event = await api.getLatestEvent(token, alarm.id);
+                        if (event) statuses[alarm.id] = event.status;
+                    } catch {}
+                })
+            );
+            setAlarmStatuses(statuses);
+        }).catch((err) => {
+            setFetchError((err as Error).message);
+        });
+    };
+
     useEffect(() => {
         fetchAlarms();
-        if (token) {
-            api.listGroupMembers(token, id).then(setMembers).catch(() => {});
-            api.listGroupAlarms(token, id).then(async (alarms) => {
-                setGroupAlarms(alarms);
-                const statuses: Record<string, string> = {};
-                await Promise.all(
-                    alarms.map(async (alarm) => {
-                        try {
-                            const event = await api.getLatestEvent(token, alarm.id);
-                            if (event) statuses[alarm.id] = event.status;
-                        } catch {}
-                    })
-                );
-                setAlarmStatuses(statuses);
-            }).catch(() => {});
-        }
+        loadGroupData();
     }, []);
 
     useEffect(() => {
@@ -217,6 +227,13 @@ export default function GroupScreen() {
             </View>
 
             {/* Members */}
+            {fetchError && (
+                <ErrorBanner
+                    message={fetchError}
+                    onRetry={loadGroupData}
+                    style={{ marginTop: 12, marginBottom: 4 }}
+                />
+            )}
             <Text
                 className="mt-6"
                 style={{

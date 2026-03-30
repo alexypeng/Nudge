@@ -5,6 +5,8 @@ import { useAlarmStore } from "@/src/stores/alarmStore";
 import { AlarmCard } from "@/src/components/AlarmCard";
 import { GlassCard } from "@/src/components/GlassCard";
 import { TactileButton } from "@/src/components/TactileButton";
+import { ArcadeSpinner } from "@/src/components/ArcadeSpinner";
+import { ErrorBanner } from "@/src/components/ErrorBanner";
 import { useEffect } from "react";
 
 export default function AlarmsScreen() {
@@ -12,6 +14,8 @@ export default function AlarmsScreen() {
     const alarms = useAlarmStore((s) => s.alarms);
     const fetchAlarms = useAlarmStore((s) => s.fetch);
     const updateAlarm = useAlarmStore((s) => s.update);
+    const isLoading = useAlarmStore((s) => s.isLoading);
+    const error = useAlarmStore((s) => s.error);
 
     useEffect(() => {
         fetchAlarms();
@@ -35,8 +39,18 @@ export default function AlarmsScreen() {
                 ALARMS
             </Text>
 
+            {error && (
+                <ErrorBanner
+                    message={error}
+                    onRetry={fetchAlarms}
+                    style={{ marginTop: 8, marginBottom: 4 }}
+                />
+            )}
+
             <View className="mt-2">
-                {alarms.length > 0 ? (
+                {isLoading && alarms.length === 0 ? (
+                    <ArcadeSpinner />
+                ) : alarms.length > 0 ? (
                     alarms.map((alarm) => (
                         <AlarmCard
                             key={alarm.id}

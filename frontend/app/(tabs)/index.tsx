@@ -11,6 +11,8 @@ import { useGroupStore } from "@/src/stores/groupStore";
 import { api, AlarmEventOut } from "@/src/api/client";
 import { AlarmCard } from "@/src/components/AlarmCard";
 import { GlassCard } from "@/src/components/GlassCard";
+import { ArcadeSpinner } from "@/src/components/ArcadeSpinner";
+import { ErrorBanner } from "@/src/components/ErrorBanner";
 
 function formatTime12h(time24: string) {
     const [h, m] = time24.split(":");
@@ -34,8 +36,12 @@ export default function HomeScreen() {
     const alarms = useAlarmStore((s) => s.alarms);
     const alarmFetch = useAlarmStore((s) => s.fetch);
     const alarmUpdate = useAlarmStore((s) => s.update);
+    const alarmLoading = useAlarmStore((s) => s.isLoading);
+    const alarmError = useAlarmStore((s) => s.error);
     const groups = useGroupStore((s) => s.groups);
     const groupFetch = useGroupStore((s) => s.fetch);
+    const groupLoading = useGroupStore((s) => s.isLoading);
+    const groupError = useGroupStore((s) => s.error);
 
     const [visibleIds, setVisibleIds] = useState<Set<string>>(new Set());
     const [activeEvents, setActiveEvents] = useState<Record<string, AlarmEventOut>>({});
@@ -72,6 +78,9 @@ export default function HomeScreen() {
 
     if (!token) return <Redirect href="/(auth)/login" />;
 
+    const isFirstLoad = (alarmLoading && alarms.length === 0) || (groupLoading && groups.length === 0);
+    const fetchError = alarmError || groupError;
+
     const displayedAlarms = alarms.filter((a) => a.is_active || visibleIds.has(a.id));
     const activeAlarms = alarms.filter((a) => a.is_active);
     const nextAlarm = activeAlarms
@@ -99,6 +108,19 @@ export default function HomeScreen() {
             >
                 {getGreeting()}, {user?.display_name ?? "there"}
             </Text>
+
+            {fetchError && (
+                <ErrorBanner
+                    message={fetchError}
+                    onRetry={() => { alarmFetch(); groupFetch(); }}
+                    style={{ marginBottom: 12 }}
+                />
+            )}
+
+            {isFirstLoad ? (
+                <ArcadeSpinner style={{ marginTop: 40 }} />
+            ) : (
+            <>
 
             {/* Active Event Banner */}
             {Object.keys(activeEvents).length > 0 && (
@@ -300,6 +322,9 @@ export default function HomeScreen() {
                         Join or create a group to get started
                     </Text>
                 </GlassCard>
+            )}
+
+            </>
             )}
         </ScrollView>
     );
