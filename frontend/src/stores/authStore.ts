@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { api, UserOut, RegisterIn, LoginIn } from "@/src/api/client";
+import { api, UserOut, UserUpdate, RegisterIn, LoginIn } from "@/src/api/client";
 import * as SecureStore from "expo-secure-store";
 import { registerForPushNotifications } from "../services/notificationService";
 
@@ -16,6 +16,8 @@ interface AuthState {
     logout: () => void;
     loadToken: () => Promise<void>;
     fetchUser: () => Promise<void>;
+    updateUser: (data: UserUpdate) => Promise<void>;
+    deleteAccount: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -64,5 +66,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         const user = await api.getMe(token);
         set({ user });
+    },
+    updateUser: async (data) => {
+        const token = get().token;
+        if (!token) return;
+
+        await api.updateMe(token, data);
+        await get().fetchUser();
+    },
+    deleteAccount: async () => {
+        const token = get().token;
+        if (!token) return;
+
+        await api.deleteMe(token);
+        await SecureStore.deleteItemAsync(TOKEN_KEY);
+        set({ token: null, user: null });
     },
 }));

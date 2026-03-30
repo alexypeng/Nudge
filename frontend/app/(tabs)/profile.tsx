@@ -1,5 +1,6 @@
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, Pressable } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "@/src/stores/authStore";
 import { Colors } from "@/src/theme/colors";
 import { TactileButton } from "@/src/components/TactileButton";
@@ -26,6 +27,15 @@ export default function ProfileScreen() {
             contentContainerClassName="px-5 pt-14 pb-8 items-center"
             style={{ backgroundColor: Colors.background }}
         >
+            {/* Settings Gear */}
+            <Pressable
+                onPress={() => router.push("/settings")}
+                style={{ position: "absolute", top: 56, right: 20 }}
+                hitSlop={12}
+            >
+                <Ionicons name="settings-outline" size={22} color={Colors.textSecondary} />
+            </Pressable>
+
             {/* Avatar */}
             <View
                 className="w-16 h-16 rounded-full items-center justify-center mb-4"

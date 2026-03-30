@@ -78,6 +78,7 @@ export default function RootLayout() {
                 name="friends/add-to-group"
                 options={{ title: "Add to Group", presentation: "modal" }}
             />
+            <Stack.Screen name="settings" options={{ title: "Settings" }} />
         </Stack>
     );
 }

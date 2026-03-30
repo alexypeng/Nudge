@@ -177,6 +177,8 @@ export const api = {
         request<UserOut>("GET", "/api/users/user/", token),
     updateMe: (token: string, data: UserUpdate) =>
         request<UserOut>("PUT", "/api/users/user/", token, data),
+    deleteMe: (token: string) =>
+        request<void>("DELETE", "/api/users/user/", token),
 
     registerDevice: (token: string, data: DeviceCreate) =>
         request<void>("POST", "/api/users/devices/", token, data),
