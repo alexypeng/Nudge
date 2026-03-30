@@ -1,11 +1,11 @@
 {
     "expo": {
-        "name": "frontend",
-        "slug": "frontend",
+        "name": "Nudge",
+        "slug": "nudge",
         "version": "1.0.0",
         "orientation": "portrait",
         "icon": "./assets/images/icon.png",
-        "scheme": "frontend",
+        "scheme": "nudge",
         "userInterfaceStyle": "automatic",
         "splash": {
             "image": "./assets/images/splash-icon.png",
@@ -14,8 +14,9 @@
         },
         "ios": {
             "supportsTablet": true,
+            "bundleIdentifier": "com.nudgeapp.nudge",
             "infoPlist": {
-                "NSAlarmKitUsageDescription": "RingSync needs alarm access to alert you at your scheduled times."
+                "NSAlarmKitUsageDescription": "Nudge needs alarm access to alert you at your scheduled times."
             }
         },
         "android": {
@@ -26,7 +27,7 @@
                 "monochromeImage": "./assets/images/android-icon-monochrome.png"
             },
             "predictiveBackGestureEnabled": false,
-            "package": "com.anonymous.frontend"
+            "package": "com.nudgeapp.nudge"
         },
         "web": {
             "bundler": "metro",
