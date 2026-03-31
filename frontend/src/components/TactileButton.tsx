@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, Pressable, ViewStyle, TextStyle } from 'react-native';
+import { Text, Pressable, ViewStyle, TextStyle } from 'react-native';
+import { StyleSheet } from 'react-native-unistyles';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -85,8 +86,7 @@ export function TactileButton({
   );
 }
 
-// TODO: migrate to Unistyles
-const styles = StyleSheet.create({
+const styles = StyleSheet.create((theme) => ({
   wrapper: {
     position: 'relative',
     height: 56,
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 52,
-    borderRadius: 12,
+    borderRadius: theme.radii.md,
   },
   surface: {
     position: 'absolute',
@@ -105,21 +105,21 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 52,
-    borderRadius: 12,
+    borderRadius: theme.radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
   label: {
-    color: Colors.surface,
+    color: theme.colors.surface,
     fontSize: 16,
     fontWeight: '900',
     letterSpacing: -0.5,
   },
   ghostBorder: {
     borderWidth: 1.5,
-    borderColor: Colors.borderHot,
+    borderColor: theme.colors.borderHot,
   },
   disabled: {
     opacity: 0.5,
   },
-});
+}));
