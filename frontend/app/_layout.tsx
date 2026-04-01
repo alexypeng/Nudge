@@ -1,7 +1,7 @@
 import "@/global.css";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { Stack, Redirect } from "expo-router";
+import { Stack } from "expo-router";
 import { useAuthStore } from "@/src/stores/authStore";
 import { Colors } from "@/src/theme/colors";
 import {
@@ -41,7 +41,6 @@ export default function RootLayout() {
     }, [isLoaded]);
 
     if (!isLoaded) return null;
-    if (!token) return <Redirect href="/(auth)/login" />;
 
     return (
         <Stack
