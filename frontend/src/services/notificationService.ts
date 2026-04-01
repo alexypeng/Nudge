@@ -3,7 +3,6 @@ import * as Device from "expo-device";
 import { Platform } from "react-native";
 import { router } from "expo-router";
 import { api } from "@/src/api/client";
-import { useAlarmStore } from "@/src/stores/alarmStore";
 
 export function setupNotifications() {
     Notifications.setNotificationHandler({
@@ -51,6 +50,7 @@ export function setupNotificationListeners() {
                 action === "alarm_checked_in" ||
                 action === "alarm_expired"
             ) {
+                const { useAlarmStore } = require("@/src/stores/alarmStore");
                 useAlarmStore.getState().fetch();
             }
         },
