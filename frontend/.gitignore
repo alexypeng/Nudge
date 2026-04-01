@@ -10,6 +10,8 @@ ios/
 android/
 !modules/**/ios/
 !modules/**/android/
+modules/**/android/build/
+
 
 # Metro
 .metro-health-check*
