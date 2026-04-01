@@ -29,7 +29,6 @@ export function GroupCard({ group, onPress, className }: GroupCardProps) {
   );
 }
 
-// TODO: migrate to Unistyles
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',

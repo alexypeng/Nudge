@@ -19,7 +19,6 @@ export function GlassCard({ children, style, className }: GlassCardProps) {
   );
 }
 
-// TODO: migrate to Unistyles
 const styles = StyleSheet.create({
   outer: {
     borderRadius: 18,

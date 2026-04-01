@@ -24,7 +24,6 @@ export function StatusBadge({ status }: StatusBadgeProps) {
   );
 }
 
-// TODO: migrate to Unistyles
 const styles = StyleSheet.create({
   pill: {
     paddingHorizontal: 9,

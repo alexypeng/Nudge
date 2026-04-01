@@ -1,6 +1,5 @@
 import React from 'react';
-import { Text, Pressable, ViewStyle, TextStyle } from 'react-native';
-import { StyleSheet } from 'react-native-unistyles';
+import { StyleSheet, Text, Pressable, ViewStyle, TextStyle } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -86,7 +85,7 @@ export function TactileButton({
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create({
   wrapper: {
     position: 'relative',
     height: 56,
@@ -97,7 +96,7 @@ const styles = StyleSheet.create((theme) => ({
     left: 0,
     right: 0,
     height: 52,
-    borderRadius: theme.radii.md,
+    borderRadius: 12,
   },
   surface: {
     position: 'absolute',
@@ -105,21 +104,21 @@ const styles = StyleSheet.create((theme) => ({
     left: 0,
     right: 0,
     height: 52,
-    borderRadius: theme.radii.md,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   label: {
-    color: theme.colors.surface,
+    color: Colors.surface,
     fontSize: 16,
     fontWeight: '900',
     letterSpacing: -0.5,
   },
   ghostBorder: {
     borderWidth: 1.5,
-    borderColor: theme.colors.borderHot,
+    borderColor: Colors.borderHot,
   },
   disabled: {
     opacity: 0.5,
   },
-}));
+});

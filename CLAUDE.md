@@ -7,7 +7,7 @@ RingSync is a social alarm clock built with Expo (React Native) and Django. It f
 ## 🛠 Tech Stack
 
 - **Frontend:** React Native (Expo), NativeWind v4 (utility classes), Lucide-React-Native (Icons). Uses bun as the dependency manager
-- **Styling:** Unistyles v3 (typed theme system, replaces bare StyleSheet) — **not yet installed, must be set up before use.**
+- **Styling:** NativeWind v4 (utility classes) + `StyleSheet.create` with color tokens from `src/theme/colors.ts`.
 - **Backend:** Django, Django Ninja (API), Supabase (Postgres), Redis (Caching). Uses uv as the dependency manager
 - **Animations:** React Native Reanimated v4 (Spring-based physics).
 - **Visual Effects:** `expo-blur` (BlurView), `expo-linear-gradient` (LinearGradient).
@@ -16,16 +16,6 @@ RingSync is a social alarm clock built with Expo (React Native) and Django. It f
 - **State:** Zustand.
 - **Routing:** Expo Router.
 
-## ⚙️ Unistyles Setup (Do This Before Writing Any Styled Components)
-
-Unistyles v3 is the intended styling foundation but is **not yet installed**. When asked to set it up:
-
-1. Install: `npx expo install react-native-unistyles`
-2. Requires a custom dev build — will not work in Expo Go.
-3. Define the theme in `src/theme/unistyles.ts`, registering the `arcade` theme with all color tokens, spacing, radii, and typography.
-4. Wrap the app root with `UnistylesRegistry` in `app/_layout.tsx`.
-5. Replace existing bare `StyleSheet.create` calls screen-by-screen as you touch them — do not do a big-bang migration.
-6. NativeWind can coexist with Unistyles; use NativeWind for layout utilities and Unistyles for themed component styles.
 
 ## 🎨 Visual Identity: "Midnight Arcade"
 

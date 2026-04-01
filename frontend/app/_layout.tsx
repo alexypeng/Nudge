@@ -1,5 +1,4 @@
 import "@/global.css";
-import "@/src/theme/unistyles";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { Stack, Redirect } from "expo-router";

@@ -89,7 +89,6 @@ export function AlarmCard({ alarm, isRinging = false, onPress, onToggle, classNa
   );
 }
 
-// TODO: migrate to Unistyles
 const styles = StyleSheet.create({
   cardRow: {
     flexDirection: 'row',
