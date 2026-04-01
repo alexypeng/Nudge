@@ -6,7 +6,7 @@ module.exports = function (api) {
             "nativewind/babel",
         ],
         plugins: [
-            "react-native-unistyles/plugin",
+            ["react-native-unistyles/plugin", { root: __dirname }],
         ],
     };
 };
