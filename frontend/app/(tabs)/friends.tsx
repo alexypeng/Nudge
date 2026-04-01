@@ -157,7 +157,6 @@ export default function FriendsTab() {
     );
 }
 
-// TODO: migrate to Unistyles
 const styles = StyleSheet.create({
     sectionLabel: {
         fontSize: 10,

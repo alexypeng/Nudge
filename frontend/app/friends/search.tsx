@@ -147,7 +147,6 @@ export default function SearchFriendsScreen() {
     );
 }
 
-// TODO: migrate to Unistyles
 const styles = StyleSheet.create({
     avatar: {
         width: 36,

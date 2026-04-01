@@ -142,7 +142,6 @@ export default function AddToGroupScreen() {
     );
 }
 
-// TODO: migrate to Unistyles
 const styles = StyleSheet.create({
     sectionLabel: {
         fontSize: 10,

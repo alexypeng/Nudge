@@ -113,12 +113,11 @@ export const colors = {
 - **File Structure:**
     - `src/components` — Small, reusable atoms.
     - `src/features` — Feature-specific screens and logic.
-    - `src/theme` — `colors.ts`, `spacing.ts`, `unistyles.ts` (once set up).
+    - `src/theme` — `colors.ts`, `spacing.ts`.
 
 ## 🤖 Claude Commands & Workflow
 
 - **Plan First:** Always use Plan Mode (`Shift + Tab`) to describe UI hierarchy, aesthetic intent, and motion plan before writing code.
-- **Unistyles Check:** Before styling anything, confirm whether Unistyles is set up. If not, use bare `StyleSheet` with a `// TODO: migrate to Unistyles` comment.
 - **Verification:** After writing a component, summarize the styles confirming: correct color tokens used, `letterSpacing: -0.5` on headers, `borderRadius: 18`, spring physics (no `withTiming`), 3D button shadows.
 - **File References:** Always check `src/theme/colors.ts` before introducing any color value.
 - **Design Critique:** Flag anything that risks looking generic — flat buttons, unstyled text, black shadows, missing motion, edgy copy.
