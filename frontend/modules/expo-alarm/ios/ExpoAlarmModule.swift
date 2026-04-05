@@ -89,38 +89,27 @@ public class ExpoAlarmModule: Module {
       self.store.save(backendId: id, uuid: alarmUUID)
 
       let daysOfWeek = config["daysOfWeek"] as? [Int]
-      let dateString = config["date"] as? String
 
       Task {
         do {
           let authState = AlarmManager.shared.authorizationState
           print("ExpoAlarm: authorizationState = \(authState)")
 
-          // Compute time until alarm fires for preAlert countdown
-          let preAlertDuration: TimeInterval
-          if let dateString = dateString,
-             let fireDate = ISO8601DateFormatter().date(from: dateString) {
-            preAlertDuration = fireDate.timeIntervalSinceNow
+          let time = Alarm.Schedule.Relative.Time(hour: hour, minute: minute)
+          let recurrence: Alarm.Schedule.Relative.Recurrence
+
+          if let days = daysOfWeek, !days.isEmpty {
+            let weekdays = days.compactMap { self.intToWeekday($0) }
+            recurrence = .weekly(weekdays)
+            print("ExpoAlarm: scheduling repeating alarm at \(hour):\(minute) on \(days)")
           } else {
-            // For repeating alarms without a date, compute next occurrence
-            var components = DateComponents()
-            components.hour = hour
-            components.minute = minute
-            if let nextDate = Calendar.current.nextDate(after: Date(), matching: components, matchingPolicy: .nextTime) {
-              preAlertDuration = nextDate.timeIntervalSinceNow
-            } else {
-              preAlertDuration = 60 // fallback: 1 minute
-            }
+            recurrence = .never
+            print("ExpoAlarm: scheduling one-time alarm at \(hour):\(minute)")
           }
 
-          guard preAlertDuration > 0 else {
-            print("ExpoAlarm: alarm time is in the past, skipping")
-            self.store.remove(backendId: id)
-            promise.resolve(nil)
-            return
-          }
-
-          print("ExpoAlarm: preAlert duration = \(preAlertDuration)s (\(preAlertDuration / 60)min)")
+          let schedule = Alarm.Schedule.relative(Alarm.Schedule.Relative(
+            time: time, repeats: recurrence
+          ))
 
           let stopButton = AlarmButton(
             text: LocalizedStringResource(stringLiteral: "Dismiss"),
@@ -142,38 +131,17 @@ public class ExpoAlarmModule: Module {
           )
 
           let countdownDuration = Alarm.CountdownDuration(
-            preAlert: preAlertDuration,
-            postAlert: 5 * 60 // 5 min snooze
+            preAlert: nil,
+            postAlert: 5 * 60
           )
 
-          // For repeating alarms, include a schedule; for one-time, just use countdown
-          let alarmConfig: AlarmManager.AlarmConfiguration<NudgeAlarmMetadata>
-
-          if let days = daysOfWeek, !days.isEmpty {
-            let weekdays = days.compactMap { self.intToWeekday($0) }
-            let time = Alarm.Schedule.Relative.Time(hour: hour, minute: minute)
-            let schedule = Alarm.Schedule.relative(Alarm.Schedule.Relative(
-              time: time, repeats: .weekly(weekdays)
-            ))
-            print("ExpoAlarm: scheduling repeating alarm at \(hour):\(minute) on \(days)")
-
-            alarmConfig = AlarmManager.AlarmConfiguration(
-              countdownDuration: countdownDuration,
-              schedule: schedule,
-              attributes: attributes,
-              secondaryIntent: nil,
-              sound: .default
-            )
-          } else {
-            print("ExpoAlarm: scheduling one-time alarm at \(hour):\(minute)")
-
-            alarmConfig = AlarmManager.AlarmConfiguration(
-              countdownDuration: countdownDuration,
-              attributes: attributes,
-              secondaryIntent: nil,
-              sound: .default
-            )
-          }
+          let alarmConfig = AlarmManager.AlarmConfiguration(
+            countdownDuration: countdownDuration,
+            schedule: schedule,
+            attributes: attributes,
+            secondaryIntent: nil,
+            sound: .default
+          )
 
           let alarm = try await AlarmManager.shared.schedule(
             id: alarmUUID,
@@ -223,7 +191,9 @@ public class ExpoAlarmModule: Module {
       self.observerTask = Task {
         for await alarms in AlarmManager.shared.alarmUpdates {
           for alarm in alarms {
+            guard alarm.state == .alerting else { continue }
             guard let backendId = self.store.backendId(for: alarm.id) else { continue }
+            print("ExpoAlarm: alarm \(backendId) is alerting!")
             self.sendEvent("onAlarmFired", [
               "alarmId": backendId,
               "action": "fired"
