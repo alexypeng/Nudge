@@ -22,9 +22,10 @@ export default function GroupsScreen() {
     }, []);
 
     return (
+        <View style={{ flex: 1, backgroundColor: Colors.background }}>
         <ScrollView
             className="flex-1"
-            contentContainerClassName="px-5 pt-14 pb-8"
+            contentContainerClassName="px-5 pt-14 pb-24"
             style={{ backgroundColor: Colors.background }}
         >
             <Text
@@ -107,14 +108,13 @@ export default function GroupsScreen() {
                 )}
             </View>
 
-            <View className="mt-4">
-                <TactileButton
-                    label="Create Group"
-                    onPress={() => {
-                        router.push("/group/create");
-                    }}
-                />
-            </View>
         </ScrollView>
+        <View style={{ position: "absolute", bottom: 16, left: 20, right: 20 }}>
+            <TactileButton
+                label="Create Group"
+                onPress={() => router.push("/group/create")}
+            />
+        </View>
+        </View>
     );
 }

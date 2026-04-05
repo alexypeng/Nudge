@@ -39,9 +39,10 @@ export default function FriendsTab() {
     const isFirstLoad = isLoading && friends.length === 0 && pending.length === 0;
 
     return (
+        <View style={{ flex: 1, backgroundColor: Colors.background }}>
         <ScrollView
             className="flex-1"
-            contentContainerClassName="px-5 pt-14 pb-8"
+            contentContainerClassName="px-5 pt-14 pb-24"
             style={{ backgroundColor: Colors.background }}
         >
             {storeError && (
@@ -147,13 +148,14 @@ export default function FriendsTab() {
             </>
             )}
 
-            <View className="mt-4">
-                <TactileButton
-                    label="Add Friends"
-                    onPress={() => router.push("/friends/search")}
-                />
-            </View>
         </ScrollView>
+        <View style={{ position: "absolute", bottom: 16, left: 20, right: 20 }}>
+            <TactileButton
+                label="Add Friends"
+                onPress={() => router.push("/friends/search")}
+            />
+        </View>
+        </View>
     );
 }
 

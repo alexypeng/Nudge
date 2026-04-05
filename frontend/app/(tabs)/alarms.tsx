@@ -24,9 +24,10 @@ export default function AlarmsScreen() {
     }, []);
 
     return (
+        <View style={{ flex: 1, backgroundColor: Colors.background }}>
         <ScrollView
             className="flex-1"
-            contentContainerClassName="px-5 pt-14 pb-8"
+            contentContainerClassName="px-5 pt-14 pb-24"
             style={{ backgroundColor: Colors.background }}
         >
             <Text
@@ -82,12 +83,13 @@ export default function AlarmsScreen() {
                 )}
             </View>
 
-            <View className="mt-4">
-                <TactileButton
-                    label="New Alarm"
-                    onPress={() => router.push("/alarm/create")}
-                />
-            </View>
         </ScrollView>
+        <View style={{ position: "absolute", bottom: 16, left: 20, right: 20 }}>
+            <TactileButton
+                label="New Alarm"
+                onPress={() => router.push("/alarm/create")}
+            />
+        </View>
+        </View>
     );
 }
