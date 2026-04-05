@@ -242,6 +242,7 @@ export default function HomeScreen() {
                         <AlarmCard
                             key={alarm.id}
                             alarm={alarm}
+                            groupName={groups.find((g) => g.id === alarm.group_id)?.name}
                             className="mb-2"
                             onPress={() =>
                                 router.push({

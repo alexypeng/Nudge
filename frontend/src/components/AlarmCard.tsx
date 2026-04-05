@@ -13,6 +13,7 @@ import { GlassCard } from './GlassCard';
 
 interface AlarmCardProps {
   alarm: AlarmOut;
+  groupName?: string;
   isRinging?: boolean;
   onPress?: () => void;
   onToggle?: (isActive: boolean) => void;
@@ -21,7 +22,7 @@ interface AlarmCardProps {
 
 const SPRING = { damping: 28, stiffness: 600 };
 
-export function AlarmCard({ alarm, isRinging = false, onPress, onToggle, className }: AlarmCardProps) {
+export function AlarmCard({ alarm, groupName, isRinging = false, onPress, onToggle, className }: AlarmCardProps) {
   const pulse = useSharedValue(1);
   const toggleX = useSharedValue(alarm.is_active ? 22 : 0);
 
@@ -71,7 +72,7 @@ export function AlarmCard({ alarm, isRinging = false, onPress, onToggle, classNa
               </View>
               <Text style={[styles.name, !alarm.is_active && styles.dimmed]}>{alarm.name}</Text>
               <Text style={styles.repeats}>
-                {alarm.repeats || 'One-time'}
+                {alarm.repeats || 'One-time'}{groupName ? `  ·  ${groupName}` : ''}
               </Text>
             </View>
             <Pressable onPress={handleToggle} hitSlop={8}>

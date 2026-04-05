@@ -2,6 +2,7 @@ import { View, Text, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { Colors } from "@/src/theme/colors";
 import { useAlarmStore } from "@/src/stores/alarmStore";
+import { useGroupStore } from "@/src/stores/groupStore";
 import { AlarmCard } from "@/src/components/AlarmCard";
 import { GlassCard } from "@/src/components/GlassCard";
 import { TactileButton } from "@/src/components/TactileButton";
@@ -16,6 +17,7 @@ export default function AlarmsScreen() {
     const updateAlarm = useAlarmStore((s) => s.update);
     const isLoading = useAlarmStore((s) => s.isLoading);
     const error = useAlarmStore((s) => s.error);
+    const groups = useGroupStore((s) => s.groups);
 
     useEffect(() => {
         fetchAlarms();
@@ -55,6 +57,7 @@ export default function AlarmsScreen() {
                         <AlarmCard
                             key={alarm.id}
                             alarm={alarm}
+                            groupName={groups.find((g) => g.id === alarm.group_id)?.name}
                             className="mb-2"
                             onPress={() => {
                                 router.push({
