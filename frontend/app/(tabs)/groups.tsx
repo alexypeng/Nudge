@@ -1,10 +1,9 @@
 import { View, Text, ScrollView, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { Users } from "lucide-react-native";
 import { Colors } from "@/src/theme/colors";
 import { useGroupStore } from "@/src/stores/groupStore";
-import { GroupCard } from "@/src/components/GroupCard";
-import { GlassCard } from "@/src/components/GlassCard";
 import { TactileButton } from "@/src/components/TactileButton";
 import { ArcadeSpinner } from "@/src/components/ArcadeSpinner";
 import { ErrorBanner } from "@/src/components/ErrorBanner";
@@ -28,76 +27,99 @@ export default function GroupsScreen() {
                 contentContainerClassName="px-5 pt-14 pb-24"
                 style={{ backgroundColor: Colors.background }}
             >
+                <Text
+                    style={{
+                        fontSize: 22,
+                        fontWeight: "900",
+                        color: Colors.textPrimary,
+                        letterSpacing: -0.5,
+                        marginBottom: 16,
+                    }}
+                >
+                    Groups
+                </Text>
+
                 {error && (
                     <ErrorBanner
                         message={error}
                         onRetry={fetchGroups}
-                        style={{ marginTop: 8, marginBottom: 4 }}
+                        style={{ marginBottom: 8 }}
                     />
                 )}
 
-                <View className="mt-2">
-                    {isLoading && groups.length === 0 ? (
-                        <ArcadeSpinner />
-                    ) : groups.length > 0 ? (
-                        <View className="flex-row flex-wrap" style={{ gap: 8 }}>
-                            {groups.map((group) => (
-                                <Pressable
-                                    key={group.id}
-                                    onPress={() =>
-                                        router.push({
-                                            pathname: "/group/[id]",
-                                            params: { id: group.id },
-                                        })
-                                    }
-                                    style={{
-                                        backgroundColor: Colors.surface,
-                                        borderWidth: 1.5,
-                                        borderColor: Colors.border,
-                                        borderRadius: 18,
-                                        padding: 16,
-                                        width: "31%",
-                                        aspectRatio: 1,
-                                        justifyContent: "center",
-                                        alignItems: "center",
-                                    }}
-                                >
-                                    <Ionicons
-                                        name={
-                                            (group.icon as keyof typeof Ionicons.glyphMap) ||
-                                            "people"
-                                        }
-                                        size={40}
-                                        color={Colors.accent}
-                                        style={{ marginBottom: 10 }}
-                                    />
-                                    <Text
-                                        style={{
-                                            fontSize: 15,
-                                            fontWeight: "900",
-                                            color: Colors.textPrimary,
-                                            letterSpacing: -0.5,
-                                        }}
-                                        numberOfLines={2}
-                                    >
-                                        {group.name}
-                                    </Text>
-                                </Pressable>
-                            ))}
-                        </View>
-                    ) : (
-                        <GlassCard>
-                            <Text
+                {isLoading && groups.length === 0 ? (
+                    <ArcadeSpinner style={{ marginTop: 40 }} />
+                ) : groups.length > 0 ? (
+                    <View className="flex-row flex-wrap" style={{ gap: 8 }}>
+                        {groups.map((group) => (
+                            <Pressable
+                                key={group.id}
+                                onPress={() =>
+                                    router.push({
+                                        pathname: "/group/[id]",
+                                        params: { id: group.id },
+                                    })
+                                }
                                 style={{
-                                    fontSize: 13,
-                                    color: Colors.textSecondary,
+                                    backgroundColor: Colors.surface,
+                                    borderWidth: 1.5,
+                                    borderColor: Colors.border,
+                                    borderRadius: 18,
+                                    padding: 16,
+                                    width: "31%",
+                                    aspectRatio: 1,
+                                    justifyContent: "center",
+                                    alignItems: "center",
                                 }}
                             >
-                                Join or create a group to get started
-                            </Text>
-                        </GlassCard>
-                    )}
-                </View>
+                                <Ionicons
+                                    name={
+                                        (group.icon as keyof typeof Ionicons.glyphMap) ||
+                                        "people"
+                                    }
+                                    size={40}
+                                    color={Colors.accent}
+                                    style={{ marginBottom: 10 }}
+                                />
+                                <Text
+                                    style={{
+                                        fontSize: 15,
+                                        fontWeight: "900",
+                                        color: Colors.textPrimary,
+                                        letterSpacing: -0.5,
+                                        textAlign: "center",
+                                    }}
+                                    numberOfLines={2}
+                                >
+                                    {group.name}
+                                </Text>
+                            </Pressable>
+                        ))}
+                    </View>
+                ) : (
+                    <View style={{ alignItems: "center", marginTop: 60 }}>
+                        <Users color={Colors.textDim} size={48} strokeWidth={1.5} />
+                        <Text
+                            style={{
+                                fontSize: 15,
+                                fontWeight: "700",
+                                color: Colors.textSecondary,
+                                marginTop: 16,
+                            }}
+                        >
+                            No groups yet
+                        </Text>
+                        <Text
+                            style={{
+                                fontSize: 13,
+                                color: Colors.textDim,
+                                marginTop: 4,
+                            }}
+                        >
+                            Create or join a group to get started
+                        </Text>
+                    </View>
+                )}
             </ScrollView>
             <View
                 style={{

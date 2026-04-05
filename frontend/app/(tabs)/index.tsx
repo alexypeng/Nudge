@@ -2,6 +2,7 @@ import { View, Text, ScrollView, Pressable } from "react-native";
 import { Redirect, useRouter } from "expo-router";
 
 import { Ionicons } from "@expo/vector-icons";
+import { Bell, Users } from "lucide-react-native";
 import { Colors } from "@/src/theme/colors";
 import { useAuthStore } from "@/src/stores/authStore";
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -108,11 +109,12 @@ export default function HomeScreen() {
         >
             {/* Greeting */}
             <Text
-                className="text-base mb-6"
                 style={{
+                    fontSize: 22,
                     fontWeight: "900",
                     color: Colors.textPrimary,
                     letterSpacing: -0.5,
+                    marginBottom: 20,
                 }}
             >
                 {getGreeting()}, {user?.display_name ?? "there"}
@@ -213,16 +215,19 @@ export default function HomeScreen() {
                     </Text>
                 </GlassCard>
             ) : (
-                <GlassCard>
+                <View style={{ alignItems: "center", paddingVertical: 24 }}>
+                    <Bell color={Colors.textDim} size={36} strokeWidth={1.5} />
                     <Text
                         style={{
-                            fontSize: 13,
+                            fontSize: 14,
+                            fontWeight: "700",
                             color: Colors.textSecondary,
+                            marginTop: 12,
                         }}
                     >
-                        No alarms yet — create one to get started
+                        No alarms yet
                     </Text>
-                </GlassCard>
+                </View>
             )}
 
             {/* Alarms */}
@@ -315,16 +320,19 @@ export default function HomeScreen() {
                     ))}
                 </View>
             ) : (
-                <GlassCard>
+                <View style={{ alignItems: "center", paddingVertical: 24 }}>
+                    <Users color={Colors.textDim} size={36} strokeWidth={1.5} />
                     <Text
                         style={{
-                            fontSize: 13,
+                            fontSize: 14,
+                            fontWeight: "700",
                             color: Colors.textSecondary,
+                            marginTop: 12,
                         }}
                     >
-                        Join or create a group to get started
+                        No groups yet
                     </Text>
-                </GlassCard>
+                </View>
             )}
 
             </>

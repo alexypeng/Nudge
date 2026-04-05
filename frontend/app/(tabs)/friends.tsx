@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
+import { UserPlus } from "lucide-react-native";
 import { useFriendStore } from "@/src/stores/friendStore";
 import { Colors } from "@/src/theme/colors";
 import { GlassCard } from "@/src/components/GlassCard";
@@ -45,11 +46,23 @@ export default function FriendsTab() {
             contentContainerClassName="px-5 pt-14 pb-24"
             style={{ backgroundColor: Colors.background }}
         >
+            <Text
+                style={{
+                    fontSize: 22,
+                    fontWeight: "900",
+                    color: Colors.textPrimary,
+                    letterSpacing: -0.5,
+                    marginBottom: 16,
+                }}
+            >
+                Friends
+            </Text>
+
             {storeError && (
                 <ErrorBanner
                     message={storeError}
                     onRetry={fetchAll}
-                    style={{ marginBottom: 12 }}
+                    style={{ marginBottom: 8 }}
                 />
             )}
 
@@ -109,7 +122,9 @@ export default function FriendsTab() {
             {/* Friends List */}
             <View className={pending.length > 0 ? "mt-6" : ""}>
                 {friends.length > 0 ? (
-                    friends.map((friend) => (
+                    <>
+                    <Text style={styles.sectionLabel}>FRIENDS</Text>
+                    {friends.map((friend) => (
                         <GlassCard key={friend.friendship_id} style={{ marginBottom: 8 }}>
                             <View className="flex-row items-center justify-between">
                                 <View className="flex-row items-center flex-1">
@@ -134,13 +149,31 @@ export default function FriendsTab() {
                                 </Pressable>
                             </View>
                         </GlassCard>
-                    ))
+                    ))}
+                    </>
                 ) : (
-                    <GlassCard>
-                        <Text style={{ fontSize: 13, color: Colors.textSecondary }}>
-                            No friends yet — add some to build groups faster
+                    <View style={{ alignItems: "center", marginTop: 60 }}>
+                        <UserPlus color={Colors.textDim} size={48} strokeWidth={1.5} />
+                        <Text
+                            style={{
+                                fontSize: 15,
+                                fontWeight: "700",
+                                color: Colors.textSecondary,
+                                marginTop: 16,
+                            }}
+                        >
+                            No friends yet
                         </Text>
-                    </GlassCard>
+                        <Text
+                            style={{
+                                fontSize: 13,
+                                color: Colors.textDim,
+                                marginTop: 4,
+                            }}
+                        >
+                            Add some to build groups faster
+                        </Text>
+                    </View>
                 )}
             </View>
 

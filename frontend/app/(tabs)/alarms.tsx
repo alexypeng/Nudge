@@ -1,10 +1,10 @@
 import { View, Text, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
+import { Bell } from "lucide-react-native";
 import { Colors } from "@/src/theme/colors";
 import { useAlarmStore } from "@/src/stores/alarmStore";
 import { useGroupStore } from "@/src/stores/groupStore";
 import { AlarmCard } from "@/src/components/AlarmCard";
-import { GlassCard } from "@/src/components/GlassCard";
 import { TactileButton } from "@/src/components/TactileButton";
 import { ArcadeSpinner } from "@/src/components/ArcadeSpinner";
 import { ErrorBanner } from "@/src/components/ErrorBanner";
@@ -29,57 +29,80 @@ export default function AlarmsScreen() {
                 className="flex-1"
                 contentContainerClassName="px-5 pt-14 pb-24"
                 style={{ backgroundColor: Colors.background }}
+
             >
+                <Text
+                    style={{
+                        fontSize: 22,
+                        fontWeight: "900",
+                        color: Colors.textPrimary,
+                        letterSpacing: -0.5,
+                        marginBottom: 16,
+                    }}
+                >
+                    Alarms
+                </Text>
+
                 {error && (
                     <ErrorBanner
                         message={error}
                         onRetry={fetchAlarms}
-                        style={{ marginTop: 8, marginBottom: 4 }}
+                        style={{ marginBottom: 8 }}
                     />
                 )}
 
-                <View className="mt-2">
-                    {isLoading && alarms.length === 0 ? (
-                        <ArcadeSpinner />
-                    ) : alarms.length > 0 ? (
-                        [...alarms]
-                            .sort((a, b) => a.time.localeCompare(b.time))
-                            .map((alarm) => (
-                                <AlarmCard
-                                    key={alarm.id}
-                                    alarm={alarm}
-                                    groupName={
-                                        groups.find(
-                                            (g) => g.id === alarm.group_id,
-                                        )?.name
-                                    }
-                                    className="mb-2"
-                                    onPress={() => {
-                                        router.push({
-                                            pathname: "/alarm/[id]",
-                                            params: { id: alarm.id },
-                                        });
-                                    }}
-                                    onToggle={(isActive) =>
-                                        updateAlarm(alarm.id, {
-                                            is_active: isActive,
-                                        })
-                                    }
-                                />
-                            ))
-                    ) : (
-                        <GlassCard>
-                            <Text
-                                style={{
-                                    fontSize: 13,
-                                    color: Colors.textSecondary,
+                {isLoading && alarms.length === 0 ? (
+                    <ArcadeSpinner style={{ marginTop: 40 }} />
+                ) : alarms.length > 0 ? (
+                    [...alarms]
+                        .sort((a, b) => a.time.localeCompare(b.time))
+                        .map((alarm) => (
+                            <AlarmCard
+                                key={alarm.id}
+                                alarm={alarm}
+                                groupName={
+                                    groups.find(
+                                        (g) => g.id === alarm.group_id,
+                                    )?.name
+                                }
+                                className="mb-2"
+                                onPress={() => {
+                                    router.push({
+                                        pathname: "/alarm/[id]",
+                                        params: { id: alarm.id },
+                                    });
                                 }}
-                            >
-                                No alarms yet — create one to get started
-                            </Text>
-                        </GlassCard>
-                    )}
-                </View>
+                                onToggle={(isActive) =>
+                                    updateAlarm(alarm.id, {
+                                        is_active: isActive,
+                                    })
+                                }
+                            />
+                        ))
+                ) : (
+                    <View style={{ alignItems: "center", marginTop: 60 }}>
+                        <Bell color={Colors.textDim} size={48} strokeWidth={1.5} />
+                        <Text
+                            style={{
+                                fontSize: 15,
+                                fontWeight: "700",
+                                color: Colors.textSecondary,
+                                marginTop: 16,
+                            }}
+                        >
+                            No alarms yet
+                        </Text>
+                        <Text
+                            style={{
+                                fontSize: 13,
+                                color: Colors.textDim,
+                                marginTop: 4,
+                            }}
+                        >
+                            Create one to get started
+                        </Text>
+                    </View>
+                )}
             </ScrollView>
             <View
                 style={{
