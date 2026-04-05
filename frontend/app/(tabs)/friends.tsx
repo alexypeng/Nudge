@@ -108,7 +108,6 @@ export default function FriendsTab() {
 
             {/* Friends List */}
             <View className={pending.length > 0 ? "mt-6" : ""}>
-                <Text style={styles.sectionLabel}>MY FRIENDS</Text>
                 {friends.length > 0 ? (
                     friends.map((friend) => (
                         <GlassCard key={friend.friendship_id} style={{ marginBottom: 8 }}>
