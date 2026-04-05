@@ -27,7 +27,7 @@ export const useAlarmStore = create<AlarmState>((set, get) => ({
         try {
             const alarms = await api.listAlarms(token, groupId);
             set({ alarms });
-            syncAllAlarms(alarms).catch(() => {});
+            syncAllAlarms(alarms).catch((e) => console.warn("[Alarm] error:", e));
         } catch (err) {
             set({ error: (err as Error).message });
         } finally {
@@ -40,7 +40,7 @@ export const useAlarmStore = create<AlarmState>((set, get) => ({
 
         const alarm = await api.createAlarm(token, data);
         set((state) => ({ alarms: [...state.alarms, alarm] }));
-        scheduleAlarm(alarm).catch(() => {});
+        scheduleAlarm(alarm).catch((e) => console.warn("[Alarm] error:", e));
     },
     update: async (id, data) => {
         const token = useAuthStore.getState().token;
@@ -51,9 +51,9 @@ export const useAlarmStore = create<AlarmState>((set, get) => ({
             alarms: state.alarms.map((a) => (a.id === id ? updated : a)),
         }));
         if (updated.is_active) {
-            scheduleAlarm(updated).catch(() => {});
+            scheduleAlarm(updated).catch((e) => console.warn("[Alarm] error:", e));
         } else {
-            cancelAlarm(id).catch(() => {});
+            cancelAlarm(id).catch((e) => console.warn("[Alarm] error:", e));
         }
     },
     delete: async (id) => {
@@ -61,7 +61,7 @@ export const useAlarmStore = create<AlarmState>((set, get) => ({
         if (!token) return;
 
         await api.deleteAlarm(token, id);
-        cancelAlarm(id).catch(() => {});
+        cancelAlarm(id).catch((e) => console.warn("[Alarm] error:", e));
         set((state) => ({
             alarms: state.alarms.filter((a) => a.id !== id),
         }));

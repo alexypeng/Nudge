@@ -1,38 +1,43 @@
 import ExpoModulesCore
 import AlarmKit
+import SwiftUI
+
+struct NudgeAlarmMetadata: AlarmMetadata {
+  init() {}
+}
 
 struct AlarmIDStore {
-   private let defaults = UserDefaults.standard
-   private let key = "expo_alarm_id_map"
+  private let defaults = UserDefaults.standard
+  private let key = "expo_alarm_id_map"
 
-   private func load() -> [String: String] {
+  private func load() -> [String: String] {
     defaults.dictionary(forKey: key) as? [String: String] ?? [:]
-   }
+  }
 
-   func save(backendId: String, uuid: UUID) {
+  func save(backendId: String, uuid: UUID) {
     var map = load()
     map[backendId] = uuid.uuidString
     defaults.set(map, forKey: key)
-   }
+  }
 
-   func uuid(for backendId: String) -> UUID? {
-    guard let uuidString = load()[backendId] else {return nil}
+  func uuid(for backendId: String) -> UUID? {
+    guard let uuidString = load()[backendId] else { return nil }
     return UUID(uuidString: uuidString)
-   }
+  }
 
-   func backendId(for uuid: UUID) -> String? {
+  func backendId(for uuid: UUID) -> String? {
     load().first(where: { $0.value == uuid.uuidString })?.key
-      }
+  }
 
-      func remove(backendId: String) {
-          var map = load()
-          map.removeValue(forKey: backendId)
-          defaults.set(map, forKey: key)
-      }
+  func remove(backendId: String) {
+    var map = load()
+    map.removeValue(forKey: backendId)
+    defaults.set(map, forKey: key)
+  }
 
-      func removeAll() {
-          defaults.removeObject(forKey: key)
-      }
+  func removeAll() {
+    defaults.removeObject(forKey: key)
+  }
 }
 
 public class ExpoAlarmModule: Module {
@@ -58,8 +63,13 @@ public class ExpoAlarmModule: Module {
     }
 
     AsyncFunction("requestPermission") { () async -> Bool in
-      let state = await AlarmManager.shared.requestAuthorization()
-      return state == .authorized
+      do {
+        let state = try await AlarmManager.shared.requestAuthorization()
+        return state == .authorized
+      } catch {
+        print("ExpoAlarm: requestAuthorization failed - \(error)")
+        return false
+      }
     }
 
     AsyncFunction("scheduleAlarm") { (config: [String: Any], promise: Promise) in
@@ -67,7 +77,7 @@ public class ExpoAlarmModule: Module {
             let hour = config["hour"] as? Int,
             let minute = config["minute"] as? Int,
             let title = config["title"] as? String,
-            let body = config["body"] as? String else {
+            let _ = config["body"] as? String else {
         promise.reject(
           NSError(domain: "ExpoAlarm", code: 1,
                   userInfo: [NSLocalizedDescriptionKey: "Missing required fields"])
@@ -79,49 +89,114 @@ public class ExpoAlarmModule: Module {
       self.store.save(backendId: id, uuid: alarmUUID)
 
       let daysOfWeek = config["daysOfWeek"] as? [Int]
+      let dateString = config["date"] as? String
 
       Task {
         do {
-          if let days = daysOfWeek, !days.isEmpty {
-            let weekdays = days.compactMap { self.intToWeekday($0) }
+          let authState = AlarmManager.shared.authorizationState
+          print("ExpoAlarm: authorizationState = \(authState)")
 
-            let _ = try await AlarmManager.shared.schedule(id: alarmUUID) {
-              Alarm.Schedule.relative(
-                .repeats: .weekly(weekdays)
-              )
-
-              AlarmPresentation.Alert(
-                title: title,
-                stopButton: AlarmButton(label: "Dismiss"),
-                secondaryButton: .openAppButton()
-              )
-            }
+          // Compute time until alarm fires for preAlert countdown
+          let preAlertDuration: TimeInterval
+          if let dateString = dateString,
+             let fireDate = ISO8601DateFormatter().date(from: dateString) {
+            preAlertDuration = fireDate.timeIntervalSinceNow
           } else {
-            let _ = try await AlarmManager.shared.schedule(id: alarmUUID) {
-              Alarm.Schedule.relative(
-                .repeats: .never
-              )
-
-              AlarmPresentation.Alert(
-                title: title,
-                stopButton: AlarmButton(label: "Dismiss"),
-                secondaryButton: .openAppButton()
-              )
+            // For repeating alarms without a date, compute next occurrence
+            var components = DateComponents()
+            components.hour = hour
+            components.minute = minute
+            if let nextDate = Calendar.current.nextDate(after: Date(), matching: components, matchingPolicy: .nextTime) {
+              preAlertDuration = nextDate.timeIntervalSinceNow
+            } else {
+              preAlertDuration = 60 // fallback: 1 minute
             }
           }
 
+          guard preAlertDuration > 0 else {
+            print("ExpoAlarm: alarm time is in the past, skipping")
+            self.store.remove(backendId: id)
+            promise.resolve(nil)
+            return
+          }
+
+          print("ExpoAlarm: preAlert duration = \(preAlertDuration)s (\(preAlertDuration / 60)min)")
+
+          let stopButton = AlarmButton(
+            text: LocalizedStringResource(stringLiteral: "Dismiss"),
+            textColor: .white,
+            systemImageName: "xmark.circle.fill"
+          )
+
+          let alertPresentation = AlarmPresentation.Alert(
+            title: LocalizedStringResource(stringLiteral: title),
+            stopButton: stopButton
+          )
+
+          let presentation = AlarmPresentation(alert: alertPresentation)
+
+          let attributes = AlarmAttributes(
+            presentation: presentation,
+            metadata: NudgeAlarmMetadata(),
+            tintColor: .blue
+          )
+
+          let countdownDuration = Alarm.CountdownDuration(
+            preAlert: preAlertDuration,
+            postAlert: 5 * 60 // 5 min snooze
+          )
+
+          // For repeating alarms, include a schedule; for one-time, just use countdown
+          let alarmConfig: AlarmManager.AlarmConfiguration<NudgeAlarmMetadata>
+
+          if let days = daysOfWeek, !days.isEmpty {
+            let weekdays = days.compactMap { self.intToWeekday($0) }
+            let time = Alarm.Schedule.Relative.Time(hour: hour, minute: minute)
+            let schedule = Alarm.Schedule.relative(Alarm.Schedule.Relative(
+              time: time, repeats: .weekly(weekdays)
+            ))
+            print("ExpoAlarm: scheduling repeating alarm at \(hour):\(minute) on \(days)")
+
+            alarmConfig = AlarmManager.AlarmConfiguration(
+              countdownDuration: countdownDuration,
+              schedule: schedule,
+              attributes: attributes,
+              secondaryIntent: nil,
+              sound: .default
+            )
+          } else {
+            print("ExpoAlarm: scheduling one-time alarm at \(hour):\(minute)")
+
+            alarmConfig = AlarmManager.AlarmConfiguration(
+              countdownDuration: countdownDuration,
+              attributes: attributes,
+              secondaryIntent: nil,
+              sound: .default
+            )
+          }
+
+          let alarm = try await AlarmManager.shared.schedule(
+            id: alarmUUID,
+            configuration: alarmConfig
+          )
+
+          print("ExpoAlarm: scheduled successfully, id=\(alarmUUID), alarm=\(alarm)")
+          let activeCount = (try? AlarmManager.shared.alarms.count) ?? -1
+          print("ExpoAlarm: active alarms count = \(activeCount)")
+
           promise.resolve(nil)
         } catch {
+          print("ExpoAlarm: scheduling FAILED - \(error)")
           self.store.remove(backendId: id)
           promise.reject(error)
         }
       }
     }
 
-    AsyncFunction("cancelAlarm") { (id: String) async in
+    AsyncFunction("cancelAlarm") { (id: String) in
       guard let uuid = self.store.uuid(for: id) else { return }
       do {
-        try await AlarmManager.shared.cancel(id: uuid)
+        try AlarmManager.shared.cancel(id: uuid)
       } catch {
         print("ExpoAlarm: Failed to cancel - \(error)")
       }
@@ -129,13 +204,17 @@ public class ExpoAlarmModule: Module {
     }
 
     AsyncFunction("cancelAllAlarms") { () async in
-      let alarms = AlarmManager.shared.alarms
-      for alarm in alarms {
-        do {
-          try await AlarmManager.shared.cancel(id: alarm.id)
-        } catch {
-          print("ExpoAlarm: Failed to cancel \(alarm.id) - \(error)")
+      do {
+        let alarms = try AlarmManager.shared.alarms
+        for alarm in alarms {
+          do {
+            try AlarmManager.shared.cancel(id: alarm.id)
+          } catch {
+            print("ExpoAlarm: Failed to cancel \(alarm.id) - \(error)")
+          }
         }
+      } catch {
+        print("ExpoAlarm: Failed to list alarms - \(error)")
       }
       self.store.removeAll()
     }

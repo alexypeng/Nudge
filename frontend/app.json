@@ -16,7 +16,10 @@
             "supportsTablet": true,
             "bundleIdentifier": "com.nudgeapp.nudge",
             "infoPlist": {
-                "NSAlarmKitUsageDescription": "Nudge needs alarm access to alert you at your scheduled times."
+                "NSAlarmKitUsageDescription": "Nudge needs alarm access to alert you at your scheduled times.",
+                "NSAppTransportSecurity": {
+                    "NSAllowsLocalNetworking": true
+                }
             }
         },
         "android": {
@@ -45,6 +48,14 @@
                 {
                     "icon": "./assets/images/icon.png",
                     "color": "#60a5fa"
+                }
+            ],
+            [
+                "expo-build-properties",
+                {
+                    "ios": {
+                        "deploymentTarget": "26.0"
+                    }
                 }
             ]
         ],

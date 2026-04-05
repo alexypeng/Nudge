@@ -6,6 +6,7 @@ import { useAuthStore } from "@/src/stores/authStore";
 import { Colors } from "@/src/theme/colors";
 import {
     requestAlarmPermission,
+    checkAlarmCapability,
     setupAlarmListener,
 } from "@/src/services/alarmScheduler";
 import {
@@ -27,7 +28,9 @@ export default function RootLayout() {
 
     useEffect(() => {
         loadToken();
-        requestAlarmPermission().catch(() => {});
+        requestAlarmPermission()
+            .then(() => checkAlarmCapability())
+            .catch((e) => console.warn("[Alarm] init error:", e));
         const alarmSub = setupAlarmListener();
         const cleanupNotifications = setupNotificationListeners();
         return () => {

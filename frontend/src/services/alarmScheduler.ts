@@ -21,14 +21,20 @@ function repeatsToDaysOfWeek(repeats: string): number[] {
 }
 
 export async function scheduleAlarm(alarm: AlarmOut) {
-  if (!ExpoAlarm) return;
-  if (!alarm.is_active || !alarm.next_trigger_utc) return;
+  if (!ExpoAlarm) {
+    console.warn("[Alarm] native module not loaded — cannot schedule");
+    return;
+  }
+  if (!alarm.is_active || !alarm.next_trigger_utc) {
+    console.warn("[Alarm] skipping schedule — active:", alarm.is_active, "trigger:", alarm.next_trigger_utc);
+    return;
+  }
 
   const [hourStr, minuteStr] = alarm.time.split(":");
   const hour = parseInt(hourStr, 10);
   const minute = parseInt(minuteStr, 10);
 
-  await ExpoAlarm.scheduleAlarm({
+  const config = {
     id: alarm.id,
     hour,
     minute,
@@ -37,7 +43,15 @@ export async function scheduleAlarm(alarm: AlarmOut) {
     title: alarm.name,
     body: "Time to wake up!",
     data: { alarmId: alarm.id },
-  });
+  };
+
+  console.log("[Alarm] scheduling:", JSON.stringify(config));
+  try {
+    await ExpoAlarm.scheduleAlarm(config);
+    console.log("[Alarm] scheduled OK");
+  } catch (e) {
+    console.warn("[Alarm] schedule FAILED:", e);
+  }
 }
 
 export async function cancelAlarm(alarmId: string) {
@@ -46,20 +60,34 @@ export async function cancelAlarm(alarmId: string) {
 }
 
 export async function syncAllAlarms(alarms: AlarmOut[]) {
-  if (!ExpoAlarm) return;
+  if (!ExpoAlarm) {
+    console.warn("[Alarm] native module not loaded — cannot sync");
+    return;
+  }
   await ExpoAlarm.cancelAllAlarms();
   const active = alarms.filter((a) => a.is_active && a.next_trigger_utc);
+  console.log("[Alarm] syncing", active.length, "active alarms");
   await Promise.all(active.map(scheduleAlarm));
 }
 
 export async function requestAlarmPermission(): Promise<boolean> {
-  if (!ExpoAlarm) return false;
-  return ExpoAlarm.requestPermission();
+  if (!ExpoAlarm) {
+    console.warn("[Alarm] native module not loaded — cannot request permission");
+    return false;
+  }
+  const granted = await ExpoAlarm.requestPermission();
+  console.log("[Alarm] permission granted:", granted);
+  return granted;
 }
 
 export async function checkAlarmCapability() {
-  if (!ExpoAlarm) return { available: false, reason: "Native module not available" };
-  return ExpoAlarm.checkCapability();
+  if (!ExpoAlarm) {
+    console.warn("[Alarm] native module not loaded");
+    return { available: false, reason: "Native module not available" };
+  }
+  const cap = await ExpoAlarm.checkCapability();
+  console.log("[Alarm] capability:", JSON.stringify(cap));
+  return cap;
 }
 
 export function setupAlarmListener() {
