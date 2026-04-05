@@ -44,20 +44,9 @@ export default function FriendsTab() {
         <ScrollView
             className="flex-1"
             contentContainerClassName="px-5 pt-14 pb-24"
+            contentContainerStyle={{ flexGrow: 1 }}
             style={{ backgroundColor: Colors.background }}
         >
-            <Text
-                style={{
-                    fontSize: 22,
-                    fontWeight: "900",
-                    color: Colors.textPrimary,
-                    letterSpacing: -0.5,
-                    marginBottom: 16,
-                }}
-            >
-                Friends
-            </Text>
-
             {storeError && (
                 <ErrorBanner
                     message={storeError}
@@ -152,7 +141,7 @@ export default function FriendsTab() {
                     ))}
                     </>
                 ) : (
-                    <View style={{ alignItems: "center", marginTop: 60 }}>
+                    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
                         <UserPlus color={Colors.textDim} size={48} strokeWidth={1.5} />
                         <Text
                             style={{
