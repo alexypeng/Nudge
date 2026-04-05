@@ -1,6 +1,9 @@
 import { useGroupStore } from "@/src/stores/groupStore";
+import { useFriendStore } from "@/src/stores/friendStore";
+import { useAuthStore } from "@/src/stores/authStore";
+import { api } from "@/src/api/client";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     View,
     Text,
@@ -9,10 +12,13 @@ import {
     Platform,
     ScrollView,
     Pressable,
+    StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { Colors } from "@/src/theme/colors";
 import { TactileButton } from "@/src/components/TactileButton";
+import { GlassCard } from "@/src/components/GlassCard";
 
 const ICON_OPTIONS: (keyof typeof Ionicons.glyphMap)[] = [
     "people",
@@ -35,19 +41,46 @@ const ICON_OPTIONS: (keyof typeof Ionicons.glyphMap)[] = [
 
 export default function GroupCreateScreen() {
     const router = useRouter();
-
+    const token = useAuthStore((s) => s.token);
     const createGroup = useGroupStore((s) => s.create);
+    const friends = useFriendStore((s) => s.friends);
+    const fetchFriends = useFriendStore((s) => s.fetch);
 
     const [name, setName] = useState("");
     const [icon, setIcon] = useState<string>("people");
+    const [selected, setSelected] = useState<Set<string>>(new Set());
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        fetchFriends();
+    }, []);
+
+    const toggleSelect = (userId: string) => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setSelected((prev) => {
+            const next = new Set(prev);
+            if (next.has(userId)) {
+                next.delete(userId);
+            } else {
+                next.add(userId);
+            }
+            return next;
+        });
+    };
 
     const handleGroupCreate = async () => {
         setError(null);
         setIsSubmitting(true);
         try {
-            await createGroup({ name, icon });
+            const group = await createGroup({ name, icon });
+            if (token && selected.size > 0) {
+                await Promise.all(
+                    Array.from(selected).map((userId) =>
+                        api.addMemberToGroup(token, group.id, userId)
+                    )
+                );
+            }
             router.back();
         } catch (err) {
             setError((err as Error).message);
@@ -58,102 +91,232 @@ export default function GroupCreateScreen() {
 
     return (
         <KeyboardAvoidingView
-            className="flex-1 px-5 pt-8"
+            className="flex-1"
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={{ backgroundColor: Colors.background }}
         >
-            <Text
-                style={{
-                    fontSize: 10,
-                    fontWeight: "400",
-                    color: Colors.textDim,
-                    letterSpacing: 2.5,
-                    textTransform: "uppercase",
-                    marginBottom: 6,
-                }}
-            >
-                ICON
-            </Text>
             <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
-                style={{ marginBottom: 16, flexGrow: 0 }}
+                className="flex-1"
+                contentContainerClassName="px-5 pt-8 pb-24"
+                keyboardShouldPersistTaps="handled"
             >
-                {ICON_OPTIONS.map((name) => {
-                    const selected = icon === name;
-                    return (
-                        <Pressable
-                            key={name}
-                            onPress={() => setIcon(name)}
-                            style={{
-                                width: 48,
-                                height: 48,
-                                borderRadius: 12,
-                                alignItems: "center",
-                                justifyContent: "center",
-                                backgroundColor: selected
-                                    ? Colors.accentSubtle
-                                    : Colors.surface,
-                                borderWidth: 1.5,
-                                borderColor: selected
-                                    ? Colors.borderHot
-                                    : Colors.border,
-                            }}
-                        >
-                            <Ionicons
-                                name={name}
-                                size={22}
-                                color={selected ? Colors.accent : Colors.textSecondary}
-                            />
-                        </Pressable>
-                    );
-                })}
+                <Text style={styles.label}>ICON</Text>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
+                    style={{ marginBottom: 16, flexGrow: 0 }}
+                >
+                    {ICON_OPTIONS.map((iconName) => {
+                        const isSelected = icon === iconName;
+                        return (
+                            <Pressable
+                                key={iconName}
+                                onPress={() => setIcon(iconName)}
+                                style={{
+                                    width: 48,
+                                    height: 48,
+                                    borderRadius: 12,
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    backgroundColor: isSelected
+                                        ? Colors.accentSubtle
+                                        : Colors.surface,
+                                    borderWidth: 1.5,
+                                    borderColor: isSelected
+                                        ? Colors.borderHot
+                                        : Colors.border,
+                                }}
+                            >
+                                <Ionicons
+                                    name={iconName}
+                                    size={22}
+                                    color={
+                                        isSelected
+                                            ? Colors.accent
+                                            : Colors.textSecondary
+                                    }
+                                />
+                            </Pressable>
+                        );
+                    })}
+                </ScrollView>
+
+                <Text style={styles.label}>GROUP NAME</Text>
+                <TextInput
+                    className="h-12 px-4 mb-5"
+                    style={{
+                        backgroundColor: Colors.surface,
+                        color: Colors.textPrimary,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: Colors.border,
+                        fontSize: 15,
+                    }}
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="Early Birds"
+                    placeholderTextColor={Colors.textDim}
+                    autoFocus
+                />
+
+                <Text style={styles.label}>ADD MEMBERS</Text>
+                {friends.length > 0 ? (
+                    friends.map((friend) => {
+                        const isSelected = selected.has(friend.user.id);
+                        return (
+                            <Pressable
+                                key={friend.friendship_id}
+                                onPress={() => toggleSelect(friend.user.id)}
+                            >
+                                <GlassCard
+                                    style={{
+                                        marginBottom: 8,
+                                        borderColor: isSelected
+                                            ? Colors.borderHot
+                                            : Colors.border,
+                                    }}
+                                >
+                                    <View style={styles.friendRow}>
+                                        <View
+                                            style={[
+                                                styles.checkbox,
+                                                isSelected &&
+                                                    styles.checkboxSelected,
+                                            ]}
+                                        >
+                                            {isSelected && (
+                                                <Text style={styles.checkmark}>
+                                                    ✓
+                                                </Text>
+                                            )}
+                                        </View>
+                                        <View style={styles.avatar}>
+                                            <Text style={styles.avatarText}>
+                                                {friend.user.display_name
+                                                    .charAt(0)
+                                                    .toUpperCase()}
+                                            </Text>
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text
+                                                style={styles.friendName}
+                                                numberOfLines={1}
+                                            >
+                                                {friend.user.display_name}
+                                            </Text>
+                                            <Text
+                                                style={styles.username}
+                                                numberOfLines={1}
+                                            >
+                                                @{friend.user.username}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                </GlassCard>
+                            </Pressable>
+                        );
+                    })
+                ) : (
+                    <Text
+                        style={{
+                            fontSize: 13,
+                            color: Colors.textDim,
+                            marginTop: 4,
+                        }}
+                    >
+                        Add friends first to invite them to groups
+                    </Text>
+                )}
+
+                {error && (
+                    <Text
+                        className="mt-3"
+                        style={{ fontSize: 13, color: Colors.statusLate }}
+                    >
+                        {error}
+                    </Text>
+                )}
             </ScrollView>
 
-            <Text
+            <View
                 style={{
-                    fontSize: 10,
-                    fontWeight: "400",
-                    color: Colors.textDim,
-                    letterSpacing: 2.5,
-                    textTransform: "uppercase",
-                    marginBottom: 6,
+                    position: "absolute",
+                    bottom: 16,
+                    left: 20,
+                    right: 20,
                 }}
             >
-                GROUP NAME
-            </Text>
-            <TextInput
-                className="h-12 px-4 mb-5"
-                style={{
-                    backgroundColor: Colors.surface,
-                    color: Colors.textPrimary,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: Colors.border,
-                    fontSize: 15,
-                }}
-                value={name}
-                onChangeText={setName}
-                placeholder="Early Birds"
-                placeholderTextColor={Colors.textDim}
-                autoFocus
-            />
-
-            {error && (
-                <Text
-                    className="mb-3"
-                    style={{ fontSize: 13, color: Colors.statusLate }}
-                >
-                    {error}
-                </Text>
-            )}
-
-            <TactileButton
-                label="Create Group"
-                onPress={handleGroupCreate}
-                disabled={isSubmitting || !name}
-            />
+                <TactileButton
+                    label={
+                        selected.size > 0
+                            ? `Create Group with ${selected.size} Friend${selected.size > 1 ? "s" : ""}`
+                            : "Create Group"
+                    }
+                    onPress={handleGroupCreate}
+                    disabled={isSubmitting || !name}
+                />
+            </View>
         </KeyboardAvoidingView>
     );
 }
+
+const styles = StyleSheet.create({
+    label: {
+        fontSize: 10,
+        fontWeight: "400",
+        color: Colors.textDim,
+        letterSpacing: 2.5,
+        textTransform: "uppercase",
+        marginBottom: 6,
+    },
+    friendRow: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    checkbox: {
+        width: 22,
+        height: 22,
+        borderRadius: 6,
+        borderWidth: 1.5,
+        borderColor: Colors.border,
+        marginRight: 12,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    checkboxSelected: {
+        backgroundColor: Colors.accent,
+        borderColor: Colors.accent,
+    },
+    checkmark: {
+        fontSize: 14,
+        fontWeight: "900",
+        color: Colors.surface,
+    },
+    avatar: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: Colors.avatarBlue,
+        alignItems: "center",
+        justifyContent: "center",
+        marginRight: 12,
+    },
+    avatarText: {
+        fontSize: 14,
+        fontWeight: "900",
+        color: Colors.surface,
+    },
+    friendName: {
+        fontSize: 15,
+        fontWeight: "700",
+        color: Colors.textPrimary,
+        letterSpacing: -0.5,
+    },
+    username: {
+        fontSize: 12,
+        fontWeight: "400",
+        color: Colors.textSecondary,
+        marginTop: 1,
+    },
+});

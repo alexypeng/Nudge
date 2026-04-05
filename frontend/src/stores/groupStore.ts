@@ -10,7 +10,7 @@ interface GroupStore {
     error: string | null;
 
     fetch: () => Promise<void>;
-    create: (data: GroupCreate) => Promise<void>;
+    create: (data: GroupCreate) => Promise<GroupOut>;
     update: (id: string, data: GroupUpdate) => Promise<void>;
     join: (id: string) => Promise<void>;
     leave: (id: string) => Promise<void>;
@@ -40,10 +40,11 @@ export const useGroupStore = create<GroupStore>((set, get) => ({
     },
     create: async (data) => {
         const token = useAuthStore.getState().token;
-        if (!token) return;
+        if (!token) throw new Error("Not authenticated");
 
         const group = await api.createGroup(token, data);
         set((state) => ({ groups: sortGroups([...state.groups, group]) }));
+        return group;
     },
     update: async (id, data) => {
         const token = useAuthStore.getState().token;
