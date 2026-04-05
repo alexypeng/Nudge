@@ -1,5 +1,5 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useLocalSearchParams, useRouter, useNavigation } from "expo-router";
+import { useEffect, useState, useCallback } from "react";
 import { useAlarmStore } from "@/src/stores/alarmStore";
 import { useGroupStore } from "@/src/stores/groupStore";
 import {
@@ -10,11 +10,12 @@ import {
     Pressable,
     KeyboardAvoidingView,
     Platform,
+    ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Check } from "lucide-react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Colors } from "@/src/theme/colors";
-import { TactileButton } from "@/src/components/TactileButton";
 import { GlassCard } from "@/src/components/GlassCard";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -22,6 +23,7 @@ const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
 export default function AlarmCreateScreen() {
     const router = useRouter();
+    const navigation = useNavigation();
 
     const { groupId: paramGroupId } = useLocalSearchParams<{ groupId?: string }>();
     const createAlarm = useAlarmStore((s) => s.create);
@@ -38,6 +40,7 @@ export default function AlarmCreateScreen() {
 
     const isOneTime = selectedDays.length === 0;
     const needsGroupPicker = !paramGroupId;
+    const canSubmit = !!name && !!selectedGroupId && !isSubmitting;
 
     useEffect(() => {
         if (needsGroupPicker) fetchGroups();
@@ -49,7 +52,7 @@ export default function AlarmCreateScreen() {
         );
     };
 
-    const handleCreate = async () => {
+    const handleCreate = useCallback(async () => {
         setError(null);
         setIsSubmitting(true);
         try {
@@ -67,7 +70,25 @@ export default function AlarmCreateScreen() {
         } finally {
             setIsSubmitting(false);
         }
-    };
+    }, [name, time, selectedDays, selectedGroupId, isOneTime]);
+
+    useEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <Pressable
+                    onPress={canSubmit ? handleCreate : undefined}
+                    style={{ opacity: canSubmit ? 1 : 0.3, padding: 4 }}
+                    disabled={!canSubmit}
+                >
+                    {isSubmitting ? (
+                        <ActivityIndicator size="small" color={Colors.accent} />
+                    ) : (
+                        <Check color={Colors.accent} size={24} strokeWidth={2.5} />
+                    )}
+                </Pressable>
+            ),
+        });
+    }, [canSubmit, isSubmitting, handleCreate]);
 
     return (
         <KeyboardAvoidingView
@@ -283,13 +304,6 @@ export default function AlarmCreateScreen() {
                         {error}
                     </Text>
                 )}
-
-                {/* Submit */}
-                <TactileButton
-                    label="Create Alarm"
-                    onPress={handleCreate}
-                    disabled={isSubmitting || !name || !selectedGroupId}
-                />
             </ScrollView>
         </KeyboardAvoidingView>
     );

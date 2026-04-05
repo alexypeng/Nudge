@@ -2,9 +2,9 @@ import { useGroupStore } from "@/src/stores/groupStore";
 import { useFriendStore } from "@/src/stores/friendStore";
 import { useAuthStore } from "@/src/stores/authStore";
 import { api } from "@/src/api/client";
-import { useRouter } from "expo-router";
-import { UserPlus } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useRouter, useNavigation } from "expo-router";
+import { UserPlus, Check } from "lucide-react-native";
+import { useEffect, useState, useCallback } from "react";
 import {
     View,
     Text,
@@ -14,11 +14,11 @@ import {
     ScrollView,
     Pressable,
     StyleSheet,
+    ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Colors } from "@/src/theme/colors";
-import { TactileButton } from "@/src/components/TactileButton";
 import { GlassCard } from "@/src/components/GlassCard";
 
 const ICON_OPTIONS: (keyof typeof Ionicons.glyphMap)[] = [
@@ -42,6 +42,7 @@ const ICON_OPTIONS: (keyof typeof Ionicons.glyphMap)[] = [
 
 export default function GroupCreateScreen() {
     const router = useRouter();
+    const navigation = useNavigation();
     const token = useAuthStore((s) => s.token);
     const createGroup = useGroupStore((s) => s.create);
     const friends = useFriendStore((s) => s.friends);
@@ -52,6 +53,8 @@ export default function GroupCreateScreen() {
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const canSubmit = !!name && !isSubmitting;
 
     useEffect(() => {
         fetchFriends();
@@ -70,7 +73,7 @@ export default function GroupCreateScreen() {
         });
     };
 
-    const handleGroupCreate = async () => {
+    const handleGroupCreate = useCallback(async () => {
         setError(null);
         setIsSubmitting(true);
         try {
@@ -88,7 +91,25 @@ export default function GroupCreateScreen() {
         } finally {
             setIsSubmitting(false);
         }
-    };
+    }, [name, icon, selected, token]);
+
+    useEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <Pressable
+                    onPress={canSubmit ? handleGroupCreate : undefined}
+                    style={{ opacity: canSubmit ? 1 : 0.3, padding: 4 }}
+                    disabled={!canSubmit}
+                >
+                    {isSubmitting ? (
+                        <ActivityIndicator size="small" color={Colors.accent} />
+                    ) : (
+                        <Check color={Colors.accent} size={24} strokeWidth={2.5} />
+                    )}
+                </Pressable>
+            ),
+        });
+    }, [canSubmit, isSubmitting, handleGroupCreate]);
 
     return (
         <KeyboardAvoidingView
@@ -98,7 +119,7 @@ export default function GroupCreateScreen() {
         >
             <ScrollView
                 className="flex-1"
-                contentContainerClassName="px-5 pt-8 pb-24"
+                contentContainerClassName="px-5 pt-8 pb-8"
                 keyboardShouldPersistTaps="handled"
             >
                 <Text style={styles.label}>ICON</Text>
@@ -252,25 +273,6 @@ export default function GroupCreateScreen() {
                     </Text>
                 )}
             </ScrollView>
-
-            <View
-                style={{
-                    position: "absolute",
-                    bottom: 16,
-                    left: 20,
-                    right: 20,
-                }}
-            >
-                <TactileButton
-                    label={
-                        selected.size > 0
-                            ? `Create Group with ${selected.size} Friend${selected.size > 1 ? "s" : ""}`
-                            : "Create Group"
-                    }
-                    onPress={handleGroupCreate}
-                    disabled={isSubmitting || !name}
-                />
-            </View>
         </KeyboardAvoidingView>
     );
 }
