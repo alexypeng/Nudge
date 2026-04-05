@@ -3,6 +3,7 @@ import { useFriendStore } from "@/src/stores/friendStore";
 import { useAuthStore } from "@/src/stores/authStore";
 import { api } from "@/src/api/client";
 import { useRouter } from "expo-router";
+import { UserPlus } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
     View,
@@ -218,15 +219,28 @@ export default function GroupCreateScreen() {
                         );
                     })
                 ) : (
-                    <Text
-                        style={{
-                            fontSize: 13,
-                            color: Colors.textDim,
-                            marginTop: 4,
-                        }}
-                    >
-                        Add friends first to invite them to groups
-                    </Text>
+                    <View style={{ alignItems: "center", paddingVertical: 24 }}>
+                        <UserPlus color={Colors.textDim} size={36} strokeWidth={1.5} />
+                        <Text
+                            style={{
+                                fontSize: 14,
+                                fontWeight: "700",
+                                color: Colors.textSecondary,
+                                marginTop: 12,
+                            }}
+                        >
+                            No friends yet
+                        </Text>
+                        <Text
+                            style={{
+                                fontSize: 13,
+                                color: Colors.textDim,
+                                marginTop: 4,
+                            }}
+                        >
+                            Add friends first to invite them
+                        </Text>
+                    </View>
                 )}
 
                 {error && (
