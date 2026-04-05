@@ -88,7 +88,9 @@ export default function HomeScreen() {
     const isFirstLoad = (alarmLoading && alarms.length === 0) || (groupLoading && groups.length === 0);
     const fetchError = alarmError || groupError;
 
-    const displayedAlarms = alarms.filter((a) => a.is_active || visibleIds.has(a.id));
+    const displayedAlarms = alarms
+        .filter((a) => a.is_active || visibleIds.has(a.id))
+        .sort((a, b) => a.time.localeCompare(b.time));
     const activeAlarms = alarms.filter((a) => a.is_active);
     const nextAlarm = activeAlarms
         .filter((a) => a.next_trigger_utc)

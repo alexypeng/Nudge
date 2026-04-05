@@ -187,7 +187,7 @@ export default function GroupScreen() {
                 ALARMS
             </Text>
             {alarms.length > 0 ? (
-                alarms.map((alarm) => (
+                [...alarms].sort((a, b) => a.time.localeCompare(b.time)).map((alarm) => (
                     <AlarmCard
                         key={alarm.id}
                         alarm={alarm}
