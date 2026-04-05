@@ -86,8 +86,18 @@ export default function GroupsScreen() {
                         ))}
                     </View>
                 ) : (
-                    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-                        <Users color={Colors.textDim} size={48} strokeWidth={1.5} />
+                    <View
+                        style={{
+                            flex: 1,
+                            alignItems: "center",
+                            justifyContent: "center",
+                        }}
+                    >
+                        <Users
+                            color={Colors.textDim}
+                            size={96}
+                            strokeWidth={1.5}
+                        />
                         <Text
                             style={{
                                 fontSize: 15,

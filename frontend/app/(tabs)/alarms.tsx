@@ -70,7 +70,7 @@ export default function AlarmsScreen() {
                     <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
                         <Bell
                             color={Colors.textDim}
-                            size={48}
+                            size={96}
                             strokeWidth={1.5}
                         />
                         <Text

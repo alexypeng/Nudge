@@ -65,7 +65,7 @@ export default function FriendsTab() {
                 <ArcadeSpinner style={{ marginTop: 40 }} />
             ) : friends.length === 0 && pending.length === 0 ? (
                 <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-                    <UserPlus color={Colors.textDim} size={48} strokeWidth={1.5} />
+                    <UserPlus color={Colors.textDim} size={96} strokeWidth={1.5} />
                     <Text
                         style={{
                             fontSize: 15,
@@ -83,7 +83,7 @@ export default function FriendsTab() {
                             marginTop: 4,
                         }}
                     >
-                        Add some to build groups faster
+                        Add some friends to get the full experience!
                     </Text>
                 </View>
             ) : (
