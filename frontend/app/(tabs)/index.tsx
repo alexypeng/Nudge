@@ -55,7 +55,7 @@ export default function HomeScreen() {
             currentAlarms.map(async (alarm) => {
                 try {
                     const event = await api.getLatestEvent(token, alarm.id);
-                    if (event && (event.status === "RINGING" || event.status === "SILENCED")) {
+                    if (event && event.status === "RINGING") {
                         events[alarm.id] = event;
                     }
                 } catch {}
@@ -154,7 +154,6 @@ export default function HomeScreen() {
                                 alarmName={alarm.name}
                                 time={t12}
                                 period={period}
-                                status={event.status}
                                 onCheckIn={() => handleCheckIn(alarmId)}
                             />
                         );

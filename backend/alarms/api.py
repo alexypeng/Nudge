@@ -245,9 +245,6 @@ def trigger_alarm(request, alarm_id: str):
             return 409, {"error": f"{alarm.user.display_name} already checked in!"}
         if event.status == AlarmEvent.Status.RINGING:
             return 409, {"error": "They are currently being rung! Give them a second."}
-        if event.status == AlarmEvent.Status.SILENCED:
-            return 409, {"error": "The user is in their 5-minute grace period."}
-
         recent_ring = ManualRing.objects.filter(
             alarm=alarm, created_at__gte=timezone.now() - timedelta(seconds=10)
         ).exists()
@@ -333,46 +330,6 @@ def check_in_alarm(request, alarm_id: str):
 
 
 @router.post(
-    "/alarm/{alarm_id}/silence/",
-    response={200: dict, 403: dict, 404: None, 409: dict},
-    auth=TokenAuth(),
-)
-def silence_alarm(request, alarm_id: str):
-    with transaction.atomic():
-        alarm = get_object_or_404(Alarm.objects.select_for_update(), id=alarm_id)
-
-        if alarm.user != request.auth:
-            return 403, {"error": "You do not have access to this alarm"}
-
-        event = (
-            AlarmEvent.objects.filter(alarm=alarm)
-            .select_for_update()
-            .order_by("-created_at")
-            .first()
-        )
-        if not event:
-            return 404, None
-        if event.status != AlarmEvent.Status.RINGING:
-            return 409, {"error": "The alarm is not ringing at the moment"}
-
-        event.status = AlarmEvent.Status.SILENCED
-        event.silenced_at = timezone.now()
-        event.save(update_fields=["status", "silenced_at"])
-
-    group_members = alarm.group.members.exclude(id=alarm.user.id)
-    data_payload = {
-        "event_id": str(event.id),
-        "alarm_id": str(alarm.id),
-    }
-
-    success = send_group_push(
-        users=group_members, action=Actions.SILENCED, data=data_payload
-    )
-
-    return 200, {"message": f"Silenced your {event.alarm.name} alarm"}
-
-
-@router.post(
     "/alarm/{alarm_id}/ring/",
     response={200: dict, 403: dict, 409: dict, 404: None},
     auth=TokenAuth(),
@@ -388,7 +345,7 @@ def ring_alarm(request, alarm_id: str):
         existing_event = AlarmEvent.objects.filter(
             alarm=alarm,
             created_at__gte=recent_threshold,
-            status__in=[AlarmEvent.Status.RINGING, AlarmEvent.Status.SILENCED],
+            status=AlarmEvent.Status.RINGING,
         ).exists()
 
         if existing_event:

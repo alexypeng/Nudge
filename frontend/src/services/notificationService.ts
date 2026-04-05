@@ -46,7 +46,6 @@ export function setupNotificationListeners() {
 
             if (
                 action === "alarm_ringing" ||
-                action === "alarm_silenced" ||
                 action === "alarm_checked_in" ||
                 action === "alarm_expired"
             ) {

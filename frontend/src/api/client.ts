@@ -108,7 +108,6 @@ export interface FriendRequestOut {
 // Events
 export type AlarmEventStatus =
     | "RINGING"
-    | "SILENCED"
     | "CHECKED_IN"
     | "EXPIRED";
 
@@ -118,7 +117,6 @@ export interface AlarmEventOut {
     user_id: string;
     status: AlarmEventStatus;
     created_at: string;
-    silenced_at: string | null;
     checked_in_at: string | null;
 }
 
@@ -223,12 +221,6 @@ export const api = {
         request<{ message: string; event_id: string }>(
             "POST",
             `/api/alarms/alarm/${alarmId}/ring/`,
-            token,
-        ),
-    silenceAlarm: (token: string, alarmId: string) =>
-        request<{ message: string }>(
-            "POST",
-            `/api/alarms/alarm/${alarmId}/silence/`,
             token,
         ),
     checkIn: (token: string, alarmId: string) =>

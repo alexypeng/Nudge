@@ -105,7 +105,6 @@ class AlarmEventOut(Schema):
     user_id: uuid.UUID
     status: str
     created_at: datetime
-    silenced_at: Optional[datetime] = None
     checked_in_at: Optional[datetime] = None
 
 

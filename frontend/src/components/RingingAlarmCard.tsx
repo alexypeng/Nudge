@@ -8,7 +8,6 @@ interface RingingAlarmCardProps {
     alarmName: string;
     time: string;
     period: string;
-    status: string;
     onCheckIn: () => Promise<void>;
 }
 
@@ -16,15 +15,9 @@ export function RingingAlarmCard({
     alarmName,
     time,
     period,
-    status,
     onCheckIn,
 }: RingingAlarmCardProps) {
     const [loading, setLoading] = useState(false);
-
-    const isRinging = status === "RINGING";
-    const borderColor = isRinging ? Colors.statusLate : Colors.statusSnooze;
-    const statusLabel = isRinging ? "RINGING" : "SILENCED";
-    const statusColor = isRinging ? Colors.statusLate : Colors.statusSnooze;
 
     const handlePress = async () => {
         setLoading(true);
@@ -36,7 +29,7 @@ export function RingingAlarmCard({
     };
 
     return (
-        <View style={[styles.card, { borderColor }]}>
+        <View style={styles.card}>
             <View style={styles.top}>
                 <View style={styles.info}>
                     <View style={styles.timeRow}>
@@ -45,16 +38,14 @@ export function RingingAlarmCard({
                     </View>
                     <Text style={styles.name}>{alarmName}</Text>
                 </View>
-                <View style={[styles.badge, { borderColor: statusColor }]}>
+                <View style={styles.badge}>
                     <Ionicons
                         name="alarm"
                         size={12}
-                        color={statusColor}
+                        color={Colors.statusLate}
                         style={{ marginRight: 4 }}
                     />
-                    <Text style={[styles.badgeText, { color: statusColor }]}>
-                        {statusLabel}
-                    </Text>
+                    <Text style={styles.badgeText}>RINGING</Text>
                 </View>
             </View>
             <TactileButton
@@ -72,6 +63,7 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.surface,
         borderRadius: 18,
         borderWidth: 1.5,
+        borderColor: Colors.statusLate,
         padding: 20,
         marginBottom: 8,
     },
@@ -111,6 +103,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         backgroundColor: "rgba(255,255,255,0.06)",
         borderWidth: 1,
+        borderColor: Colors.statusLate,
         borderRadius: 99,
         paddingHorizontal: 9,
         paddingVertical: 3,
@@ -118,6 +111,7 @@ const styles = StyleSheet.create({
     badgeText: {
         fontSize: 10,
         fontWeight: "700",
+        color: Colors.statusLate,
         letterSpacing: 2.5,
         textTransform: "uppercase",
     },

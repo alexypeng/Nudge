@@ -99,14 +99,12 @@ class Alarm(models.Model):
 class AlarmEvent(models.Model):
     class Status(models.TextChoices):
         RINGING = "RINGING", "ringing"
-        SILENCED = "SILENCED", "silenced"
         CHECKED_IN = "CHECKED_IN", "checked_in"
         EXPIRED = "EXPIRED", "expired"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.RINGING)
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
-    silenced_at = models.DateTimeField(null=True, blank=True)
     checked_in_at = models.DateTimeField(null=True, blank=True)
 
     sound_filename = models.CharField(max_length=255, default="default_chime.wav")

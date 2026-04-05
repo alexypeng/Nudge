@@ -24,7 +24,7 @@ class Command(BaseCommand):
 
         abandoned_event_ids = list(
             AlarmEvent.objects.filter(
-                status__in=[AlarmEvent.Status.RINGING, AlarmEvent.Status.SILENCED], created_at__lte=threshold
+                status=AlarmEvent.Status.RINGING, created_at__lte=threshold
             ).values_list("id", flat=True)
         )
 
@@ -40,7 +40,7 @@ class Command(BaseCommand):
                 if not event:
                     continue
 
-                if event.status in [AlarmEvent.Status.RINGING, AlarmEvent.Status.SILENCED]:
+                if event.status == AlarmEvent.Status.RINGING:
                     event.status = AlarmEvent.Status.EXPIRED
                     event.save(update_fields=["status"])
 

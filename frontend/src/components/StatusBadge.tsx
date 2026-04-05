@@ -9,7 +9,6 @@ interface StatusBadgeProps {
 
 const statusConfig: Record<AlarmEventStatus, { label: string; color: string }> = {
   RINGING: { label: 'Ringing', color: Colors.statusLate },
-  SILENCED: { label: 'Snoozed', color: Colors.statusSnooze },
   CHECKED_IN: { label: 'On Time', color: Colors.statusUp },
   EXPIRED: { label: 'Expired', color: Colors.statusExpired },
 };
