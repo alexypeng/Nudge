@@ -65,7 +65,9 @@ export function setupNotificationListeners() {
             if (!action || !alarmId) return;
 
             if (action === "alarm_ringing" || action === "manual_ring") {
-                router.push({ pathname: "/alarm/active", params: { alarmId } });
+                const { useAlarmStore } = require("@/src/stores/alarmStore");
+                useAlarmStore.getState().fetch();
+                router.replace("/(tabs)/");
             }
         },
     );

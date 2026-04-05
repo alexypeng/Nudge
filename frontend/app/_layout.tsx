@@ -62,12 +62,6 @@ export default function RootLayout() {
             />
             <Stack.Screen name="alarm/[id]" options={{ title: "Edit Alarm" }} />
             <Stack.Screen
-                name="alarm/active"
-                options={{
-                    headerShown: false,
-                }}
-            />
-            <Stack.Screen
                 name="group/create"
                 options={{ title: "New Group", presentation: "modal" }}
             />

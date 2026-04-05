@@ -10,6 +10,7 @@ import { useAlarmStore } from "@/src/stores/alarmStore";
 import { useGroupStore } from "@/src/stores/groupStore";
 import { api, AlarmEventOut } from "@/src/api/client";
 import { AlarmCard } from "@/src/components/AlarmCard";
+import { RingingAlarmCard } from "@/src/components/RingingAlarmCard";
 import { GlassCard } from "@/src/components/GlassCard";
 import { ArcadeSpinner } from "@/src/components/ArcadeSpinner";
 import { ErrorBanner } from "@/src/components/ErrorBanner";
@@ -61,6 +62,12 @@ export default function HomeScreen() {
             })
         );
         setActiveEvents(events);
+    };
+
+    const handleCheckIn = async (alarmId: string) => {
+        if (!token) return;
+        await api.checkIn(token, alarmId);
+        await fetchEvents();
     };
 
     useFocusEffect(
@@ -122,43 +129,37 @@ export default function HomeScreen() {
             ) : (
             <>
 
-            {/* Active Event Banner */}
+            {/* Ringing Alarms */}
             {Object.keys(activeEvents).length > 0 && (
-                <Pressable
-                    onPress={() => {
-                        const alarmId = Object.keys(activeEvents)[0];
-                        router.push({
-                            pathname: "/alarm/active",
-                            params: { alarmId },
-                        });
-                    }}
-                    style={{
-                        backgroundColor: Colors.surface,
-                        borderWidth: 1.5,
-                        borderColor: Colors.statusLate,
-                        borderRadius: 18,
-                        padding: 16,
-                        marginTop: 12,
-                        flexDirection: "row",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                    }}
-                >
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                        <Ionicons name="alarm" size={20} color={Colors.statusLate} />
-                        <Text
-                            style={{
-                                fontSize: 15,
-                                fontWeight: "900",
-                                color: Colors.textPrimary,
-                                letterSpacing: -0.5,
-                            }}
-                        >
-                            Alarm ringing
-                        </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={18} color={Colors.textSecondary} />
-                </Pressable>
+                <>
+                    <Text
+                        className="mt-3 mb-2"
+                        style={{
+                            fontSize: 10,
+                            fontWeight: "400",
+                            color: Colors.statusLate,
+                            letterSpacing: 2.5,
+                            textTransform: "uppercase",
+                        }}
+                    >
+                        RINGING NOW
+                    </Text>
+                    {Object.entries(activeEvents).map(([alarmId, event]) => {
+                        const alarm = alarms.find((a) => a.id === alarmId);
+                        if (!alarm) return null;
+                        const { time: t12, period } = formatTime12h(alarm.time);
+                        return (
+                            <RingingAlarmCard
+                                key={alarmId}
+                                alarmName={alarm.name}
+                                time={t12}
+                                period={period}
+                                status={event.status}
+                                onCheckIn={() => handleCheckIn(alarmId)}
+                            />
+                        );
+                    })}
+                </>
             )}
 
             {/* Next Alarm Hero */}

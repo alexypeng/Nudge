@@ -92,7 +92,9 @@ export async function checkAlarmCapability() {
 
 export function setupAlarmListener() {
   if (!ExpoAlarm) return { remove: () => {} };
-  return ExpoAlarm.addListener("onAlarmFired", (event: AlarmEvent) => {
-    router.push({ pathname: "/alarm/active", params: { alarmId: event.alarmId } });
+  return ExpoAlarm.addListener("onAlarmFired", (_event: AlarmEvent) => {
+    const { useAlarmStore } = require("@/src/stores/alarmStore");
+    useAlarmStore.getState().fetch();
+    router.replace("/(tabs)/");
   });
 }
