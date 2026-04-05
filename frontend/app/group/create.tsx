@@ -95,16 +95,25 @@ export default function GroupCreateScreen() {
 
     useEffect(() => {
         navigation.setOptions({
+            headerLeft: () => <View style={{ width: 36 }} />,
             headerRight: () => (
                 <Pressable
                     onPress={canSubmit ? handleGroupCreate : undefined}
-                    style={{ opacity: canSubmit ? 1 : 0.3, padding: 4 }}
                     disabled={!canSubmit}
+                    style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 99,
+                        backgroundColor: Colors.accent,
+                        opacity: canSubmit ? 1 : 0.3,
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
                 >
                     {isSubmitting ? (
-                        <ActivityIndicator size="small" color={Colors.accent} />
+                        <ActivityIndicator size="small" color={Colors.surface} />
                     ) : (
-                        <Check color={Colors.accent} size={24} strokeWidth={2.5} />
+                        <Check color={Colors.surface} size={18} strokeWidth={3} />
                     )}
                 </Pressable>
             ),
