@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { api, GroupCreate, GroupOut, GroupUpdate } from "../api/client";
 import { useAuthStore } from "./authStore";
+import { useAlarmStore } from "./alarmStore";
+import { cancelAlarm } from "@/src/services/alarmScheduler";
 
 interface GroupStore {
     groups: GroupOut[];
@@ -64,6 +66,16 @@ export const useGroupStore = create<GroupStore>((set, get) => ({
         if (!token) return;
 
         await api.leaveGroup(token, id);
+
+        const alarmState = useAlarmStore.getState();
+        const groupAlarms = alarmState.alarms.filter((a) => a.group_id === id);
+        await Promise.all(
+            groupAlarms.map((a) => cancelAlarm(a.id).catch(() => {}))
+        );
+        useAlarmStore.setState({
+            alarms: alarmState.alarms.filter((a) => a.group_id !== id),
+        });
+
         set((state) => ({ groups: state.groups.filter((g) => g.id !== id) }));
     },
 }));
