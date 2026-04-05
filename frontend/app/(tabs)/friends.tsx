@@ -63,6 +63,29 @@ export default function FriendsTab() {
 
             {isFirstLoad ? (
                 <ArcadeSpinner style={{ marginTop: 40 }} />
+            ) : friends.length === 0 && pending.length === 0 ? (
+                <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+                    <UserPlus color={Colors.textDim} size={48} strokeWidth={1.5} />
+                    <Text
+                        style={{
+                            fontSize: 15,
+                            fontWeight: "700",
+                            color: Colors.textSecondary,
+                            marginTop: 16,
+                        }}
+                    >
+                        No friends yet
+                    </Text>
+                    <Text
+                        style={{
+                            fontSize: 13,
+                            color: Colors.textDim,
+                            marginTop: 4,
+                        }}
+                    >
+                        Add some to build groups faster
+                    </Text>
+                </View>
             ) : (
             <>
 
@@ -109,9 +132,8 @@ export default function FriendsTab() {
             )}
 
             {/* Friends List */}
-            <View className={pending.length > 0 ? "mt-6" : ""}>
-                {friends.length > 0 ? (
-                    <>
+            {friends.length > 0 && (
+                <View className={pending.length > 0 ? "mt-6" : ""}>
                     <Text style={styles.sectionLabel}>FRIENDS</Text>
                     {friends.map((friend) => (
                         <GlassCard key={friend.friendship_id} style={{ marginBottom: 8 }}>
@@ -139,32 +161,8 @@ export default function FriendsTab() {
                             </View>
                         </GlassCard>
                     ))}
-                    </>
-                ) : (
-                    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-                        <UserPlus color={Colors.textDim} size={48} strokeWidth={1.5} />
-                        <Text
-                            style={{
-                                fontSize: 15,
-                                fontWeight: "700",
-                                color: Colors.textSecondary,
-                                marginTop: 16,
-                            }}
-                        >
-                            No friends yet
-                        </Text>
-                        <Text
-                            style={{
-                                fontSize: 13,
-                                color: Colors.textDim,
-                                marginTop: 4,
-                            }}
-                        >
-                            Add some to build groups faster
-                        </Text>
-                    </View>
-                )}
-            </View>
+                </View>
+            )}
 
             </>
             )}
