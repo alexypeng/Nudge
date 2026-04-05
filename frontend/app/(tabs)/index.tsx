@@ -49,10 +49,10 @@ export default function HomeScreen() {
 
     const fetchEvents = async () => {
         if (!token) return;
-        const currentAlarms = useAlarmStore.getState().alarms.filter((a) => a.is_active);
+        const allAlarms = useAlarmStore.getState().alarms;
         const events: Record<string, AlarmEventOut> = {};
         await Promise.all(
-            currentAlarms.map(async (alarm) => {
+            allAlarms.map(async (alarm) => {
                 try {
                     const event = await api.getLatestEvent(token, alarm.id);
                     if (event && event.status === "RINGING") {
@@ -144,7 +144,7 @@ export default function HomeScreen() {
                             textTransform: "uppercase",
                         }}
                     >
-                        RINGING NOW
+                        PENDING CHECK-IN
                     </Text>
                     {Object.entries(activeEvents).map(([alarmId, event]) => {
                         const alarm = alarms.find((a) => a.id === alarmId);
