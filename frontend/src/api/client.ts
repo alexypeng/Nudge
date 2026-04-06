@@ -132,6 +132,15 @@ export interface ManualRingOut {
     created_at: string;
 }
 
+export interface LeaderboardEntry {
+    user_id: string;
+    display_name: string;
+    username: string;
+    total_events: number;
+    on_time_checkins: number;
+    success_rate: number;
+}
+
 async function request<T>(
     method: "GET" | "POST" | "PUT" | "DELETE",
     path: string,
@@ -284,5 +293,21 @@ export const api = {
             `/api/alarms/group/${groupId}/add-member/`,
             token,
             { user_id: userId },
+        ),
+
+    forgotPassword: (email: string) =>
+        request<{ message: string }>("POST", "/api/users/forgot-password/", undefined, { email }),
+    resetPassword: (email: string, code: string, new_password: string) =>
+        request<{ message: string }>("POST", "/api/users/reset-password/", undefined, {
+            email,
+            code,
+            new_password,
+        }),
+
+    getGroupLeaderboard: (token: string, groupId: string) =>
+        request<LeaderboardEntry[]>(
+            "GET",
+            `/api/alarms/group/${groupId}/leaderboard/`,
+            token,
         ),
 };

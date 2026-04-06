@@ -74,3 +74,13 @@ class FriendRequestOut(Schema):
     id: uuid.UUID
     from_user: UserSearchOut
     created_at: datetime
+
+
+class PasswordResetRequest(Schema):
+    email: str
+
+
+class PasswordResetConfirm(Schema):
+    email: str
+    code: str
+    new_password: str

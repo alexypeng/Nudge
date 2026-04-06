@@ -1,17 +1,32 @@
-from ninja import Router
-from .auth import TokenAuth
-from .models import User, AuthToken, UserDevice, Friendship
-from .schemas import (
-    UserOut, UserCreate, UserLogin, TokenOut, UserUpdate, DeviceCreate,
-    UserSearchOut, FriendRequestCreate, FriendOut, FriendRequestOut,
-)
-from django.contrib.auth import authenticate
-from ninja.errors import HttpError
+import random
 import uuid
+
+from django.contrib.auth import authenticate
+from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import Q
-from alarms.utils import send_group_push
+from ninja import Router
+from ninja.errors import HttpError
+
 from alarms.enums import Actions
+from alarms.utils import send_group_push
+
+from .auth import TokenAuth
+from .models import AuthToken, Friendship, PasswordResetCode, User, UserDevice
+from .schemas import (
+    DeviceCreate,
+    FriendOut,
+    FriendRequestCreate,
+    FriendRequestOut,
+    PasswordResetConfirm,
+    PasswordResetRequest,
+    TokenOut,
+    UserCreate,
+    UserLogin,
+    UserOut,
+    UserSearchOut,
+    UserUpdate,
+)
 
 
 router = Router()
@@ -71,6 +86,50 @@ def login_user(request, payload: UserLogin):
         return {"token": token}
     else:
         raise HttpError(401, "Invalid email or password")
+
+
+@router.post("/forgot-password/", response={200: dict})
+def forgot_password(request, payload: PasswordResetRequest):
+    user = User.objects.filter(email=payload.email).first()
+    if user:
+        # Invalidate old codes
+        PasswordResetCode.objects.filter(user=user, used=False).update(used=True)
+        code = f"{random.randint(0, 999999):06d}"
+        PasswordResetCode.objects.create(user=user, code=code)
+        send_mail(
+            subject="Your RingSync reset code",
+            message=f"Your password reset code is: {code}\n\nThis code expires in 10 minutes.",
+            from_email=None,
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
+    # Always return 200 to avoid leaking whether the email exists
+    return 200, {"message": "If that email is registered, a reset code has been sent."}
+
+
+@router.post("/reset-password/", response={200: dict, 400: dict})
+def reset_password(request, payload: PasswordResetConfirm):
+    user = User.objects.filter(email=payload.email).first()
+    if not user:
+        return 400, {"error": "Invalid code or email."}
+
+    code_obj = (
+        PasswordResetCode.objects.filter(user=user, code=payload.code, used=False)
+        .order_by("-created_at")
+        .first()
+    )
+
+    if not code_obj or code_obj.is_expired():
+        return 400, {"error": "Invalid or expired code."}
+
+    with transaction.atomic():
+        user.set_password(payload.new_password)
+        user.save(update_fields=["password"])
+        user.authtoken_set.all().delete()
+        code_obj.used = True
+        code_obj.save(update_fields=["used"])
+
+    return 200, {"message": "Password reset successfully."}
 
 
 @router.post("/devices/", response={200: dict}, auth=TokenAuth())

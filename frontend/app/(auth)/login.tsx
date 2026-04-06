@@ -99,8 +99,15 @@ export default function LoginScreen() {
                     className="mb-3"
                 />
                 <Link
+                    href="/(auth)/forgot-password"
+                    className="text-center mt-4"
+                    style={{ color: Colors.accent }}
+                >
+                    Forgot password?
+                </Link>
+                <Link
                     href="/(auth)/register"
-                    className="text-center mt-5"
+                    className="text-center mt-4"
                     style={{
                         color: Colors.textSecondary,
                     }}
