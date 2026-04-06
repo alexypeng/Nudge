@@ -239,8 +239,7 @@ export default function GroupScreen() {
 
             {members.length > 0 ? (
                 <View style={{ gap: 8 }}>
-                    {members.map((member) => {
-                        const isMe = member.id === currentUserId;
+                    {members.filter((m) => m.id !== currentUserId).map((member) => {
                         const memberAlarms = groupAlarms.filter(
                             (a) => a.user_id === member.id
                         );
@@ -269,9 +268,7 @@ export default function GroupScreen() {
                                             width: 32,
                                             height: 32,
                                             borderRadius: 16,
-                                            backgroundColor: isMe
-                                                ? Colors.avatarGreen
-                                                : Colors.avatarBlue,
+                                            backgroundColor: Colors.avatarBlue,
                                             alignItems: "center",
                                             justifyContent: "center",
                                         }}
@@ -297,17 +294,6 @@ export default function GroupScreen() {
                                         }}
                                     >
                                         {member.display_name}
-                                        {isMe && (
-                                            <Text
-                                                style={{
-                                                    fontWeight: "400",
-                                                    color: Colors.textDim,
-                                                }}
-                                            >
-                                                {" "}
-                                                (You)
-                                            </Text>
-                                        )}
                                     </Text>
                                 </View>
 
@@ -322,7 +308,6 @@ export default function GroupScreen() {
                                             const hour12 = h % 12 || 12;
                                             const timeStr = `${hour12}:${String(m).padStart(2, "0")} ${period}`;
                                             const showRing =
-                                                !isMe &&
                                                 alarmStatuses[alarm.id] === "EXPIRED";
 
                                             return (
