@@ -35,7 +35,7 @@ export default function RegisterPage() {
                 password,
                 timezone,
             });
-            router.replace("/(tabs)");
+            router.replace("/onboarding");
         } catch (err) {
             setError((err as Error).message);
         }
