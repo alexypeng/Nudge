@@ -16,9 +16,15 @@ import {
     StyleSheet,
     ActivityIndicator,
 } from "react-native";
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
+} from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Colors } from "@/src/theme/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassCard } from "@/src/components/GlassCard";
 
 const ICON_OPTIONS: (keyof typeof Ionicons.glyphMap)[] = [
@@ -54,7 +60,12 @@ export default function GroupCreateScreen() {
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const insets = useSafeAreaInsets();
     const canSubmit = !!name && !isSubmitting;
+    const btnY = useSharedValue(0);
+    const btnAnim = useAnimatedStyle(() => ({
+        transform: [{ translateY: btnY.value }],
+    }));
 
     useEffect(() => {
         fetchFriends();
@@ -81,8 +92,8 @@ export default function GroupCreateScreen() {
             if (token && selected.size > 0) {
                 await Promise.all(
                     Array.from(selected).map((userId) =>
-                        api.addMemberToGroup(token, group.id, userId)
-                    )
+                        api.addMemberToGroup(token, group.id, userId),
+                    ),
                 );
             }
             router.back();
@@ -94,31 +105,8 @@ export default function GroupCreateScreen() {
     }, [name, icon, selected, token]);
 
     useEffect(() => {
-        navigation.setOptions({
-            headerLeft: () => <View style={{ width: 36 }} />,
-            headerRight: () => (
-                <Pressable
-                    onPress={canSubmit ? handleGroupCreate : undefined}
-                    disabled={!canSubmit}
-                    style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 99,
-                        backgroundColor: Colors.accent,
-                        opacity: canSubmit ? 1 : 0.3,
-                        alignItems: "center",
-                        justifyContent: "center",
-                    }}
-                >
-                    {isSubmitting ? (
-                        <ActivityIndicator size="small" color={Colors.surface} />
-                    ) : (
-                        <Check color={Colors.surface} size={18} strokeWidth={3} />
-                    )}
-                </Pressable>
-            ),
-        });
-    }, [canSubmit, isSubmitting, handleGroupCreate]);
+        navigation.setOptions({ headerShown: false });
+    }, []);
 
     return (
         <KeyboardAvoidingView
@@ -126,9 +114,55 @@ export default function GroupCreateScreen() {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={{ backgroundColor: Colors.background }}
         >
+            <View style={[styles.header, { paddingTop: insets.top - 32, paddingBottom: 24 }]}>
+                <Text style={styles.headerTitle}>New Group</Text>
+                <Pressable
+                    onPressIn={() => {
+                        btnY.value = withSpring(2, {
+                            damping: 28,
+                            stiffness: 600,
+                        });
+                    }}
+                    onPressOut={() => {
+                        btnY.value = withSpring(0, {
+                            damping: 28,
+                            stiffness: 600,
+                        });
+                    }}
+                    onPress={() => {
+                        if (!canSubmit) return;
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        handleGroupCreate();
+                    }}
+                    disabled={!canSubmit}
+                    style={styles.headerBtnHit}
+                >
+                    <Animated.View
+                        style={[
+                            styles.headerBtn,
+                            { opacity: canSubmit ? 1 : 0.3 },
+                            btnAnim,
+                        ]}
+                    >
+                        {isSubmitting ? (
+                            <ActivityIndicator
+                                size="small"
+                                color={Colors.surface}
+                            />
+                        ) : (
+                            <Check
+                                color={Colors.surface}
+                                size={18}
+                                strokeWidth={3}
+                            />
+                        )}
+                    </Animated.View>
+                </Pressable>
+            </View>
+            <View style={styles.divider} />
             <ScrollView
                 className="flex-1"
-                contentContainerClassName="px-5 pt-8 pb-8"
+                contentContainerClassName="px-5 pt-4 pb-8"
                 keyboardShouldPersistTaps="handled"
             >
                 <Text style={styles.label}>ICON</Text>
@@ -250,7 +284,11 @@ export default function GroupCreateScreen() {
                     })
                 ) : (
                     <View style={{ alignItems: "center", paddingVertical: 24 }}>
-                        <UserPlus color={Colors.textDim} size={36} strokeWidth={1.5} />
+                        <UserPlus
+                            color={Colors.textDim}
+                            size={36}
+                            strokeWidth={1.5}
+                        />
                         <Text
                             style={{
                                 fontSize: 14,
@@ -287,6 +325,40 @@ export default function GroupCreateScreen() {
 }
 
 const styles = StyleSheet.create({
+    header: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 20,
+        paddingBottom: 8,
+    },
+    headerTitle: {
+        fontSize: 16,
+        fontWeight: "900",
+        color: Colors.textPrimary,
+        letterSpacing: -0.5,
+    },
+    headerBtnHit: {
+        position: "absolute",
+        right: 20,
+    },
+    headerBtn: {
+        width: 42,
+        height: 42,
+        borderRadius: 99,
+        backgroundColor: Colors.accent,
+        alignItems: "center",
+        justifyContent: "center",
+        shadowColor: Colors.accentPress,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 1,
+        shadowRadius: 0,
+        elevation: 4,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: "rgba(255, 255, 255, 0.05)",
+    },
     label: {
         fontSize: 10,
         fontWeight: "400",
