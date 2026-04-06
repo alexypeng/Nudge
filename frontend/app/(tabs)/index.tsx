@@ -195,60 +195,35 @@ export default function HomeScreen() {
     };
 
     const fetchRingableFriends = async () => {
-        if (!token || !user) return;
-        try {
-            const currentGroups = useGroupStore.getState().groups;
-            if (currentGroups.length === 0) {
-                setRingableFriends([]);
-                return;
+        if (!user) return;
+        const store = useGroupStore.getState();
+        const currentGroups = store.groups;
+        if (currentGroups.length === 0) {
+            setRingableFriends([]);
+            return;
+        }
+
+        // Fetch group details for all groups (populates store cache)
+        await Promise.allSettled(
+            currentGroups.map((g) => store.fetchGroupDetail(g.id)),
+        );
+
+        const { members: allMembers, groupAlarms: allGroupAlarms, alarmStatuses } =
+            useGroupStore.getState();
+
+        const userNameMap: Record<string, string> = {};
+        const ringable: RingableFriend[] = [];
+
+        for (const group of currentGroups) {
+            const members = allMembers[group.id] ?? [];
+            const alarms = allGroupAlarms[group.id] ?? [];
+
+            for (const member of members) {
+                userNameMap[member.id] = member.display_name;
             }
 
-            const groupDataResults = await Promise.allSettled(
-                currentGroups.map(async (group) => {
-                    const [alarms, members] = await Promise.all([
-                        api.listGroupAlarms(token, group.id),
-                        api.listGroupMembers(token, group.id),
-                    ]);
-                    return { group, alarms, members };
-                }),
-            );
-
-            const userNameMap: Record<string, string> = {};
-            const otherAlarms: {
-                alarm: { id: string; name: string; time: string; user_id: string };
-                group: { id: string; name: string };
-            }[] = [];
-
-            for (const result of groupDataResults) {
-                if (result.status !== "fulfilled") continue;
-                const { group, alarms, members } = result.value;
-                for (const member of members) {
-                    userNameMap[member.id] = member.display_name;
-                }
-                for (const alarm of alarms) {
-                    if (alarm.user_id !== user.id) {
-                        otherAlarms.push({ alarm, group });
-                    }
-                }
-            }
-
-            if (otherAlarms.length === 0) {
-                setRingableFriends([]);
-                return;
-            }
-
-            const eventResults = await Promise.allSettled(
-                otherAlarms.map(async ({ alarm, group }) => {
-                    const event = await api.getLatestEvent(token, alarm.id);
-                    return { alarm, group, event };
-                }),
-            );
-
-            const ringable: RingableFriend[] = [];
-            for (const result of eventResults) {
-                if (result.status !== "fulfilled") continue;
-                const { alarm, group, event } = result.value;
-                if (event && event.status === "EXPIRED") {
+            for (const alarm of alarms) {
+                if (alarm.user_id !== user.id && alarmStatuses[alarm.id] === "EXPIRED") {
                     ringable.push({
                         alarmId: alarm.id,
                         alarmName: alarm.name,
@@ -257,21 +232,13 @@ export default function HomeScreen() {
                         displayName: userNameMap[alarm.user_id] ?? "Unknown",
                         groupId: group.id,
                         groupName: group.name,
-                        eventCreatedAt: event.created_at,
+                        eventCreatedAt: "",
                     });
                 }
             }
-
-            ringable.sort(
-                (a, b) =>
-                    new Date(b.eventCreatedAt).getTime() -
-                    new Date(a.eventCreatedAt).getTime(),
-            );
-
-            setRingableFriends(ringable);
-        } catch {
-            setRingableFriends([]);
         }
+
+        setRingableFriends(ringable);
     };
 
     const RING_COOLDOWN_MS = 2 * 60 * 1000;

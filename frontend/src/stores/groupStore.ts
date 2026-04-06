@@ -1,15 +1,22 @@
 import { create } from "zustand";
-import { api, GroupCreate, GroupOut, GroupUpdate } from "../api/client";
+import { api, AlarmOut, GroupCreate, GroupOut, GroupUpdate, UserOut } from "../api/client";
 import { useAuthStore } from "./authStore";
 import { useAlarmStore } from "./alarmStore";
 import { cancelAlarm } from "@/src/services/alarmScheduler";
 
 interface GroupStore {
     groups: GroupOut[];
+    /** members keyed by group id */
+    members: Record<string, UserOut[]>;
+    /** all alarms in a group (all members), keyed by group id */
+    groupAlarms: Record<string, AlarmOut[]>;
+    /** latest event status per alarm id */
+    alarmStatuses: Record<string, string>;
     isLoading: boolean;
     error: string | null;
 
     fetch: () => Promise<void>;
+    fetchGroupDetail: (groupId: string) => Promise<void>;
     create: (data: GroupCreate) => Promise<GroupOut>;
     update: (id: string, data: GroupUpdate) => Promise<void>;
     join: (id: string) => Promise<void>;
@@ -19,8 +26,11 @@ interface GroupStore {
 const sortGroups = (groups: GroupOut[]) =>
     [...groups].sort((a, b) => a.name.localeCompare(b.name));
 
-export const useGroupStore = create<GroupStore>((set, get) => ({
+export const useGroupStore = create<GroupStore>((set) => ({
     groups: [],
+    members: {},
+    groupAlarms: {},
+    alarmStatuses: {},
     isLoading: false,
     error: null,
 
@@ -37,6 +47,34 @@ export const useGroupStore = create<GroupStore>((set, get) => ({
         } finally {
             set({ isLoading: false });
         }
+    },
+
+    fetchGroupDetail: async (groupId: string) => {
+        const token = useAuthStore.getState().token;
+        if (!token) return;
+
+        try {
+            const [members, alarms] = await Promise.all([
+                api.listGroupMembers(token, groupId),
+                api.listGroupAlarms(token, groupId),
+            ]);
+
+            const statuses: Record<string, string> = {};
+            await Promise.all(
+                alarms.map(async (alarm) => {
+                    try {
+                        const event = await api.getLatestEvent(token, alarm.id);
+                        if (event) statuses[alarm.id] = event.status;
+                    } catch {}
+                }),
+            );
+
+            set((state) => ({
+                members: { ...state.members, [groupId]: members },
+                groupAlarms: { ...state.groupAlarms, [groupId]: alarms },
+                alarmStatuses: { ...state.alarmStatuses, ...statuses },
+            }));
+        } catch {}
     },
     create: async (data) => {
         const token = useAuthStore.getState().token;
