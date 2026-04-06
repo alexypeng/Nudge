@@ -24,7 +24,13 @@ export default function AlarmsScreen() {
     }, []);
 
     return (
-        <View style={{ flex: 1, backgroundColor: Colors.background }}>
+        <View
+            style={{
+                flex: 1,
+                backgroundColor: Colors.background,
+                paddingTop: 15,
+            }}
+        >
             <ScrollView
                 className="flex-1"
                 contentContainerClassName="px-5 pt-14 pb-24"
@@ -67,7 +73,13 @@ export default function AlarmsScreen() {
                             />
                         ))
                 ) : (
-                    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+                    <View
+                        style={{
+                            flex: 1,
+                            alignItems: "center",
+                            justifyContent: "center",
+                        }}
+                    >
                         <Bell
                             color={Colors.textDim}
                             size={96}

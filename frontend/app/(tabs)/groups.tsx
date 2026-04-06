@@ -21,7 +21,13 @@ export default function GroupsScreen() {
     }, []);
 
     return (
-        <View style={{ flex: 1, backgroundColor: Colors.background }}>
+        <View
+            style={{
+                flex: 1,
+                backgroundColor: Colors.background,
+                paddingTop: 15,
+            }}
+        >
             <ScrollView
                 className="flex-1"
                 contentContainerClassName="px-5 pt-14 pb-24"

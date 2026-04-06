@@ -37,155 +37,259 @@ export default function FriendsTab() {
         }
     };
 
-    const isFirstLoad = isLoading && friends.length === 0 && pending.length === 0;
+    const isFirstLoad =
+        isLoading && friends.length === 0 && pending.length === 0;
 
     return (
-        <View style={{ flex: 1, backgroundColor: Colors.background }}>
-        <ScrollView
-            className="flex-1"
-            contentContainerClassName="px-5 pt-14 pb-24"
-            contentContainerStyle={{ flexGrow: 1 }}
-            style={{ backgroundColor: Colors.background }}
+        <View
+            style={{
+                flex: 1,
+                backgroundColor: Colors.background,
+                paddingTop: 15,
+            }}
         >
-            {storeError && (
-                <ErrorBanner
-                    message={storeError}
-                    onRetry={fetchAll}
-                    style={{ marginBottom: 8 }}
-                />
-            )}
+            <ScrollView
+                className="flex-1"
+                contentContainerClassName="px-5 pt-14 pb-24"
+                contentContainerStyle={{ flexGrow: 1 }}
+                style={{ backgroundColor: Colors.background }}
+            >
+                {storeError && (
+                    <ErrorBanner
+                        message={storeError}
+                        onRetry={fetchAll}
+                        style={{ marginBottom: 8 }}
+                    />
+                )}
 
-            {actionError && (
-                <Text style={{ fontSize: 13, color: Colors.statusLate, marginBottom: 8 }}>
-                    {actionError}
-                </Text>
-            )}
-
-            {isFirstLoad ? (
-                <ArcadeSpinner style={{ marginTop: 40 }} />
-            ) : friends.length === 0 && pending.length === 0 ? (
-                <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-                    <UserPlus color={Colors.textDim} size={96} strokeWidth={1.5} />
-                    <Text
-                        style={{
-                            fontSize: 15,
-                            fontWeight: "700",
-                            color: Colors.textSecondary,
-                            marginTop: 16,
-                        }}
-                    >
-                        No friends yet
-                    </Text>
+                {actionError && (
                     <Text
                         style={{
                             fontSize: 13,
-                            color: Colors.textDim,
-                            marginTop: 4,
+                            color: Colors.statusLate,
+                            marginBottom: 8,
                         }}
                     >
-                        Add some friends to get the full experience!
+                        {actionError}
                     </Text>
-                </View>
-            ) : (
-            <>
+                )}
 
-            {/* Pending Requests */}
-            {pending.length > 0 && (
-                <View>
-                    <Text style={styles.sectionLabel}>REQUESTS</Text>
-                    {pending.map((request) => (
-                        <GlassCard key={request.id} style={{ marginBottom: 8 }}>
-                            <View className="flex-row items-center justify-between">
-                                <View className="flex-row items-center flex-1">
-                                    <View style={styles.avatar}>
-                                        <Text style={styles.avatarText}>
-                                            {request.from_user.display_name.charAt(0).toUpperCase()}
-                                        </Text>
-                                    </View>
-                                    <View>
-                                        <Text style={styles.name} numberOfLines={1}>
-                                            {request.from_user.display_name}
-                                        </Text>
-                                        <Text style={styles.username} numberOfLines={1}>
-                                            @{request.from_user.username}
-                                        </Text>
-                                    </View>
-                                </View>
-                                <View className="flex-row" style={{ gap: 8 }}>
-                                    <Pressable
-                                        style={styles.acceptButton}
-                                        onPress={() => handleAction(() => acceptRequest(request.id))}
+                {isFirstLoad ? (
+                    <ArcadeSpinner style={{ marginTop: 40 }} />
+                ) : friends.length === 0 && pending.length === 0 ? (
+                    <View
+                        style={{
+                            flex: 1,
+                            alignItems: "center",
+                            justifyContent: "center",
+                        }}
+                    >
+                        <UserPlus
+                            color={Colors.textDim}
+                            size={96}
+                            strokeWidth={1.5}
+                        />
+                        <Text
+                            style={{
+                                fontSize: 15,
+                                fontWeight: "700",
+                                color: Colors.textSecondary,
+                                marginTop: 16,
+                            }}
+                        >
+                            No friends yet
+                        </Text>
+                        <Text
+                            style={{
+                                fontSize: 13,
+                                color: Colors.textDim,
+                                marginTop: 4,
+                            }}
+                        >
+                            Add some friends to get the full experience!
+                        </Text>
+                    </View>
+                ) : (
+                    <>
+                        {/* Pending Requests */}
+                        {pending.length > 0 && (
+                            <View>
+                                <Text style={styles.sectionLabel}>
+                                    REQUESTS
+                                </Text>
+                                {pending.map((request) => (
+                                    <GlassCard
+                                        key={request.id}
+                                        style={{ marginBottom: 8 }}
                                     >
-                                        <Text style={styles.acceptText}>Accept</Text>
-                                    </Pressable>
-                                    <Pressable
-                                        style={styles.declineButton}
-                                        onPress={() => handleAction(() => declineRequest(request.id))}
+                                        <View className="flex-row items-center justify-between">
+                                            <View className="flex-row items-center flex-1">
+                                                <View style={styles.avatar}>
+                                                    <Text
+                                                        style={
+                                                            styles.avatarText
+                                                        }
+                                                    >
+                                                        {request.from_user.display_name
+                                                            .charAt(0)
+                                                            .toUpperCase()}
+                                                    </Text>
+                                                </View>
+                                                <View>
+                                                    <Text
+                                                        style={styles.name}
+                                                        numberOfLines={1}
+                                                    >
+                                                        {
+                                                            request.from_user
+                                                                .display_name
+                                                        }
+                                                    </Text>
+                                                    <Text
+                                                        style={styles.username}
+                                                        numberOfLines={1}
+                                                    >
+                                                        @
+                                                        {
+                                                            request.from_user
+                                                                .username
+                                                        }
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                            <View
+                                                className="flex-row"
+                                                style={{ gap: 8 }}
+                                            >
+                                                <Pressable
+                                                    style={styles.acceptButton}
+                                                    onPress={() =>
+                                                        handleAction(() =>
+                                                            acceptRequest(
+                                                                request.id,
+                                                            ),
+                                                        )
+                                                    }
+                                                >
+                                                    <Text
+                                                        style={
+                                                            styles.acceptText
+                                                        }
+                                                    >
+                                                        Accept
+                                                    </Text>
+                                                </Pressable>
+                                                <Pressable
+                                                    style={styles.declineButton}
+                                                    onPress={() =>
+                                                        handleAction(() =>
+                                                            declineRequest(
+                                                                request.id,
+                                                            ),
+                                                        )
+                                                    }
+                                                >
+                                                    <Text
+                                                        style={
+                                                            styles.declineText
+                                                        }
+                                                    >
+                                                        Decline
+                                                    </Text>
+                                                </Pressable>
+                                            </View>
+                                        </View>
+                                    </GlassCard>
+                                ))}
+                            </View>
+                        )}
+
+                        {/* Friends List */}
+                        {friends.length > 0 && (
+                            <View className={pending.length > 0 ? "mt-6" : ""}>
+                                {friends.map((friend) => (
+                                    <GlassCard
+                                        key={friend.friendship_id}
+                                        style={{ marginBottom: 8 }}
                                     >
-                                        <Text style={styles.declineText}>Decline</Text>
-                                    </Pressable>
-                                </View>
+                                        <View className="flex-row items-center justify-between">
+                                            <View className="flex-row items-center flex-1">
+                                                <View style={styles.avatar}>
+                                                    <Text
+                                                        style={
+                                                            styles.avatarText
+                                                        }
+                                                    >
+                                                        {friend.user.display_name
+                                                            .charAt(0)
+                                                            .toUpperCase()}
+                                                    </Text>
+                                                </View>
+                                                <View>
+                                                    <Text
+                                                        style={styles.name}
+                                                        numberOfLines={1}
+                                                    >
+                                                        {
+                                                            friend.user
+                                                                .display_name
+                                                        }
+                                                    </Text>
+                                                    <Text
+                                                        style={styles.username}
+                                                        numberOfLines={1}
+                                                    >
+                                                        @{friend.user.username}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                            <Pressable
+                                                onPress={() =>
+                                                    handleAction(() =>
+                                                        removeFriend(
+                                                            friend.friendship_id,
+                                                        ),
+                                                    )
+                                                }
+                                            >
+                                                <Text style={styles.removeText}>
+                                                    Remove
+                                                </Text>
+                                            </Pressable>
+                                        </View>
+                                    </GlassCard>
+                                ))}
                             </View>
-                        </GlassCard>
-                    ))}
-                </View>
-            )}
-
-            {/* Friends List */}
-            {friends.length > 0 && (
-                <View className={pending.length > 0 ? "mt-6" : ""}>
-                    <Text style={styles.sectionLabel}>FRIENDS</Text>
-                    {friends.map((friend) => (
-                        <GlassCard key={friend.friendship_id} style={{ marginBottom: 8 }}>
-                            <View className="flex-row items-center justify-between">
-                                <View className="flex-row items-center flex-1">
-                                    <View style={styles.avatar}>
-                                        <Text style={styles.avatarText}>
-                                            {friend.user.display_name.charAt(0).toUpperCase()}
-                                        </Text>
-                                    </View>
-                                    <View>
-                                        <Text style={styles.name} numberOfLines={1}>
-                                            {friend.user.display_name}
-                                        </Text>
-                                        <Text style={styles.username} numberOfLines={1}>
-                                            @{friend.user.username}
-                                        </Text>
-                                    </View>
-                                </View>
-                                <Pressable
-                                    onPress={() => handleAction(() => removeFriend(friend.friendship_id))}
-                                >
-                                    <Text style={styles.removeText}>Remove</Text>
-                                </Pressable>
-                            </View>
-                        </GlassCard>
-                    ))}
-                </View>
-            )}
-
-            </>
-            )}
-
-        </ScrollView>
-        <View style={{ position: "absolute", bottom: 16, left: 20, right: 20 }}>
-            <TactileButton
-                label="Add Friends"
-                onPress={() => router.push("/friends/search")}
-            />
-        </View>
+                        )}
+                    </>
+                )}
+            </ScrollView>
+            <View
+                style={{
+                    position: "absolute",
+                    bottom: 16,
+                    left: 20,
+                    right: 20,
+                }}
+            >
+                <TactileButton
+                    label="Add Friends"
+                    onPress={() => router.push("/friends/search")}
+                />
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     sectionLabel: {
-        fontSize: 10,
-        fontWeight: "400",
+        fontSize: 12,
+        fontWeight: "700",
         color: Colors.textDim,
-        letterSpacing: 2.5,
+        letterSpacing: 2,
         textTransform: "uppercase",
-        marginBottom: 6,
+        paddingLeft: 5,
+        paddingBottom: 6,
     },
     avatar: {
         width: 36,

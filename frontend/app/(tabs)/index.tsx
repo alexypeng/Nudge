@@ -116,11 +116,11 @@ export default function HomeScreen() {
             {/* Greeting */}
             <Text
                 style={{
-                    fontSize: 22,
+                    fontSize: 28,
                     fontWeight: "900",
                     color: Colors.textPrimary,
                     letterSpacing: -0.5,
-                    marginBottom: 20,
+                    marginBottom: 15,
                     paddingTop: 30,
                     textAlign: "center",
                 }}
@@ -193,6 +193,7 @@ export default function HomeScreen() {
                             letterSpacing: 2,
                             textTransform: "uppercase",
                             paddingLeft: 5,
+                            paddingBottom: 6,
                         }}
                     >
                         NEXT ALARM
@@ -315,6 +316,7 @@ export default function HomeScreen() {
                             letterSpacing: 2,
                             textTransform: "uppercase",
                             paddingLeft: 5,
+                            paddingBottom: 6,
                         }}
                     >
                         MY GROUPS
