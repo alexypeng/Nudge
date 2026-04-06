@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
+import { View, Text, TextInput, ScrollView, Pressable, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useFriendStore } from "@/src/stores/friendStore";
 import { useAuthStore } from "@/src/stores/authStore";
@@ -19,6 +19,7 @@ export default function AddToGroupScreen() {
 
     const [members, setMembers] = useState<UserOut[]>([]);
     const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [search, setSearch] = useState("");
     const [isAdding, setIsAdding] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -74,43 +75,109 @@ export default function AddToGroupScreen() {
             <Text style={styles.sectionLabel}>SELECT FRIENDS</Text>
 
             {availableFriends.length > 0 ? (
-                availableFriends.map((friend) => {
-                    const isSelected = selected.has(friend.user.id);
-                    return (
-                        <Pressable
-                            key={friend.friendship_id}
-                            onPress={() => toggleSelect(friend.user.id)}
-                        >
-                            <GlassCard
-                                style={{
-                                    marginBottom: 8,
-                                    borderColor: isSelected ? Colors.borderHot : Colors.border,
-                                }}
-                            >
-                                <View className="flex-row items-center">
-                                    <View
-                                        style={[
-                                            styles.checkbox,
-                                            isSelected && styles.checkboxSelected,
-                                        ]}
+                <>
+                    <TextInput
+                        className="h-12 px-4 mb-4"
+                        style={{
+                            backgroundColor: Colors.surface,
+                            color: Colors.textPrimary,
+                            borderRadius: 12,
+                            borderWidth: 1,
+                            borderColor: Colors.border,
+                            fontSize: 15,
+                        }}
+                        value={search}
+                        onChangeText={setSearch}
+                        placeholder="Search friends"
+                        placeholderTextColor={Colors.textDim}
+                    />
+                    <View
+                        className="flex-row flex-wrap"
+                        style={{ gap: 8 }}
+                    >
+                        {availableFriends
+                            .filter((f) => {
+                                if (!search) return true;
+                                const q = search.toLowerCase();
+                                return (
+                                    f.user.display_name
+                                        .toLowerCase()
+                                        .includes(q) ||
+                                    f.user.username
+                                        .toLowerCase()
+                                        .includes(q)
+                                );
+                            })
+                            .map((friend) => {
+                                const active = selected.has(friend.user.id);
+                                return (
+                                    <Pressable
+                                        key={friend.friendship_id}
+                                        onPress={() =>
+                                            toggleSelect(friend.user.id)
+                                        }
+                                        style={{
+                                            backgroundColor: active
+                                                ? Colors.accent
+                                                : Colors.surface,
+                                            borderWidth: 1.5,
+                                            borderColor: active
+                                                ? Colors.accent
+                                                : Colors.border,
+                                            borderRadius: 18,
+                                            padding: 16,
+                                            width: "31%",
+                                            aspectRatio: 1,
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                        }}
                                     >
-                                        {isSelected && (
-                                            <Text style={styles.checkmark}>✓</Text>
-                                        )}
-                                    </View>
-                                    <View style={styles.avatar}>
-                                        <Text style={styles.avatarText}>
-                                            {friend.user.display_name.charAt(0).toUpperCase()}
+                                        <View
+                                            style={{
+                                                width: 40,
+                                                height: 40,
+                                                borderRadius: 20,
+                                                backgroundColor: active
+                                                    ? Colors.surface
+                                                    : Colors.avatarBlue,
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                marginBottom: 10,
+                                            }}
+                                        >
+                                            <Text
+                                                style={{
+                                                    fontSize: 16,
+                                                    fontWeight: "900",
+                                                    color: active
+                                                        ? Colors.accent
+                                                        : Colors.surface,
+                                                }}
+                                            >
+                                                {friend.user.display_name
+                                                    .charAt(0)
+                                                    .toUpperCase()}
+                                            </Text>
+                                        </View>
+                                        <Text
+                                            style={{
+                                                fontSize: 15,
+                                                fontWeight: "900",
+                                                color: active
+                                                    ? Colors.surface
+                                                    : Colors.textPrimary,
+                                                letterSpacing: -0.5,
+                                                textAlign: "center",
+                                            }}
+                                            numberOfLines={2}
+                                        >
+                                            {friend.user.display_name}
                                         </Text>
-                                    </View>
-                                    <Text style={styles.name} numberOfLines={1}>
-                                        {friend.user.display_name}
-                                    </Text>
-                                </View>
-                            </GlassCard>
-                        </Pressable>
-                    );
-                })
+                                    </Pressable>
+                                );
+                            })}
+                    </View>
+                </>
             ) : (
                 <GlassCard>
                     <Text style={{ fontSize: 13, color: Colors.textSecondary }}>
@@ -150,45 +217,5 @@ const styles = StyleSheet.create({
         letterSpacing: 2.5,
         textTransform: "uppercase",
         marginBottom: 6,
-    },
-    checkbox: {
-        width: 22,
-        height: 22,
-        borderRadius: 6,
-        borderWidth: 1.5,
-        borderColor: Colors.border,
-        marginRight: 12,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    checkboxSelected: {
-        backgroundColor: Colors.accent,
-        borderColor: Colors.accent,
-    },
-    checkmark: {
-        fontSize: 14,
-        fontWeight: "900",
-        color: Colors.surface,
-    },
-    avatar: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: Colors.avatarBlue,
-        alignItems: "center",
-        justifyContent: "center",
-        marginRight: 12,
-    },
-    avatarText: {
-        fontSize: 14,
-        fontWeight: "900",
-        color: Colors.surface,
-    },
-    name: {
-        fontSize: 15,
-        fontWeight: "700",
-        color: Colors.textPrimary,
-        letterSpacing: -0.5,
-        flexShrink: 1,
     },
 });
