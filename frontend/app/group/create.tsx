@@ -114,7 +114,12 @@ export default function GroupCreateScreen() {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={{ backgroundColor: Colors.background }}
         >
-            <View style={[styles.header, { paddingTop: insets.top - 32, paddingBottom: 24 }]}>
+            <View
+                style={[
+                    styles.header,
+                    { paddingTop: insets.top - 32, paddingBottom: 24 },
+                ]}
+            >
                 <Text style={styles.headerTitle}>New Group</Text>
                 <Pressable
                     onPressIn={() => {
@@ -233,52 +238,45 @@ export default function GroupCreateScreen() {
                             <Pressable
                                 key={friend.friendship_id}
                                 onPress={() => toggleSelect(friend.user.id)}
+                                style={{
+                                    backgroundColor: isSelected
+                                        ? Colors.accent
+                                        : Colors.surface,
+                                    borderWidth: 1.5,
+                                    borderColor: isSelected
+                                        ? Colors.accent
+                                        : Colors.border,
+                                    borderRadius: 18,
+                                    padding: 16,
+                                    width: "31%",
+                                    aspectRatio: 1,
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                }}
                             >
-                                <GlassCard
-                                    style={{
-                                        marginBottom: 8,
-                                        borderColor: isSelected
-                                            ? Colors.borderHot
-                                            : Colors.border,
-                                    }}
-                                >
-                                    <View style={styles.friendRow}>
-                                        <View
-                                            style={[
-                                                styles.checkbox,
-                                                isSelected &&
-                                                    styles.checkboxSelected,
-                                            ]}
-                                        >
-                                            {isSelected && (
-                                                <Text style={styles.checkmark}>
-                                                    ✓
-                                                </Text>
-                                            )}
-                                        </View>
-                                        <View style={styles.avatar}>
-                                            <Text style={styles.avatarText}>
-                                                {friend.user.display_name
-                                                    .charAt(0)
-                                                    .toUpperCase()}
-                                            </Text>
-                                        </View>
-                                        <View style={{ flex: 1 }}>
-                                            <Text
-                                                style={styles.friendName}
-                                                numberOfLines={1}
-                                            >
-                                                {friend.user.display_name}
-                                            </Text>
-                                            <Text
-                                                style={styles.username}
-                                                numberOfLines={1}
-                                            >
-                                                @{friend.user.username}
-                                            </Text>
-                                        </View>
+                                <View style={styles.friendBox}>
+                                    <View style={styles.avatar}>
+                                        <Text style={styles.avatarText}>
+                                            {friend.user.display_name
+                                                .charAt(0)
+                                                .toUpperCase()}
+                                        </Text>
                                     </View>
-                                </GlassCard>
+                                    <View style={{ flex: 1 }}>
+                                        <Text
+                                            style={styles.friendName}
+                                            numberOfLines={1}
+                                        >
+                                            {friend.user.display_name}
+                                        </Text>
+                                        <Text
+                                            style={styles.username}
+                                            numberOfLines={1}
+                                        >
+                                            @{friend.user.username}
+                                        </Text>
+                                    </View>
+                                </View>
                             </Pressable>
                         );
                     })
@@ -367,9 +365,10 @@ const styles = StyleSheet.create({
         textTransform: "uppercase",
         marginBottom: 6,
     },
-    friendRow: {
-        flexDirection: "row",
+    friendBox: {
+        flexDirection: "column",
         alignItems: "center",
+        textAlign: "center",
     },
     checkbox: {
         width: 22,
@@ -398,6 +397,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         marginRight: 12,
+        alignSelf: "center",
     },
     avatarText: {
         fontSize: 14,

@@ -33,7 +33,9 @@ export default function AlarmCreateScreen() {
     const router = useRouter();
     const navigation = useNavigation();
 
-    const { groupId: paramGroupId } = useLocalSearchParams<{ groupId?: string }>();
+    const { groupId: paramGroupId } = useLocalSearchParams<{
+        groupId?: string;
+    }>();
     const createAlarm = useAlarmStore((s) => s.create);
     const groups = useGroupStore((s) => s.groups);
     const fetchGroups = useGroupStore((s) => s.fetch);
@@ -44,7 +46,6 @@ export default function AlarmCreateScreen() {
     const [selectedDays, setSelectedDays] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showAllGroups, setShowAllGroups] = useState(false);
 
     const insets = useSafeAreaInsets();
     const isOneTime = selectedDays.length === 0;
@@ -95,11 +96,26 @@ export default function AlarmCreateScreen() {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={{ backgroundColor: Colors.background }}
         >
-            <View style={[styles.header, { paddingTop: insets.top - 32, paddingBottom: 24 }]}>
+            <View
+                style={[
+                    styles.header,
+                    { paddingTop: insets.top - 32, paddingBottom: 24 },
+                ]}
+            >
                 <Text style={styles.headerTitle}>New Alarm</Text>
                 <Pressable
-                    onPressIn={() => { btnY.value = withSpring(2, { damping: 28, stiffness: 600 }); }}
-                    onPressOut={() => { btnY.value = withSpring(0, { damping: 28, stiffness: 600 }); }}
+                    onPressIn={() => {
+                        btnY.value = withSpring(2, {
+                            damping: 28,
+                            stiffness: 600,
+                        });
+                    }}
+                    onPressOut={() => {
+                        btnY.value = withSpring(0, {
+                            damping: 28,
+                            stiffness: 600,
+                        });
+                    }}
                     onPress={() => {
                         if (!canSubmit) return;
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -116,9 +132,16 @@ export default function AlarmCreateScreen() {
                         ]}
                     >
                         {isSubmitting ? (
-                            <ActivityIndicator size="small" color={Colors.surface} />
+                            <ActivityIndicator
+                                size="small"
+                                color={Colors.surface}
+                            />
                         ) : (
-                            <Check color={Colors.surface} size={18} strokeWidth={3} />
+                            <Check
+                                color={Colors.surface}
+                                size={18}
+                                strokeWidth={3}
+                            />
                         )}
                     </Animated.View>
                 </Pressable>
@@ -243,12 +266,15 @@ export default function AlarmCreateScreen() {
                                     className="flex-row flex-wrap mb-2"
                                     style={{ gap: 8 }}
                                 >
-                                    {(showAllGroups ? groups : groups.slice(0, 3)).map((group) => {
-                                        const active = selectedGroupId === group.id;
+                                    {groups.map((group) => {
+                                        const active =
+                                            selectedGroupId === group.id;
                                         return (
                                             <Pressable
                                                 key={group.id}
-                                                onPress={() => setSelectedGroupId(group.id)}
+                                                onPress={() =>
+                                                    setSelectedGroupId(group.id)
+                                                }
                                                 style={{
                                                     backgroundColor: active
                                                         ? Colors.accent
@@ -266,9 +292,16 @@ export default function AlarmCreateScreen() {
                                                 }}
                                             >
                                                 <Ionicons
-                                                    name={(group.icon as keyof typeof Ionicons.glyphMap) || "people"}
+                                                    name={
+                                                        (group.icon as keyof typeof Ionicons.glyphMap) ||
+                                                        "people"
+                                                    }
                                                     size={40}
-                                                    color={active ? Colors.surface : Colors.accent}
+                                                    color={
+                                                        active
+                                                            ? Colors.surface
+                                                            : Colors.accent
+                                                    }
                                                     style={{ marginBottom: 10 }}
                                                 />
                                                 <Text
@@ -289,23 +322,6 @@ export default function AlarmCreateScreen() {
                                         );
                                     })}
                                 </View>
-                                {groups.length > 3 && (
-                                    <Pressable
-                                        onPress={() => setShowAllGroups((v) => !v)}
-                                        style={{ marginBottom: 12 }}
-                                    >
-                                        <Text
-                                            style={{
-                                                fontSize: 13,
-                                                fontWeight: "700",
-                                                color: Colors.accent,
-                                                textAlign: "center",
-                                            }}
-                                        >
-                                            {showAllGroups ? "Show less" : `Show all (${groups.length})`}
-                                        </Text>
-                                    </Pressable>
-                                )}
                                 <View style={{ marginBottom: 12 }} />
                             </>
                         ) : (
