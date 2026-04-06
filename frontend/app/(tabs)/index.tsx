@@ -3,6 +3,7 @@ import { Redirect, useRouter } from "expo-router";
 
 import { Ionicons } from "@expo/vector-icons";
 import { Bell, Users } from "lucide-react-native";
+import * as Haptics from "expo-haptics";
 import { Colors } from "@/src/theme/colors";
 import { useAuthStore } from "@/src/stores/authStore";
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -15,6 +16,17 @@ import { RingingAlarmCard } from "@/src/components/RingingAlarmCard";
 import { GlassCard } from "@/src/components/GlassCard";
 import { ArcadeSpinner } from "@/src/components/ArcadeSpinner";
 import { ErrorBanner } from "@/src/components/ErrorBanner";
+
+interface RingableFriend {
+    alarmId: string;
+    alarmName: string;
+    alarmTime: string;
+    userId: string;
+    displayName: string;
+    groupId: string;
+    groupName: string;
+    eventCreatedAt: string;
+}
 
 function formatTime12h(time24: string) {
     const [h, m] = time24.split(":");
@@ -49,6 +61,8 @@ export default function HomeScreen() {
     const [activeEvents, setActiveEvents] = useState<
         Record<string, AlarmEventOut>
     >({});
+    const [ringableFriends, setRingableFriends] = useState<RingableFriend[]>([]);
+    const [ringStatus, setRingStatus] = useState<Record<string, string>>({});
 
     const fetchEvents = async () => {
         if (!token) return;
@@ -73,10 +87,116 @@ export default function HomeScreen() {
         await fetchEvents();
     };
 
+    const fetchRingableFriends = async () => {
+        if (!token || !user) return;
+        try {
+            const currentGroups = useGroupStore.getState().groups;
+            if (currentGroups.length === 0) {
+                setRingableFriends([]);
+                return;
+            }
+
+            const groupDataResults = await Promise.allSettled(
+                currentGroups.map(async (group) => {
+                    const [alarms, members] = await Promise.all([
+                        api.listGroupAlarms(token, group.id),
+                        api.listGroupMembers(token, group.id),
+                    ]);
+                    return { group, alarms, members };
+                }),
+            );
+
+            const userNameMap: Record<string, string> = {};
+            const otherAlarms: {
+                alarm: { id: string; name: string; time: string; user_id: string };
+                group: { id: string; name: string };
+            }[] = [];
+
+            for (const result of groupDataResults) {
+                if (result.status !== "fulfilled") continue;
+                const { group, alarms, members } = result.value;
+                for (const member of members) {
+                    userNameMap[member.id] = member.display_name;
+                }
+                for (const alarm of alarms) {
+                    if (alarm.user_id !== user.id) {
+                        otherAlarms.push({ alarm, group });
+                    }
+                }
+            }
+
+            if (otherAlarms.length === 0) {
+                setRingableFriends([]);
+                return;
+            }
+
+            const eventResults = await Promise.allSettled(
+                otherAlarms.map(async ({ alarm, group }) => {
+                    const event = await api.getLatestEvent(token, alarm.id);
+                    return { alarm, group, event };
+                }),
+            );
+
+            const ringable: RingableFriend[] = [];
+            for (const result of eventResults) {
+                if (result.status !== "fulfilled") continue;
+                const { alarm, group, event } = result.value;
+                if (event && event.status === "EXPIRED") {
+                    ringable.push({
+                        alarmId: alarm.id,
+                        alarmName: alarm.name,
+                        alarmTime: alarm.time,
+                        userId: alarm.user_id,
+                        displayName: userNameMap[alarm.user_id] ?? "Unknown",
+                        groupId: group.id,
+                        groupName: group.name,
+                        eventCreatedAt: event.created_at,
+                    });
+                }
+            }
+
+            ringable.sort(
+                (a, b) =>
+                    new Date(b.eventCreatedAt).getTime() -
+                    new Date(a.eventCreatedAt).getTime(),
+            );
+
+            setRingableFriends(ringable);
+        } catch {
+            setRingableFriends([]);
+        }
+    };
+
+    const handleRing = async (alarmId: string) => {
+        if (!token) return;
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        try {
+            await api.triggerAlarm(token, alarmId);
+            setRingStatus((prev) => ({ ...prev, [alarmId]: "Sent!" }));
+        } catch (err) {
+            const message = (err as Error).message;
+            setRingStatus((prev) => ({
+                ...prev,
+                [alarmId]: message.includes("429")
+                    ? "Too soon, try again shortly"
+                    : message,
+            }));
+        }
+        setTimeout(
+            () =>
+                setRingStatus((prev) => {
+                    const next = { ...prev };
+                    delete next[alarmId];
+                    return next;
+                }),
+            3000,
+        );
+    };
+
     useFocusEffect(
         useCallback(() => {
             alarmFetch().then(fetchEvents);
-            groupFetch();
+            groupFetch().then(fetchRingableFriends);
             const activeIds = new Set(
                 useAlarmStore
                     .getState()
@@ -180,6 +300,134 @@ export default function HomeScreen() {
                                     );
                                 },
                             )}
+                        </>
+                    )}
+
+                    {/* Ring Your Friends */}
+                    {ringableFriends.length > 0 && (
+                        <>
+                            <Text
+                                className="mt-6 mb-2"
+                                style={{
+                                    fontSize: 10,
+                                    fontWeight: "400",
+                                    color: Colors.statusSnooze,
+                                    letterSpacing: 2.5,
+                                    textTransform: "uppercase",
+                                }}
+                            >
+                                RING YOUR FRIENDS
+                            </Text>
+                            {ringableFriends.map((friend) => {
+                                const { time: t12, period } = formatTime12h(
+                                    friend.alarmTime,
+                                );
+                                const status = ringStatus[friend.alarmId];
+                                return (
+                                    <GlassCard
+                                        key={friend.alarmId}
+                                        style={{
+                                            marginBottom: 8,
+                                            borderColor: Colors.statusSnooze,
+                                        }}
+                                    >
+                                        <View
+                                            style={{
+                                                flexDirection: "row",
+                                                justifyContent: "space-between",
+                                                alignItems: "center",
+                                            }}
+                                        >
+                                            <View style={{ flex: 1 }}>
+                                                <Text
+                                                    style={{
+                                                        fontSize: 15,
+                                                        fontWeight: "900",
+                                                        color: Colors.textPrimary,
+                                                        letterSpacing: -0.5,
+                                                    }}
+                                                >
+                                                    {friend.displayName}
+                                                </Text>
+                                                <Text
+                                                    style={{
+                                                        fontSize: 12,
+                                                        color: Colors.textSecondary,
+                                                        marginTop: 2,
+                                                    }}
+                                                >
+                                                    {friend.alarmName} · {t12}{" "}
+                                                    {period}
+                                                </Text>
+                                                <Text
+                                                    style={{
+                                                        fontSize: 11,
+                                                        color: Colors.textDim,
+                                                        marginTop: 2,
+                                                    }}
+                                                >
+                                                    {friend.groupName} · needs a
+                                                    wake-up call
+                                                </Text>
+                                            </View>
+                                            <View
+                                                style={{ alignItems: "center" }}
+                                            >
+                                                <Pressable
+                                                    onPress={() =>
+                                                        handleRing(
+                                                            friend.alarmId,
+                                                        )
+                                                    }
+                                                    style={{
+                                                        backgroundColor:
+                                                            Colors.accentSubtle,
+                                                        borderWidth: 1,
+                                                        borderColor:
+                                                            "rgba(96,165,250,0.25)",
+                                                        borderRadius: 99,
+                                                        paddingHorizontal: 12,
+                                                        paddingVertical: 6,
+                                                        flexDirection: "row",
+                                                        alignItems: "center",
+                                                        gap: 4,
+                                                    }}
+                                                >
+                                                    <Ionicons
+                                                        name="notifications"
+                                                        size={14}
+                                                        color={Colors.accent}
+                                                    />
+                                                    <Text
+                                                        style={{
+                                                            fontSize: 10,
+                                                            fontWeight: "700",
+                                                            color: Colors.accent,
+                                                        }}
+                                                    >
+                                                        Ring
+                                                    </Text>
+                                                </Pressable>
+                                                {status && (
+                                                    <Text
+                                                        style={{
+                                                            fontSize: 10,
+                                                            color:
+                                                                status ===
+                                                                "Sent!"
+                                                                    ? Colors.statusUp
+                                                                    : Colors.statusLate,
+                                                            marginTop: 4,
+                                                        }}
+                                                    >
+                                                        {status}
+                                                    </Text>
+                                                )}
+                                            </View>
+                                        </View>
+                                    </GlassCard>
+                                );
+                            })}
                         </>
                     )}
 
