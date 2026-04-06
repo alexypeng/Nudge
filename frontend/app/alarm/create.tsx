@@ -169,12 +169,13 @@ export default function AlarmCreateScreen() {
                 {/* Alarm Name */}
                 <Text
                     style={{
-                        fontSize: 10,
-                        fontWeight: "400",
+                        fontSize: 12,
+                        fontWeight: "700",
                         color: Colors.textDim,
-                        letterSpacing: 2.5,
+                        letterSpacing: 2,
                         textTransform: "uppercase",
-                        marginBottom: 6,
+                        paddingLeft: 5,
+                        paddingBottom: 6,
                     }}
                 >
                     NAME
@@ -198,12 +199,13 @@ export default function AlarmCreateScreen() {
                 {/* Repeat Days */}
                 <Text
                     style={{
-                        fontSize: 10,
-                        fontWeight: "400",
+                        fontSize: 12,
+                        fontWeight: "700",
                         color: Colors.textDim,
-                        letterSpacing: 2.5,
+                        letterSpacing: 2,
                         textTransform: "uppercase",
-                        marginBottom: 6,
+                        paddingLeft: 5,
+                        paddingBottom: 6,
                     }}
                 >
                     REPEAT

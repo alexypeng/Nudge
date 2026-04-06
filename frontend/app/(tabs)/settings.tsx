@@ -285,12 +285,13 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
     sectionLabel: {
-        fontSize: 10,
-        fontWeight: "400",
+        fontSize: 12,
+        fontWeight: "700",
         color: Colors.textDim,
-        letterSpacing: 2.5,
+        letterSpacing: 2,
         textTransform: "uppercase",
-        marginBottom: 8,
+        paddingLeft: 5,
+        paddingBottom: 6,
     },
     fieldLabel: {
         fontSize: 14,

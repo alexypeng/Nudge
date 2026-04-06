@@ -414,11 +414,12 @@ const styles = StyleSheet.create({
         backgroundColor: "rgba(255, 255, 255, 0.05)",
     },
     label: {
-        fontSize: 10,
-        fontWeight: "400",
+        fontSize: 12,
+        fontWeight: "700",
         color: Colors.textDim,
-        letterSpacing: 2.5,
+        letterSpacing: 2,
         textTransform: "uppercase",
-        marginBottom: 6,
+        paddingLeft: 5,
+        paddingBottom: 6,
     },
 });

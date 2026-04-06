@@ -387,12 +387,13 @@ export default function GroupScreen() {
                     >
                         <Text
                             style={{
-                                fontSize: 10,
-                                fontWeight: "400",
+                                fontSize: 12,
+                                fontWeight: "700",
                                 color: Colors.textDim,
-                                letterSpacing: 2.5,
+                                letterSpacing: 2,
                                 textTransform: "uppercase",
-                                marginBottom: 6,
+                                paddingLeft: 5,
+                                paddingBottom: 6,
                             }}
                         >
                             ICON
@@ -436,12 +437,13 @@ export default function GroupScreen() {
 
                         <Text
                             style={{
-                                fontSize: 10,
-                                fontWeight: "400",
+                                fontSize: 12,
+                                fontWeight: "700",
                                 color: Colors.textDim,
-                                letterSpacing: 2.5,
+                                letterSpacing: 2,
                                 textTransform: "uppercase",
-                                marginBottom: 6,
+                                paddingLeft: 5,
+                                paddingBottom: 6,
                             }}
                         >
                             GROUP NAME
