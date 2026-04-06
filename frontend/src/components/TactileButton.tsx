@@ -12,6 +12,7 @@ interface TactileButtonProps {
   label: string;
   onPress: () => void;
   variant?: 'primary' | 'danger' | 'ghost';
+  size?: number;
   style?: ViewStyle;
   textStyle?: TextStyle;
   disabled?: boolean;
@@ -30,6 +31,7 @@ export function TactileButton({
   label,
   onPress,
   variant = 'primary',
+  size = 52,
   style,
   textStyle,
   disabled = false,
@@ -58,15 +60,15 @@ export function TactileButton({
         onPress();
       }}
       className={className}
-      style={[styles.wrapper, style, disabled && styles.disabled]}
+      style={[styles.wrapper, { height: size + 4 }, style, disabled && styles.disabled]}
     >
       {!isGhost && (
-        <Animated.View style={[styles.shadow, { backgroundColor: shadow }]} />
+        <Animated.View style={[styles.shadow, { backgroundColor: shadow, height: size }]} />
       )}
       <Animated.View
         style={[
           styles.surface,
-          { backgroundColor: bg },
+          { backgroundColor: bg, height: size },
           isGhost && styles.ghostBorder,
           animatedStyle,
         ]}
@@ -88,14 +90,12 @@ export function TactileButton({
 const styles = StyleSheet.create({
   wrapper: {
     position: 'relative',
-    height: 56,
   },
   shadow: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: 52,
     borderRadius: 12,
   },
   surface: {
@@ -103,7 +103,6 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 52,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',

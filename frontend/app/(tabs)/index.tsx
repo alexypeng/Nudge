@@ -16,6 +16,7 @@ import { RingingAlarmCard } from "@/src/components/RingingAlarmCard";
 import { GlassCard } from "@/src/components/GlassCard";
 import { ArcadeSpinner } from "@/src/components/ArcadeSpinner";
 import { ErrorBanner } from "@/src/components/ErrorBanner";
+import { TactileButton } from "@/src/components/TactileButton";
 
 interface RingableFriend {
     alarmId: string;
@@ -72,7 +73,7 @@ export default function HomeScreen() {
             allAlarms.map(async (alarm) => {
                 try {
                     const event = await api.getLatestEvent(token, alarm.id);
-                    if (event && event.status === "RINGING") {
+                    if (event && (event.status === "RINGING" || event.status === "EXPIRED")) {
                         events[alarm.id] = event;
                     }
                 } catch {}
@@ -372,52 +373,23 @@ export default function HomeScreen() {
                                                 </Text>
                                             </View>
                                             <View
-                                                style={{ alignItems: "center" }}
+                                                style={{ alignItems: "center", width: 80 }}
                                             >
-                                                <Pressable
+                                                <TactileButton
+                                                    label={status === "Sent!" ? "Sent!" : "Ring"}
                                                     onPress={() =>
-                                                        handleRing(
-                                                            friend.alarmId,
-                                                        )
+                                                        handleRing(friend.alarmId)
                                                     }
-                                                    style={{
-                                                        backgroundColor:
-                                                            Colors.accentSubtle,
-                                                        borderWidth: 1,
-                                                        borderColor:
-                                                            "rgba(96,165,250,0.25)",
-                                                        borderRadius: 99,
-                                                        paddingHorizontal: 12,
-                                                        paddingVertical: 6,
-                                                        flexDirection: "row",
-                                                        alignItems: "center",
-                                                        gap: 4,
-                                                    }}
-                                                >
-                                                    <Ionicons
-                                                        name="notifications"
-                                                        size={14}
-                                                        color={Colors.accent}
-                                                    />
+                                                    disabled={status === "Sent!"}
+                                                    size={36}
+                                                    style={{ width: 80 }}
+                                                    textStyle={{ fontSize: 12 }}
+                                                />
+                                                {status && status !== "Sent!" && (
                                                     <Text
                                                         style={{
                                                             fontSize: 10,
-                                                            fontWeight: "700",
-                                                            color: Colors.accent,
-                                                        }}
-                                                    >
-                                                        Ring
-                                                    </Text>
-                                                </Pressable>
-                                                {status && (
-                                                    <Text
-                                                        style={{
-                                                            fontSize: 10,
-                                                            color:
-                                                                status ===
-                                                                "Sent!"
-                                                                    ? Colors.statusUp
-                                                                    : Colors.statusLate,
+                                                            color: Colors.statusLate,
                                                             marginTop: 4,
                                                         }}
                                                     >

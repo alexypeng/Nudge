@@ -153,7 +153,7 @@ def list_group_alarms(request, group_id: str):
     if request.auth not in group.members.all():
         return 403, None
 
-    return 200, list(Alarm.objects.filter(group=group, is_active=True))
+    return 200, list(Alarm.objects.filter(group=group))
 
 
 # ==========================================
