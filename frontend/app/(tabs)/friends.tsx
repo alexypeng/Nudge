@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { UserPlus } from "lucide-react-native";
@@ -8,6 +8,7 @@ import { GlassCard } from "@/src/components/GlassCard";
 import { TactileButton } from "@/src/components/TactileButton";
 import { ArcadeSpinner } from "@/src/components/ArcadeSpinner";
 import { ErrorBanner } from "@/src/components/ErrorBanner";
+import { usePolling } from "@/src/hooks/usePolling";
 import * as Haptics from "expo-haptics";
 
 export default function FriendsTab() {
@@ -22,9 +23,9 @@ export default function FriendsTab() {
     const storeError = useFriendStore((s) => s.error);
     const [actionError, setActionError] = useState<string | null>(null);
 
-    useEffect(() => {
+    usePolling(() => {
         fetchAll();
-    }, []);
+    }, 10000);
 
     const handleAction = async (fn: () => Promise<void>) => {
         setActionError(null);

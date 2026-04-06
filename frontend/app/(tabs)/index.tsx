@@ -7,7 +7,7 @@ import * as Haptics from "expo-haptics";
 import { Colors } from "@/src/theme/colors";
 import { useAuthStore } from "@/src/stores/authStore";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useFocusEffect } from "expo-router";
+import { usePolling } from "@/src/hooks/usePolling";
 import { useAlarmStore } from "@/src/stores/alarmStore";
 import { useGroupStore } from "@/src/stores/groupStore";
 import { api, AlarmEventOut } from "@/src/api/client";
@@ -310,19 +310,17 @@ export default function HomeScreen() {
         );
     };
 
-    useFocusEffect(
-        useCallback(() => {
-            alarmFetch().then(fetchEvents);
-            groupFetch().then(fetchRingableFriends);
-            const activeIds = new Set(
-                useAlarmStore
-                    .getState()
-                    .alarms.filter((a) => a.is_active)
-                    .map((a) => a.id),
-            );
-            setVisibleIds(activeIds);
-        }, []),
-    );
+    usePolling(() => {
+        alarmFetch().then(fetchEvents);
+        groupFetch().then(fetchRingableFriends);
+        const activeIds = new Set(
+            useAlarmStore
+                .getState()
+                .alarms.filter((a) => a.is_active)
+                .map((a) => a.id),
+        );
+        setVisibleIds(activeIds);
+    }, 10000);
 
     if (!token) return <Redirect href="/(auth)/login" />;
 

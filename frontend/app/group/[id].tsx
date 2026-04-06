@@ -1,7 +1,8 @@
 import { useAlarmStore } from "@/src/stores/alarmStore";
 import { useGroupStore } from "@/src/stores/groupStore";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { usePolling } from "@/src/hooks/usePolling";
 import { View, Text, TextInput, ScrollView, Pressable, Modal } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/src/theme/colors";
@@ -81,10 +82,10 @@ export default function GroupScreen() {
         });
     };
 
-    useEffect(() => {
+    usePolling(() => {
         fetchAlarms();
         loadGroupData();
-    }, []);
+    }, 10000);
 
     useEffect(() => {
         navigation.setOptions({

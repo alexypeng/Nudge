@@ -8,7 +8,7 @@ import { AlarmCard } from "@/src/components/AlarmCard";
 import { TactileButton } from "@/src/components/TactileButton";
 import { ArcadeSpinner } from "@/src/components/ArcadeSpinner";
 import { ErrorBanner } from "@/src/components/ErrorBanner";
-import { useEffect } from "react";
+import { usePolling } from "@/src/hooks/usePolling";
 
 export default function AlarmsScreen() {
     const router = useRouter();
@@ -19,9 +19,9 @@ export default function AlarmsScreen() {
     const error = useAlarmStore((s) => s.error);
     const groups = useGroupStore((s) => s.groups);
 
-    useEffect(() => {
+    usePolling(() => {
         fetchAlarms();
-    }, []);
+    }, 10000);
 
     return (
         <View
