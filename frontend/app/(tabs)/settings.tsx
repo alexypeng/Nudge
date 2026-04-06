@@ -12,7 +12,6 @@ import { useRouter } from "expo-router";
 import { useAuthStore } from "@/src/stores/authStore";
 import { Colors } from "@/src/theme/colors";
 import { TactileButton } from "@/src/components/TactileButton";
-import { GlassCard } from "@/src/components/GlassCard";
 import * as Haptics from "expo-haptics";
 
 export default function SettingsScreen() {
@@ -20,9 +19,11 @@ export default function SettingsScreen() {
     const user = useAuthStore((s) => s.user);
     const updateUser = useAuthStore((s) => s.updateUser);
     const deleteAccount = useAuthStore((s) => s.deleteAccount);
+    const logout = useAuthStore((s) => s.logout);
 
     const [displayName, setDisplayName] = useState(user?.display_name ?? "");
     const [email, setEmail] = useState(user?.email ?? "");
+    const [username, setUsername] = useState(user?.username ?? "");
     const [newPassword, setNewPassword] = useState("");
 
     const [isSaving, setIsSaving] = useState(false);
@@ -40,14 +41,23 @@ export default function SettingsScreen() {
 
     const profileChanged =
         displayName !== (user?.display_name ?? "") ||
-        email !== (user?.email ?? "");
+        email !== (user?.email ?? "") ||
+        username !== (user?.username ?? "");
+
+    const initial = displayName?.charAt(0).toUpperCase() ?? "?";
+
+    const handleLogout = () => {
+        logout();
+        router.replace("/(auth)/login");
+    };
 
     const handleSaveProfile = async () => {
         setError(null);
         setIsSaving(true);
         try {
             const updates: { display_name?: string; email?: string } = {};
-            if (displayName !== user?.display_name) updates.display_name = displayName;
+            if (displayName !== user?.display_name)
+                updates.display_name = displayName;
             if (email !== user?.email) updates.email = email;
             await updateUser(updates);
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -90,14 +100,16 @@ export default function SettingsScreen() {
     return (
         <>
             <ScrollView
-                className="flex-1"
+                className="flex-1 pt-16"
                 contentContainerClassName="px-5 pt-8 pb-8"
                 style={{ backgroundColor: Colors.background }}
                 keyboardShouldPersistTaps="handled"
             >
                 {/* Feedback */}
                 {error && (
-                    <Text style={[styles.feedback, { color: Colors.statusLate }]}>
+                    <Text
+                        style={[styles.feedback, { color: Colors.statusLate }]}
+                    >
                         {error}
                     </Text>
                 )}
@@ -107,12 +119,28 @@ export default function SettingsScreen() {
                     </Text>
                 )}
 
-                {/* Profile Section */}
-                <Text style={styles.sectionLabel}>PROFILE</Text>
+                {/* Avatar */}
+                <Text className="text-center" style={styles.fieldLabel}>
+                    Profile Picture
+                </Text>
+                <View
+                    className="w-32 h-32 rounded-full items-center justify-center mb-8 mt-4 self-center"
+                    style={{ backgroundColor: Colors.avatarBlue }}
+                >
+                    <Text
+                        style={{
+                            fontSize: 56,
+                            fontWeight: "900",
+                            color: Colors.surface,
+                        }}
+                    >
+                        {initial}
+                    </Text>
+                </View>
 
                 <Text style={styles.fieldLabel}>Display Name</Text>
                 <TextInput
-                    className="h-12 px-4 mb-3"
+                    className="h-12 px-4 mb-5"
                     style={styles.input}
                     value={displayName}
                     onChangeText={setDisplayName}
@@ -121,7 +149,7 @@ export default function SettingsScreen() {
 
                 <Text style={styles.fieldLabel}>Email</Text>
                 <TextInput
-                    className="h-12 px-4 mb-3"
+                    className="h-12 px-4 mb-5"
                     style={styles.input}
                     value={email}
                     onChangeText={setEmail}
@@ -130,21 +158,15 @@ export default function SettingsScreen() {
                     placeholderTextColor={Colors.textDim}
                 />
 
-                <GlassCard style={{ marginBottom: 12 }}>
-                    <View style={styles.readonlyRow}>
-                        <Text style={styles.readonlyLabel}>Username</Text>
-                        <Text style={styles.readonlyValue}>
-                            @{user?.username}
-                        </Text>
-                    </View>
-                    <View style={styles.divider} />
-                    <View style={styles.readonlyRow}>
-                        <Text style={styles.readonlyLabel}>Timezone</Text>
-                        <Text style={styles.readonlyValue}>
-                            {user?.timezone}
-                        </Text>
-                    </View>
-                </GlassCard>
+                <Text style={styles.fieldLabel}>Username</Text>
+                <TextInput
+                    className="h-12 px-4 mb-8"
+                    style={styles.input}
+                    value={username}
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
+                    placeholderTextColor={Colors.textDim}
+                />
 
                 <TactileButton
                     label="Save Changes"
@@ -153,7 +175,9 @@ export default function SettingsScreen() {
                 />
 
                 {/* Password Section */}
-                <Text style={[styles.sectionLabel, { marginTop: 32 }]}>PASSWORD</Text>
+                <Text style={[styles.sectionLabel, { marginTop: 32 }]}>
+                    PASSWORD
+                </Text>
 
                 <Text style={styles.fieldLabel}>New Password</Text>
                 <TextInput
@@ -176,6 +200,15 @@ export default function SettingsScreen() {
                 <Text style={[styles.sectionLabel, { marginTop: 32 }]}>
                     DANGER ZONE
                 </Text>
+
+                {/* Logout */}
+                <View className="w-full mb-4">
+                    <TactileButton
+                        label="Sign Out"
+                        variant="danger"
+                        onPress={handleLogout}
+                    />
+                </View>
 
                 <TactileButton
                     label="Delete Account"
@@ -260,10 +293,10 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     fieldLabel: {
-        fontSize: 12,
+        fontSize: 14,
         fontWeight: "700",
         color: Colors.textSecondary,
-        marginBottom: 4,
+        marginBottom: 8,
     },
     input: {
         backgroundColor: Colors.surface,
