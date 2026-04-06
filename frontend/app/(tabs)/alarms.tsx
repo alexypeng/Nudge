@@ -48,9 +48,7 @@ export default function AlarmsScreen() {
                 {isLoading && alarms.length === 0 ? (
                     <ArcadeSpinner style={{ marginTop: 40 }} />
                 ) : alarms.length > 0 ? (
-                    [...alarms]
-                        .sort((a, b) => a.time.localeCompare(b.time))
-                        .map((alarm) => (
+                    alarms.map((alarm) => (
                             <AlarmCard
                                 key={alarm.id}
                                 alarm={alarm}

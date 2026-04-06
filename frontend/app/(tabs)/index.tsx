@@ -297,8 +297,7 @@ export default function HomeScreen() {
     const fetchError = alarmError || groupError;
 
     const displayedAlarms = alarms
-        .filter((a) => a.is_active || visibleIds.has(a.id))
-        .sort((a, b) => a.time.localeCompare(b.time));
+        .filter((a) => a.is_active || visibleIds.has(a.id));
     const activeAlarms = alarms.filter((a) => a.is_active);
     const nextAlarm = activeAlarms
         .filter((a) => a.next_trigger_utc)

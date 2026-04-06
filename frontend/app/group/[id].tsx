@@ -167,7 +167,7 @@ export default function GroupScreen() {
                 ALARMS
             </Text>
             {alarms.length > 0 ? (
-                [...alarms].sort((a, b) => a.time.localeCompare(b.time)).map((alarm) => (
+                [...alarms].sort((a, b) => a.time.localeCompare(b.time) || a.name.localeCompare(b.name)).map((alarm) => (
                     <AlarmCard
                         key={alarm.id}
                         alarm={alarm}
@@ -245,7 +245,7 @@ export default function GroupScreen() {
                     className="flex-row flex-wrap"
                     style={{ gap: 8 }}
                 >
-                    {members.filter((m) => m.id !== currentUserId).map((member) => {
+                    {[...members].filter((m) => m.id !== currentUserId).sort((a, b) => a.display_name.localeCompare(b.display_name)).map((member) => {
                         const hasExpired = groupAlarms.some(
                             (a) => a.user_id === member.id && alarmStatuses[a.id] === "EXPIRED",
                         );

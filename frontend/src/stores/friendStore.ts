@@ -21,6 +21,16 @@ interface FriendStore {
     clearSearch: () => void;
 }
 
+const sortFriends = (friends: FriendOut[]) =>
+    [...friends].sort((a, b) =>
+        a.user.display_name.localeCompare(b.user.display_name),
+    );
+
+const sortRequests = (requests: FriendRequestOut[]) =>
+    [...requests].sort((a, b) =>
+        a.from_user.display_name.localeCompare(b.from_user.display_name),
+    );
+
 export const useFriendStore = create<FriendStore>((set, get) => ({
     friends: [],
     pendingRequests: [],
@@ -34,7 +44,7 @@ export const useFriendStore = create<FriendStore>((set, get) => ({
         if (!token) return;
 
         const friends = await api.listFriends(token);
-        set({ friends });
+        set({ friends: sortFriends(friends) });
     },
 
     fetchPending: async () => {
@@ -42,7 +52,7 @@ export const useFriendStore = create<FriendStore>((set, get) => ({
         if (!token) return;
 
         const pendingRequests = await api.listPendingRequests(token);
-        set({ pendingRequests });
+        set({ pendingRequests: sortRequests(pendingRequests) });
     },
 
     fetchAll: async () => {
@@ -55,7 +65,7 @@ export const useFriendStore = create<FriendStore>((set, get) => ({
                 api.listFriends(token),
                 api.listPendingRequests(token),
             ]);
-            set({ friends, pendingRequests });
+            set({ friends: sortFriends(friends), pendingRequests: sortRequests(pendingRequests) });
         } catch (err) {
             set({ error: (err as Error).message });
         } finally {
@@ -94,7 +104,7 @@ export const useFriendStore = create<FriendStore>((set, get) => ({
 
         const friend = await api.acceptFriendRequest(token, friendshipId);
         set((state) => ({
-            friends: [...state.friends, friend],
+            friends: sortFriends([...state.friends, friend]),
             pendingRequests: state.pendingRequests.filter((r) => r.id !== friendshipId),
         }));
     },

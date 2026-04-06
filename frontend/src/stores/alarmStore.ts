@@ -14,6 +14,11 @@ interface AlarmState {
     delete: (id: string) => Promise<void>;
 }
 
+const sortAlarms = (alarms: AlarmOut[]) =>
+    [...alarms].sort((a, b) =>
+        a.time.localeCompare(b.time) || a.name.localeCompare(b.name),
+    );
+
 export const useAlarmStore = create<AlarmState>((set, get) => ({
     alarms: [],
     isLoading: false,
@@ -26,7 +31,7 @@ export const useAlarmStore = create<AlarmState>((set, get) => ({
         set({ isLoading: true, error: null });
         try {
             const alarms = await api.listAlarms(token, groupId);
-            set({ alarms });
+            set({ alarms: sortAlarms(alarms) });
             syncAllAlarms(alarms).catch((e) => console.warn("[Alarm] error:", e));
         } catch (err) {
             set({ error: (err as Error).message });
@@ -39,7 +44,7 @@ export const useAlarmStore = create<AlarmState>((set, get) => ({
         if (!token) return;
 
         const alarm = await api.createAlarm(token, data);
-        set((state) => ({ alarms: [...state.alarms, alarm] }));
+        set((state) => ({ alarms: sortAlarms([...state.alarms, alarm]) }));
         scheduleAlarm(alarm).catch((e) => console.warn("[Alarm] error:", e));
     },
     update: async (id, data) => {
