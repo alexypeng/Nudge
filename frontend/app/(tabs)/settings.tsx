@@ -25,6 +25,7 @@ export default function SettingsScreen() {
     const [email, setEmail] = useState(user?.email ?? "");
     const [username, setUsername] = useState(user?.username ?? "");
     const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
 
     const [isSaving, setIsSaving] = useState(false);
     const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -77,6 +78,7 @@ export default function SettingsScreen() {
             await updateUser({ password: newPassword });
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setNewPassword("");
+            setConfirmPassword("");
             showSuccess("Password updated");
         } catch (err) {
             setError((err as Error).message);
@@ -175,7 +177,9 @@ export default function SettingsScreen() {
                 />
 
                 {/* Password Section */}
-                <Text style={[styles.fieldLabel, {marginTop: 32}]}>New Password</Text>
+                <Text style={[styles.fieldLabel, { marginTop: 32 }]}>
+                    New Password
+                </Text>
                 <TextInput
                     className="h-14 px-4 mb-3"
                     style={styles.input}
@@ -186,10 +190,26 @@ export default function SettingsScreen() {
                     placeholderTextColor={Colors.textDim}
                 />
 
+                <TextInput
+                    className="h-14 px-4"
+                    style={styles.input}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry
+                    placeholder="Re-enter password"
+                    placeholderTextColor={Colors.textDim}
+                />
+                {confirmPassword.length > 0 && newPassword !== confirmPassword && (
+                    <Text style={{ fontSize: 12, color: Colors.statusLate, marginTop: 4 }}>
+                        Passwords don't match
+                    </Text>
+                )}
+                <View className="mb-3" />
+
                 <TactileButton
                     label="Update Password"
                     onPress={handleChangePassword}
-                    disabled={!newPassword || isChangingPassword}
+                    disabled={!newPassword || newPassword !== confirmPassword || isChangingPassword}
                 />
 
                 {/* Danger Zone */}
