@@ -132,6 +132,13 @@ def add_member_to_group(request, group_id: str, payload: AddMemberRequest):
         return 403, {"error": "You can only add friends to groups"}
 
     group.members.add(target)
+
+    send_group_push(
+        users=[target],
+        action=Actions.GROUP_MEMBER_ADDED,
+        data={"group_id": str(group.id), "group_name": group.name},
+    )
+
     return 200, group
 
 

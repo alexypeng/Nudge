@@ -52,6 +52,16 @@ export function setupNotificationListeners() {
                 const { useAlarmStore } = require("@/src/stores/alarmStore");
                 useAlarmStore.getState().fetch();
             }
+
+            if (action === "group_member_added") {
+                const { useGroupStore } = require("@/src/stores/groupStore");
+                useGroupStore.getState().fetch();
+            }
+
+            if (action === "friend_accepted") {
+                const { useFriendStore } = require("@/src/stores/friendStore");
+                useFriendStore.getState().fetch();
+            }
         },
     );
 

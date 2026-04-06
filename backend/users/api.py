@@ -10,6 +10,8 @@ from ninja.errors import HttpError
 import uuid
 from django.db import transaction
 from django.db.models import Q
+from alarms.utils import send_group_push
+from alarms.enums import Actions
 
 
 router = Router()
@@ -123,6 +125,11 @@ def send_friend_request(request, payload: FriendRequestCreate):
             if existing.from_user == to_user and existing.status == Friendship.Status.PENDING:
                 existing.status = Friendship.Status.ACCEPTED
                 existing.save(update_fields=["status"])
+                send_group_push(
+                    users=[to_user],
+                    action=Actions.FRIEND_ACCEPTED,
+                    data={"friendship_id": str(existing.id)},
+                )
                 return 201, existing
             return 409, {"error": "Friend request already sent"}
 
@@ -172,6 +179,12 @@ def accept_friend_request(request, friendship_id: str):
 
     friendship.status = Friendship.Status.ACCEPTED
     friendship.save(update_fields=["status"])
+
+    send_group_push(
+        users=[friendship.from_user],
+        action=Actions.FRIEND_ACCEPTED,
+        data={"friendship_id": str(friendship.id)},
+    )
 
     return 200, {"friendship_id": friendship.id, "user": friendship.from_user}
 
