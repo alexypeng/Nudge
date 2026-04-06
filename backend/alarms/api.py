@@ -284,7 +284,10 @@ def trigger_alarm(request, alarm_id: str):
 def get_latest_event(request, alarm_id: str):
     alarm = get_object_or_404(Alarm, id=alarm_id)
 
-    if alarm.user != request.auth:
+    is_owner = alarm.user == request.auth
+    is_group_member = alarm.group and alarm.group.members.filter(id=request.auth.id).exists()
+
+    if not is_owner and not is_group_member:
         return 403, {"error": "You do not have access to this alarm"}
 
     event = AlarmEvent.objects.filter(alarm=alarm).order_by("-created_at").first()
