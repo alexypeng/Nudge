@@ -175,7 +175,7 @@ export default function SettingsScreen() {
                 />
 
                 {/* Password Section */}
-                <Text style={styles.fieldLabel}>New Password</Text>
+                <Text style={[styles.fieldLabel, {marginTop: 32}]}>New Password</Text>
                 <TextInput
                     className="h-14 px-4 mb-3"
                     style={styles.input}
