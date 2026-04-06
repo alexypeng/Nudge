@@ -20,6 +20,7 @@ from .schemas import (
     GroupCreate,
     GroupOut,
     GroupUpdate,
+    LeaderboardEntry,
     ManualRingOut,
 )
 from .utils import send_group_push, send_wake_up_push
@@ -154,6 +155,47 @@ def list_group_alarms(request, group_id: str):
         return 403, None
 
     return 200, list(Alarm.objects.filter(group=group))
+
+
+@router.get(
+    "/group/{group_id}/leaderboard/",
+    response={200: list[LeaderboardEntry], 403: None},
+    auth=TokenAuth(),
+)
+def group_leaderboard(request, group_id: str):
+    group = get_object_or_404(Group, id=group_id)
+
+    if not group.members.filter(id=request.auth.id).exists():
+        return 403, None
+
+    members = group.members.all()
+    group_alarm_ids = list(Alarm.objects.filter(group=group).values_list("id", flat=True))
+
+    entries = []
+    for member in members:
+        events = list(AlarmEvent.objects.filter(
+            user=member, alarm_id__in=group_alarm_ids
+        ).values("status", "created_at", "checked_in_at"))
+
+        total = len(events)
+        on_time = sum(
+            1 for e in events
+            if e["status"] == AlarmEvent.Status.CHECKED_IN
+            and e["checked_in_at"] is not None
+            and (e["checked_in_at"] - e["created_at"]) <= timedelta(minutes=5)
+        )
+
+        entries.append(LeaderboardEntry(
+            user_id=member.id,
+            display_name=member.display_name,
+            username=member.username,
+            total_events=total,
+            on_time_checkins=on_time,
+            success_rate=round(on_time / total * 100, 1) if total > 0 else 100.0,
+        ))
+
+    entries.sort(key=lambda e: (-e.success_rate, -e.on_time_checkins))
+    return 200, entries
 
 
 # ==========================================

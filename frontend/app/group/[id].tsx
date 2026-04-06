@@ -9,7 +9,7 @@ import { Colors } from "@/src/theme/colors";
 import { AlarmCard } from "@/src/components/AlarmCard";
 import { GlassCard } from "@/src/components/GlassCard";
 import { TactileButton } from "@/src/components/TactileButton";
-import { api } from "@/src/api/client";
+import { api, LeaderboardEntry } from "@/src/api/client";
 import { useAuthStore } from "@/src/stores/authStore";
 import { ErrorBanner } from "@/src/components/ErrorBanner";
 
@@ -52,16 +52,27 @@ export default function GroupScreen() {
     );
 
     const currentUserId = useAuthStore((s) => s.user?.id);
+    const token = useAuthStore((s) => s.token);
     const [ringStatus, setRingStatus] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
     const [groupName, setGroupName] = useState(group?.name ?? "");
     const [groupIcon, setGroupIcon] = useState(group?.icon ?? "people");
+    const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+
+    const fetchLeaderboard = async () => {
+        if (!token) return;
+        try {
+            const data = await api.getGroupLeaderboard(token, id);
+            setLeaderboard(data);
+        } catch {}
+    };
 
     usePolling(() => {
         fetchAlarms();
         fetchGroupDetail(id);
+        fetchLeaderboard();
     });
 
     useEffect(() => {
@@ -205,6 +216,142 @@ export default function GroupScreen() {
                     }
                 />
             </View>
+
+            {/* Leaderboard */}
+            {leaderboard.length > 0 && (
+                <>
+                    <Text
+                        className="mt-6"
+                        style={{
+                            fontSize: 12,
+                            fontWeight: "700",
+                            color: Colors.textDim,
+                            letterSpacing: 2,
+                            textTransform: "uppercase",
+                            paddingLeft: 5,
+                            paddingBottom: 6,
+                        }}
+                    >
+                        LEADERBOARD
+                    </Text>
+                    <GlassCard>
+                        {leaderboard.map((entry, index) => {
+                            const isMe = entry.user_id === currentUserId;
+                            const medal =
+                                index === 0
+                                    ? "🥇"
+                                    : index === 1
+                                      ? "🥈"
+                                      : index === 2
+                                        ? "🥉"
+                                        : null;
+                            return (
+                                <View
+                                    key={entry.user_id}
+                                    style={{
+                                        flexDirection: "row",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        paddingVertical: 10,
+                                        borderBottomWidth:
+                                            index < leaderboard.length - 1
+                                                ? 1
+                                                : 0,
+                                        borderBottomColor:
+                                            "rgba(255,255,255,0.05)",
+                                    }}
+                                >
+                                    <View
+                                        style={{
+                                            flexDirection: "row",
+                                            alignItems: "center",
+                                            flex: 1,
+                                        }}
+                                    >
+                                        <Text
+                                            style={{
+                                                fontSize: 14,
+                                                width: 28,
+                                                textAlign: "center",
+                                            }}
+                                        >
+                                            {medal ?? `${index + 1}`}
+                                        </Text>
+                                        <Text
+                                            style={{
+                                                fontSize: 14,
+                                                fontWeight: isMe
+                                                    ? "900"
+                                                    : "600",
+                                                color: isMe
+                                                    ? Colors.accent
+                                                    : Colors.textPrimary,
+                                                letterSpacing: isMe
+                                                    ? -0.5
+                                                    : 0,
+                                            }}
+                                        >
+                                            {entry.display_name}
+                                            {isMe ? " (you)" : ""}
+                                        </Text>
+                                    </View>
+                                    <View
+                                        style={{
+                                            flexDirection: "row",
+                                            alignItems: "center",
+                                            gap: 6,
+                                        }}
+                                    >
+                                        <View
+                                            style={{
+                                                width: 40,
+                                                height: 6,
+                                                borderRadius: 99,
+                                                backgroundColor:
+                                                    "rgba(255,255,255,0.06)",
+                                                overflow: "hidden",
+                                            }}
+                                        >
+                                            <View
+                                                style={{
+                                                    width: `${entry.success_rate}%`,
+                                                    height: "100%",
+                                                    borderRadius: 99,
+                                                    backgroundColor:
+                                                        entry.success_rate >=
+                                                        80
+                                                            ? Colors.statusUp
+                                                            : entry.success_rate >=
+                                                                50
+                                                              ? Colors.statusSnooze
+                                                              : Colors.statusLate,
+                                                }}
+                                            />
+                                        </View>
+                                        <Text
+                                            style={{
+                                                fontSize: 13,
+                                                fontWeight: "700",
+                                                color:
+                                                    entry.success_rate >= 80
+                                                        ? Colors.statusUp
+                                                        : entry.success_rate >=
+                                                            50
+                                                          ? Colors.statusSnooze
+                                                          : Colors.statusLate,
+                                                width: 42,
+                                                textAlign: "right",
+                                            }}
+                                        >
+                                            {entry.success_rate}%
+                                        </Text>
+                                    </View>
+                                </View>
+                            );
+                        })}
+                    </GlassCard>
+                </>
+            )}
 
             {/* Members */}
             {error && (

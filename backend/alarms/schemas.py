@@ -117,3 +117,12 @@ class ManualRingOut(Schema):
 
 class AddMemberRequest(Schema):
     user_id: uuid.UUID
+
+
+class LeaderboardEntry(Schema):
+    user_id: uuid.UUID
+    display_name: str
+    username: str
+    total_events: int
+    on_time_checkins: int
+    success_rate: float
