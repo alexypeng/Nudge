@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
+import { View, Text, TextInput, ScrollView, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { UserPlus } from "lucide-react-native";
 import { useFriendStore } from "@/src/stores/friendStore";
@@ -22,6 +22,7 @@ export default function FriendsTab() {
     const isLoading = useFriendStore((s) => s.isLoading);
     const storeError = useFriendStore((s) => s.error);
     const [actionError, setActionError] = useState<string | null>(null);
+    const [search, setSearch] = useState("");
 
     usePolling(() => {
         fetchAll();
@@ -112,13 +113,37 @@ export default function FriendsTab() {
                     </View>
                 ) : (
                     <>
+                        <TextInput
+                            className="h-14 px-4 mb-4"
+                            style={{
+                                backgroundColor: Colors.surface,
+                                color: Colors.textPrimary,
+                                borderRadius: 12,
+                                borderWidth: 1,
+                                borderColor: Colors.border,
+                                fontSize: 15,
+                            }}
+                            value={search}
+                            onChangeText={setSearch}
+                            placeholder="Search friends"
+                            placeholderTextColor={Colors.textDim}
+                        />
+
                         {/* Pending Requests */}
-                        {pending.length > 0 && (
+                        {pending.filter((r) => {
+                            if (!search) return true;
+                            const q = search.toLowerCase();
+                            return r.from_user.display_name.toLowerCase().includes(q) || r.from_user.username.toLowerCase().includes(q);
+                        }).length > 0 && (
                             <View>
                                 <Text style={styles.sectionLabel}>
                                     REQUESTS
                                 </Text>
-                                {pending.map((request) => (
+                                {pending.filter((r) => {
+                                    if (!search) return true;
+                                    const q = search.toLowerCase();
+                                    return r.from_user.display_name.toLowerCase().includes(q) || r.from_user.username.toLowerCase().includes(q);
+                                }).map((request) => (
                                     <GlassCard
                                         key={request.id}
                                         style={{ marginBottom: 8 }}
@@ -206,9 +231,17 @@ export default function FriendsTab() {
                         )}
 
                         {/* Friends List */}
-                        {friends.length > 0 && (
+                        {friends.filter((f) => {
+                            if (!search) return true;
+                            const q = search.toLowerCase();
+                            return f.user.display_name.toLowerCase().includes(q) || f.user.username.toLowerCase().includes(q);
+                        }).length > 0 && (
                             <View className={pending.length > 0 ? "mt-6" : ""}>
-                                {friends.map((friend) => (
+                                {friends.filter((f) => {
+                                    if (!search) return true;
+                                    const q = search.toLowerCase();
+                                    return f.user.display_name.toLowerCase().includes(q) || f.user.username.toLowerCase().includes(q);
+                                }).map((friend) => (
                                     <GlassCard
                                         key={friend.friendship_id}
                                         style={{ marginBottom: 8 }}

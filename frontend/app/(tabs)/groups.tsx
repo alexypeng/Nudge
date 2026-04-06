@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { useState } from "react";
+import { View, Text, TextInput, ScrollView, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Users } from "lucide-react-native";
@@ -15,6 +16,7 @@ export default function GroupsScreen() {
     const fetchGroups = useGroupStore((s) => s.fetch);
     const isLoading = useGroupStore((s) => s.isLoading);
     const error = useGroupStore((s) => s.error);
+    const [search, setSearch] = useState("");
 
     usePolling(() => {
         fetchGroups();
@@ -45,8 +47,27 @@ export default function GroupsScreen() {
                 {isLoading && groups.length === 0 ? (
                     <ArcadeSpinner style={{ marginTop: 40 }} />
                 ) : groups.length > 0 ? (
+                    <>
+                    <TextInput
+                        className="h-14 px-4 mb-4"
+                        style={{
+                            backgroundColor: Colors.surface,
+                            color: Colors.textPrimary,
+                            borderRadius: 12,
+                            borderWidth: 1,
+                            borderColor: Colors.border,
+                            fontSize: 15,
+                        }}
+                        value={search}
+                        onChangeText={setSearch}
+                        placeholder="Search groups"
+                        placeholderTextColor={Colors.textDim}
+                    />
                     <View className="flex-row flex-wrap" style={{ gap: 8 }}>
-                        {groups.map((group) => (
+                        {groups.filter((g) => {
+                            if (!search) return true;
+                            return g.name.toLowerCase().includes(search.toLowerCase());
+                        }).map((group) => (
                             <Pressable
                                 key={group.id}
                                 onPress={() =>
@@ -91,6 +112,7 @@ export default function GroupsScreen() {
                             </Pressable>
                         ))}
                     </View>
+                    </>
                 ) : (
                     <View
                         style={{
