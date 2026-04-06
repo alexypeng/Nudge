@@ -74,7 +74,7 @@ export default function RegisterPage() {
                     }}
                     value={username}
                     onChangeText={(t) => setUsername(t.replace(/\s/g, "").toLowerCase())}
-                    placeholder="@username"
+                    placeholder="Username"
                     placeholderTextColor={Colors.textDim}
                     autoCapitalize="none"
                     autoCorrect={false}
