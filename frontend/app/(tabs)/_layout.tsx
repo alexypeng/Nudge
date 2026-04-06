@@ -10,12 +10,11 @@ export default function TabLayout() {
                 tabBarStyle: {
                     backgroundColor: Colors.background,
                     borderTopColor: "rgba(255,255,255,0.08)",
+                    paddingTop: 12,
+                    height: 88
                 },
                 tabBarActiveTintColor: Colors.accent,
                 tabBarInactiveTintColor: Colors.textSecondary,
-                tabBarItemStyle: {
-                    marginTop: 12
-                }
             }}
         >
             <Tabs.Screen
