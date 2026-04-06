@@ -44,6 +44,111 @@ function getGreeting() {
     return "Good evening";
 }
 
+function RingFriendCard({
+    friend,
+    status,
+    cooldownUntil,
+    onRing,
+}: {
+    friend: RingableFriend;
+    status?: string;
+    cooldownUntil: number;
+    onRing: () => void;
+}) {
+    const [remainingMs, setRemainingMs] = useState(() =>
+        Math.max(0, cooldownUntil - Date.now()),
+    );
+
+    useEffect(() => {
+        if (cooldownUntil <= 0) {
+            setRemainingMs(0);
+            return;
+        }
+        const tick = () => setRemainingMs(Math.max(0, cooldownUntil - Date.now()));
+        tick();
+        const id = setInterval(tick, 1000);
+        return () => clearInterval(id);
+    }, [cooldownUntil]);
+
+    const onCooldown = remainingMs > 0;
+    const cooldownSecs = Math.ceil(remainingMs / 1000);
+    const cooldownLabel = `${Math.floor(cooldownSecs / 60)}:${String(cooldownSecs % 60).padStart(2, "0")}`;
+
+    const { time: t12, period } = formatTime12h(friend.alarmTime);
+
+    return (
+        <GlassCard
+            style={{ marginBottom: 8, borderColor: Colors.statusSnooze }}
+        >
+            <View
+                style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                }}
+            >
+                <View style={{ flex: 1 }}>
+                    <Text
+                        style={{
+                            fontSize: 15,
+                            fontWeight: "900",
+                            color: Colors.textPrimary,
+                            letterSpacing: -0.5,
+                        }}
+                    >
+                        {friend.displayName}
+                    </Text>
+                    <Text
+                        style={{
+                            fontSize: 12,
+                            color: Colors.textSecondary,
+                            marginTop: 2,
+                        }}
+                    >
+                        {friend.alarmName} · {t12} {period}
+                    </Text>
+                    <Text
+                        style={{
+                            fontSize: 11,
+                            color: Colors.textDim,
+                            marginTop: 2,
+                        }}
+                    >
+                        {friend.groupName} · needs a wake-up call
+                    </Text>
+                </View>
+                <View style={{ alignItems: "center", width: 80 }}>
+                    <TactileButton
+                        label={
+                            status === "Sent!"
+                                ? "Sent!"
+                                : onCooldown
+                                  ? cooldownLabel
+                                  : "Ring"
+                        }
+                        onPress={onRing}
+                        disabled={status === "Sent!" || onCooldown}
+                        size={36}
+                        style={{ width: 80 }}
+                        textStyle={{ fontSize: 12 }}
+                    />
+                    {status && status !== "Sent!" && (
+                        <Text
+                            style={{
+                                fontSize: 10,
+                                color: Colors.statusLate,
+                                marginTop: 4,
+                            }}
+                        >
+                            {status}
+                        </Text>
+                    )}
+                </View>
+            </View>
+        </GlassCard>
+    );
+}
+
 export default function HomeScreen() {
     const router = useRouter();
     const token = useAuthStore((s) => s.token);
@@ -64,6 +169,7 @@ export default function HomeScreen() {
     >({});
     const [ringableFriends, setRingableFriends] = useState<RingableFriend[]>([]);
     const [ringStatus, setRingStatus] = useState<Record<string, string>>({});
+    const [ringCooldowns, setRingCooldowns] = useState<Record<string, number>>({});
 
     const fetchEvents = async () => {
         if (!token) return;
@@ -168,11 +274,21 @@ export default function HomeScreen() {
         }
     };
 
+    const RING_COOLDOWN_MS = 2 * 60 * 1000;
+
+    const getRingCooldownRemaining = (alarmId: string) => {
+        const lastRing = ringCooldowns[alarmId];
+        if (!lastRing) return 0;
+        return Math.max(0, lastRing + RING_COOLDOWN_MS - Date.now());
+    };
+
     const handleRing = async (alarmId: string) => {
         if (!token) return;
+        if (getRingCooldownRemaining(alarmId) > 0) return;
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         try {
             await api.triggerAlarm(token, alarmId);
+            setRingCooldowns((prev) => ({ ...prev, [alarmId]: Date.now() }));
             setRingStatus((prev) => ({ ...prev, [alarmId]: "Sent!" }));
         } catch (err) {
             const message = (err as Error).message;
@@ -320,87 +436,15 @@ export default function HomeScreen() {
                             >
                                 RING YOUR FRIENDS
                             </Text>
-                            {ringableFriends.map((friend) => {
-                                const { time: t12, period } = formatTime12h(
-                                    friend.alarmTime,
-                                );
-                                const status = ringStatus[friend.alarmId];
-                                return (
-                                    <GlassCard
-                                        key={friend.alarmId}
-                                        style={{
-                                            marginBottom: 8,
-                                            borderColor: Colors.statusSnooze,
-                                        }}
-                                    >
-                                        <View
-                                            style={{
-                                                flexDirection: "row",
-                                                justifyContent: "space-between",
-                                                alignItems: "center",
-                                            }}
-                                        >
-                                            <View style={{ flex: 1 }}>
-                                                <Text
-                                                    style={{
-                                                        fontSize: 15,
-                                                        fontWeight: "900",
-                                                        color: Colors.textPrimary,
-                                                        letterSpacing: -0.5,
-                                                    }}
-                                                >
-                                                    {friend.displayName}
-                                                </Text>
-                                                <Text
-                                                    style={{
-                                                        fontSize: 12,
-                                                        color: Colors.textSecondary,
-                                                        marginTop: 2,
-                                                    }}
-                                                >
-                                                    {friend.alarmName} · {t12}{" "}
-                                                    {period}
-                                                </Text>
-                                                <Text
-                                                    style={{
-                                                        fontSize: 11,
-                                                        color: Colors.textDim,
-                                                        marginTop: 2,
-                                                    }}
-                                                >
-                                                    {friend.groupName} · needs a
-                                                    wake-up call
-                                                </Text>
-                                            </View>
-                                            <View
-                                                style={{ alignItems: "center", width: 80 }}
-                                            >
-                                                <TactileButton
-                                                    label={status === "Sent!" ? "Sent!" : "Ring"}
-                                                    onPress={() =>
-                                                        handleRing(friend.alarmId)
-                                                    }
-                                                    disabled={status === "Sent!"}
-                                                    size={36}
-                                                    style={{ width: 80 }}
-                                                    textStyle={{ fontSize: 12 }}
-                                                />
-                                                {status && status !== "Sent!" && (
-                                                    <Text
-                                                        style={{
-                                                            fontSize: 10,
-                                                            color: Colors.statusLate,
-                                                            marginTop: 4,
-                                                        }}
-                                                    >
-                                                        {status}
-                                                    </Text>
-                                                )}
-                                            </View>
-                                        </View>
-                                    </GlassCard>
-                                );
-                            })}
+                            {ringableFriends.map((friend) => (
+                                <RingFriendCard
+                                    key={friend.alarmId}
+                                    friend={friend}
+                                    status={ringStatus[friend.alarmId]}
+                                    cooldownUntil={ringCooldowns[friend.alarmId] ? ringCooldowns[friend.alarmId] + RING_COOLDOWN_MS : 0}
+                                    onRing={() => handleRing(friend.alarmId)}
+                                />
+                            ))}
                         </>
                     )}
 
