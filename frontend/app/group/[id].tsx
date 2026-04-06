@@ -55,6 +55,7 @@ export default function GroupScreen() {
     const [ringStatus, setRingStatus] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
     const [groupName, setGroupName] = useState(group?.name ?? "");
     const [groupIcon, setGroupIcon] = useState(group?.icon ?? "people");
 
@@ -237,179 +238,73 @@ export default function GroupScreen() {
                 </Text>
             )}
 
-            {members.length > 0 ? (
-                <View style={{ gap: 8 }}>
+            {members.filter((m) => m.id !== currentUserId).length > 0 ? (
+                <View
+                    className="flex-row flex-wrap"
+                    style={{ gap: 8 }}
+                >
                     {members.filter((m) => m.id !== currentUserId).map((member) => {
-                        const memberAlarms = groupAlarms.filter(
-                            (a) => a.user_id === member.id
+                        const hasExpired = groupAlarms.some(
+                            (a) => a.user_id === member.id && alarmStatuses[a.id] === "EXPIRED",
                         );
 
                         return (
-                            <View
+                            <Pressable
                                 key={member.id}
+                                onPress={() => setSelectedMemberId(member.id)}
                                 style={{
-                                    backgroundColor: Colors.surface,
+                                    backgroundColor: hasExpired ? Colors.accentSubtle : Colors.surface,
                                     borderWidth: 1.5,
-                                    borderColor: Colors.border,
+                                    borderColor: hasExpired ? Colors.statusSnooze : Colors.border,
                                     borderRadius: 18,
                                     padding: 16,
+                                    width: "31%",
+                                    aspectRatio: 1,
+                                    justifyContent: "center",
+                                    alignItems: "center",
                                 }}
                             >
                                 <View
                                     style={{
-                                        flexDirection: "row",
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 20,
+                                        backgroundColor: hasExpired ? Colors.statusSnooze : Colors.avatarBlue,
                                         alignItems: "center",
-                                        gap: 10,
-                                        marginBottom: memberAlarms.length > 0 ? 12 : 0,
+                                        justifyContent: "center",
+                                        marginBottom: 10,
                                     }}
                                 >
-                                    <View
-                                        style={{
-                                            width: 32,
-                                            height: 32,
-                                            borderRadius: 16,
-                                            backgroundColor: Colors.avatarBlue,
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                        }}
-                                    >
-                                        <Text
-                                            style={{
-                                                fontSize: 13,
-                                                fontWeight: "900",
-                                                color: Colors.surface,
-                                            }}
-                                        >
-                                            {member.display_name
-                                                .charAt(0)
-                                                .toUpperCase()}
-                                        </Text>
-                                    </View>
                                     <Text
                                         style={{
-                                            fontSize: 15,
+                                            fontSize: 16,
                                             fontWeight: "900",
-                                            color: Colors.textPrimary,
-                                            letterSpacing: -0.5,
+                                            color: Colors.surface,
                                         }}
                                     >
-                                        {member.display_name}
+                                        {member.display_name.charAt(0).toUpperCase()}
                                     </Text>
                                 </View>
-
-                                {memberAlarms.length > 0 ? (
-                                    <View style={{ gap: 8 }}>
-                                        {memberAlarms.map((alarm) => {
-                                            const [h, m] = alarm.time
-                                                .slice(0, 5)
-                                                .split(":")
-                                                .map(Number);
-                                            const period = h >= 12 ? "PM" : "AM";
-                                            const hour12 = h % 12 || 12;
-                                            const timeStr = `${hour12}:${String(m).padStart(2, "0")} ${period}`;
-                                            const showRing =
-                                                alarmStatuses[alarm.id] === "EXPIRED";
-
-                                            return (
-                                                <View
-                                                    key={alarm.id}
-                                                    style={{
-                                                        flexDirection: "row",
-                                                        alignItems: "center",
-                                                        justifyContent:
-                                                            "space-between",
-                                                        backgroundColor:
-                                                            Colors.background,
-                                                        borderRadius: 12,
-                                                        paddingVertical: 10,
-                                                        paddingHorizontal: 14,
-                                                    }}
-                                                >
-                                                    <View>
-                                                        <Text
-                                                            style={{
-                                                                fontSize: 13,
-                                                                fontWeight: "700",
-                                                                color: Colors.textPrimary,
-                                                            }}
-                                                        >
-                                                            {alarm.name}
-                                                        </Text>
-                                                        <Text
-                                                            style={{
-                                                                fontSize: 11,
-                                                                color: Colors.textSecondary,
-                                                                marginTop: 2,
-                                                            }}
-                                                        >
-                                                            {timeStr}
-                                                        </Text>
-                                                    </View>
-                                                    {showRing && (
-                                                        <Pressable
-                                                            onPress={() =>
-                                                                handleRing(
-                                                                    alarm.id
-                                                                )
-                                                            }
-                                                            style={{
-                                                                backgroundColor:
-                                                                    Colors.accentSubtle,
-                                                                borderWidth: 1,
-                                                                borderColor:
-                                                                    "rgba(96,165,250,0.25)",
-                                                                borderRadius: 99,
-                                                                paddingHorizontal: 12,
-                                                                paddingVertical: 6,
-                                                                flexDirection:
-                                                                    "row",
-                                                                alignItems:
-                                                                    "center",
-                                                                gap: 4,
-                                                            }}
-                                                        >
-                                                            <Ionicons
-                                                                name="notifications"
-                                                                size={14}
-                                                                color={
-                                                                    Colors.accent
-                                                                }
-                                                            />
-                                                            <Text
-                                                                style={{
-                                                                    fontSize: 10,
-                                                                    fontWeight:
-                                                                        "700",
-                                                                    color: Colors.accent,
-                                                                }}
-                                                            >
-                                                                Ring
-                                                            </Text>
-                                                        </Pressable>
-                                                    )}
-                                                </View>
-                                            );
-                                        })}
-                                    </View>
-                                ) : (
-                                    <Text
-                                        style={{
-                                            fontSize: 12,
-                                            color: Colors.textDim,
-                                            marginTop: 4,
-                                        }}
-                                    >
-                                        No alarms
-                                    </Text>
-                                )}
-                            </View>
+                                <Text
+                                    style={{
+                                        fontSize: 15,
+                                        fontWeight: "900",
+                                        color: Colors.textPrimary,
+                                        letterSpacing: -0.5,
+                                        textAlign: "center",
+                                    }}
+                                    numberOfLines={2}
+                                >
+                                    {member.display_name}
+                                </Text>
+                            </Pressable>
                         );
                     })}
                 </View>
             ) : (
                 <GlassCard>
                     <Text style={{ fontSize: 13, color: Colors.textSecondary }}>
-                        No members yet
+                        No other members yet
                     </Text>
                 </GlassCard>
             )}
@@ -568,6 +463,168 @@ export default function GroupScreen() {
                             onPress={handleEditSave}
                             disabled={!groupName}
                         />
+                    </Pressable>
+                </Pressable>
+            </Modal>
+
+            {/* Member Alarms Modal */}
+            <Modal
+                visible={selectedMemberId !== null}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setSelectedMemberId(null)}
+            >
+                <Pressable
+                    className="flex-1 justify-end"
+                    style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+                    onPress={() => setSelectedMemberId(null)}
+                >
+                    <Pressable
+                        style={{
+                            backgroundColor: Colors.surface,
+                            borderTopLeftRadius: 24,
+                            borderTopRightRadius: 24,
+                            borderWidth: 1.5,
+                            borderBottomWidth: 0,
+                            borderColor: Colors.border,
+                            padding: 20,
+                            paddingBottom: 40,
+                            maxHeight: "70%",
+                        }}
+                    >
+                        {(() => {
+                            const member = members.find((m) => m.id === selectedMemberId);
+                            if (!member) return null;
+                            const memberAlarms = groupAlarms.filter(
+                                (a) => a.user_id === member.id && a.is_active,
+                            );
+
+                            return (
+                                <>
+                                    <View style={{ alignItems: "center", marginBottom: 20 }}>
+                                        <View
+                                            style={{
+                                                width: 4,
+                                                height: 4,
+                                                borderRadius: 2,
+                                                backgroundColor: Colors.textDim,
+                                                marginBottom: 16,
+                                            }}
+                                        />
+                                        <View
+                                            style={{
+                                                width: 48,
+                                                height: 48,
+                                                borderRadius: 24,
+                                                backgroundColor: Colors.avatarBlue,
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                marginBottom: 8,
+                                            }}
+                                        >
+                                            <Text
+                                                style={{
+                                                    fontSize: 20,
+                                                    fontWeight: "900",
+                                                    color: Colors.surface,
+                                                }}
+                                            >
+                                                {member.display_name.charAt(0).toUpperCase()}
+                                            </Text>
+                                        </View>
+                                        <Text
+                                            style={{
+                                                fontSize: 17,
+                                                fontWeight: "900",
+                                                color: Colors.textPrimary,
+                                                letterSpacing: -0.5,
+                                            }}
+                                        >
+                                            {member.display_name}
+                                        </Text>
+                                        <Text
+                                            style={{
+                                                fontSize: 12,
+                                                color: Colors.textDim,
+                                                marginTop: 2,
+                                            }}
+                                        >
+                                            {memberAlarms.length} active alarm{memberAlarms.length !== 1 ? "s" : ""}
+                                        </Text>
+                                    </View>
+
+                                    {memberAlarms.length > 0 ? (
+                                        <ScrollView style={{ flexGrow: 0 }}>
+                                            <View style={{ gap: 8 }}>
+                                                {memberAlarms.map((alarm) => {
+                                                    const [h, m] = alarm.time
+                                                        .slice(0, 5)
+                                                        .split(":")
+                                                        .map(Number);
+                                                    const period = h >= 12 ? "PM" : "AM";
+                                                    const hour12 = h % 12 || 12;
+                                                    const timeStr = `${hour12}:${String(m).padStart(2, "0")} ${period}`;
+                                                    const isExpired = alarmStatuses[alarm.id] === "EXPIRED";
+
+                                                    return (
+                                                        <View
+                                                            key={alarm.id}
+                                                            style={{
+                                                                flexDirection: "row",
+                                                                alignItems: "center",
+                                                                justifyContent: "space-between",
+                                                                backgroundColor: Colors.background,
+                                                                borderRadius: 12,
+                                                                borderWidth: isExpired ? 1 : 0,
+                                                                borderColor: Colors.statusSnooze,
+                                                                paddingVertical: 12,
+                                                                paddingHorizontal: 14,
+                                                            }}
+                                                        >
+                                                            <View>
+                                                                <Text
+                                                                    style={{
+                                                                        fontSize: 13,
+                                                                        fontWeight: "700",
+                                                                        color: Colors.textPrimary,
+                                                                    }}
+                                                                >
+                                                                    {alarm.name}
+                                                                </Text>
+                                                                <Text
+                                                                    style={{
+                                                                        fontSize: 11,
+                                                                        color: isExpired ? Colors.statusSnooze : Colors.textSecondary,
+                                                                        marginTop: 2,
+                                                                    }}
+                                                                >
+                                                                    {timeStr}{isExpired ? " · needs a wake-up call" : ""}
+                                                                </Text>
+                                                            </View>
+                                                            {isExpired && (
+                                                                <TactileButton
+                                                                    label="Ring"
+                                                                    onPress={() => handleRing(alarm.id)}
+                                                                    size={32}
+                                                                    style={{ width: 64 }}
+                                                                    textStyle={{ fontSize: 11 }}
+                                                                />
+                                                            )}
+                                                        </View>
+                                                    );
+                                                })}
+                                            </View>
+                                        </ScrollView>
+                                    ) : (
+                                        <View style={{ alignItems: "center", paddingVertical: 20 }}>
+                                            <Text style={{ fontSize: 13, color: Colors.textDim }}>
+                                                No active alarms
+                                            </Text>
+                                        </View>
+                                    )}
+                                </>
+                            );
+                        })()}
                     </Pressable>
                 </Pressable>
             </Modal>
