@@ -181,7 +181,7 @@ export default function AlarmCreateScreen() {
                     NAME
                 </Text>
                 <TextInput
-                    className="h-12 px-4 mb-5"
+                    className="h-14 px-4 mb-5"
                     style={{
                         backgroundColor: Colors.surface,
                         color: Colors.textPrimary,
@@ -266,7 +266,7 @@ export default function AlarmCreateScreen() {
                         {groups.length > 0 ? (
                             <>
                                 <TextInput
-                                    className="h-12 px-4 mb-4"
+                                    className="h-14 px-4 mb-4"
                                     style={{
                                         backgroundColor: Colors.surface,
                                         color: Colors.textPrimary,

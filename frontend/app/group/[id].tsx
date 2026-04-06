@@ -449,7 +449,7 @@ export default function GroupScreen() {
                             GROUP NAME
                         </Text>
                         <TextInput
-                            className="h-12 px-4 mb-4"
+                            className="h-14 px-4 mb-4"
                             style={{
                                 backgroundColor: Colors.background,
                                 color: Colors.textPrimary,

@@ -64,7 +64,7 @@ export default function RegisterPage() {
                     Your crew's got your back
                 </Text>
                 <TextInput
-                    className="h-12 px-4 mb-3"
+                    className="h-14 px-4 mb-3"
                     style={{
                         backgroundColor: Colors.surface,
                         color: Colors.textPrimary,
@@ -80,7 +80,7 @@ export default function RegisterPage() {
                     autoCorrect={false}
                 />
                 <TextInput
-                    className="h-12 px-4 mb-3"
+                    className="h-14 px-4 mb-3"
                     style={{
                         backgroundColor: Colors.surface,
                         color: Colors.textPrimary,
@@ -94,7 +94,7 @@ export default function RegisterPage() {
                     placeholderTextColor={Colors.textDim}
                 />
                 <TextInput
-                    className="h-12 px-4 mb-3"
+                    className="h-14 px-4 mb-3"
                     style={{
                         backgroundColor: Colors.surface,
                         color: Colors.textPrimary,
@@ -110,7 +110,7 @@ export default function RegisterPage() {
                     keyboardType="email-address"
                 />
                 <TextInput
-                    className="h-12 px-4 mb-3"
+                    className="h-14 px-4 mb-3"
                     style={{
                         backgroundColor: Colors.surface,
                         color: Colors.textPrimary,

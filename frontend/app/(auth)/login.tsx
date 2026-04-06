@@ -54,7 +54,7 @@ export default function LoginScreen() {
                     Welcome back to RingSync
                 </Text>
                 <TextInput
-                    className="h-12 px-4 mb-3"
+                    className="h-14 px-4 mb-3"
                     style={{
                         backgroundColor: Colors.surface,
                         color: Colors.textPrimary,
@@ -70,7 +70,7 @@ export default function LoginScreen() {
                     keyboardType="email-address"
                 />
                 <TextInput
-                    className="h-12 px-4 mb-4"
+                    className="h-14 px-4 mb-4"
                     style={{
                         backgroundColor: Colors.surface,
                         color: Colors.textPrimary,

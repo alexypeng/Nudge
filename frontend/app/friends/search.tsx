@@ -63,7 +63,7 @@ export default function SearchFriendsScreen() {
         >
             {/* Search Input */}
             <TextInput
-                className="h-12 px-4"
+                className="h-14 px-4"
                 style={{
                     backgroundColor: Colors.surface,
                     color: Colors.textPrimary,

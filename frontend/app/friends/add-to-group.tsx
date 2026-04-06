@@ -77,7 +77,7 @@ export default function AddToGroupScreen() {
             {availableFriends.length > 0 ? (
                 <>
                     <TextInput
-                        className="h-12 px-4 mb-4"
+                        className="h-14 px-4 mb-4"
                         style={{
                             backgroundColor: Colors.surface,
                             color: Colors.textPrimary,

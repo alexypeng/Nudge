@@ -132,7 +132,7 @@ export default function EditAlarmScreen() {
                     NAME
                 </Text>
                 <TextInput
-                    className="h-12 px-4 mb-5"
+                    className="h-14 px-4 mb-5"
                     style={{
                         backgroundColor: Colors.surface,
                         color: Colors.textPrimary,

@@ -140,7 +140,7 @@ export default function SettingsScreen() {
 
                 <Text style={styles.fieldLabel}>Display Name</Text>
                 <TextInput
-                    className="h-12 px-4 mb-5"
+                    className="h-14 px-4 mb-5"
                     style={styles.input}
                     value={displayName}
                     onChangeText={setDisplayName}
@@ -149,7 +149,7 @@ export default function SettingsScreen() {
 
                 <Text style={styles.fieldLabel}>Email</Text>
                 <TextInput
-                    className="h-12 px-4 mb-5"
+                    className="h-14 px-4 mb-5"
                     style={styles.input}
                     value={email}
                     onChangeText={setEmail}
@@ -160,7 +160,7 @@ export default function SettingsScreen() {
 
                 <Text style={styles.fieldLabel}>Username</Text>
                 <TextInput
-                    className="h-12 px-4 mb-8"
+                    className="h-14 px-4 mb-8"
                     style={styles.input}
                     value={username}
                     onChangeText={setUsername}
@@ -181,7 +181,7 @@ export default function SettingsScreen() {
 
                 <Text style={styles.fieldLabel}>New Password</Text>
                 <TextInput
-                    className="h-12 px-4 mb-3"
+                    className="h-14 px-4 mb-3"
                     style={styles.input}
                     value={newPassword}
                     onChangeText={setNewPassword}
