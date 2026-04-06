@@ -44,6 +44,7 @@ export default function AlarmCreateScreen() {
     const [selectedGroupId, setSelectedGroupId] = useState(paramGroupId ?? "");
     const [time, setTime] = useState(new Date());
     const [selectedDays, setSelectedDays] = useState<string[]>([]);
+    const [groupSearch, setGroupSearch] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -262,65 +263,94 @@ export default function AlarmCreateScreen() {
                         </Text>
                         {groups.length > 0 ? (
                             <>
+                                <TextInput
+                                    className="h-12 px-4 mb-4"
+                                    style={{
+                                        backgroundColor: Colors.surface,
+                                        color: Colors.textPrimary,
+                                        borderRadius: 12,
+                                        borderWidth: 1,
+                                        borderColor: Colors.border,
+                                        fontSize: 15,
+                                    }}
+                                    value={groupSearch}
+                                    onChangeText={setGroupSearch}
+                                    placeholder="Search groups"
+                                    placeholderTextColor={Colors.textDim}
+                                />
                                 <View
                                     className="flex-row flex-wrap mb-2"
                                     style={{ gap: 8 }}
                                 >
-                                    {groups.map((group) => {
-                                        const active =
-                                            selectedGroupId === group.id;
-                                        return (
-                                            <Pressable
-                                                key={group.id}
-                                                onPress={() =>
-                                                    setSelectedGroupId(group.id)
-                                                }
-                                                style={{
-                                                    backgroundColor: active
-                                                        ? Colors.accent
-                                                        : Colors.surface,
-                                                    borderWidth: 1.5,
-                                                    borderColor: active
-                                                        ? Colors.accent
-                                                        : Colors.border,
-                                                    borderRadius: 18,
-                                                    padding: 16,
-                                                    width: "31%",
-                                                    aspectRatio: 1,
-                                                    justifyContent: "center",
-                                                    alignItems: "center",
-                                                }}
-                                            >
-                                                <Ionicons
-                                                    name={
-                                                        (group.icon as keyof typeof Ionicons.glyphMap) ||
-                                                        "people"
+                                    {groups
+                                        .filter((g) => {
+                                            if (!groupSearch) return true;
+                                            return g.name
+                                                .toLowerCase()
+                                                .includes(
+                                                    groupSearch.toLowerCase(),
+                                                );
+                                        })
+                                        .map((group) => {
+                                            const active =
+                                                selectedGroupId === group.id;
+                                            return (
+                                                <Pressable
+                                                    key={group.id}
+                                                    onPress={() =>
+                                                        setSelectedGroupId(
+                                                            group.id,
+                                                        )
                                                     }
-                                                    size={40}
-                                                    color={
-                                                        active
-                                                            ? Colors.surface
-                                                            : Colors.accent
-                                                    }
-                                                    style={{ marginBottom: 10 }}
-                                                />
-                                                <Text
                                                     style={{
-                                                        fontSize: 15,
-                                                        fontWeight: "900",
-                                                        color: active
-                                                            ? Colors.surface
-                                                            : Colors.textPrimary,
-                                                        letterSpacing: -0.5,
-                                                        textAlign: "center",
+                                                        backgroundColor: active
+                                                            ? Colors.accent
+                                                            : Colors.surface,
+                                                        borderWidth: 1.5,
+                                                        borderColor: active
+                                                            ? Colors.accent
+                                                            : Colors.border,
+                                                        borderRadius: 18,
+                                                        padding: 16,
+                                                        width: "31%",
+                                                        aspectRatio: 1,
+                                                        justifyContent:
+                                                            "center",
+                                                        alignItems: "center",
                                                     }}
-                                                    numberOfLines={2}
                                                 >
-                                                    {group.name}
-                                                </Text>
-                                            </Pressable>
-                                        );
-                                    })}
+                                                    <Ionicons
+                                                        name={
+                                                            (group.icon as keyof typeof Ionicons.glyphMap) ||
+                                                            "people"
+                                                        }
+                                                        size={40}
+                                                        color={
+                                                            active
+                                                                ? Colors.surface
+                                                                : Colors.accent
+                                                        }
+                                                        style={{
+                                                            marginBottom: 10,
+                                                        }}
+                                                    />
+                                                    <Text
+                                                        style={{
+                                                            fontSize: 15,
+                                                            fontWeight: "900",
+                                                            color: active
+                                                                ? Colors.surface
+                                                                : Colors.textPrimary,
+                                                            letterSpacing: -0.5,
+                                                            textAlign: "center",
+                                                        }}
+                                                        numberOfLines={2}
+                                                    >
+                                                        {group.name}
+                                                    </Text>
+                                                </Pressable>
+                                            );
+                                        })}
                                 </View>
                                 <View style={{ marginBottom: 12 }} />
                             </>
