@@ -25,7 +25,7 @@ export default function FriendsTab() {
 
     usePolling(() => {
         fetchAll();
-    }, 10000);
+    });
 
     const handleAction = async (fn: () => Promise<void>) => {
         setActionError(null);

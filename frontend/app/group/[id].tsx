@@ -85,7 +85,7 @@ export default function GroupScreen() {
     usePolling(() => {
         fetchAlarms();
         loadGroupData();
-    }, 10000);
+    });
 
     useEffect(() => {
         navigation.setOptions({

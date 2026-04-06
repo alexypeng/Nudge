@@ -21,7 +21,7 @@ export default function AlarmsScreen() {
 
     usePolling(() => {
         fetchAlarms();
-    }, 10000);
+    });
 
     return (
         <View

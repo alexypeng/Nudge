@@ -18,7 +18,7 @@ export default function GroupsScreen() {
 
     usePolling(() => {
         fetchGroups();
-    }, 10000);
+    });
 
     return (
         <View

@@ -320,7 +320,7 @@ export default function HomeScreen() {
                 .map((a) => a.id),
         );
         setVisibleIds(activeIds);
-    }, 10000);
+    });
 
     if (!token) return <Redirect href="/(auth)/login" />;
 
