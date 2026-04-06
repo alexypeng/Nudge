@@ -293,6 +293,7 @@ export default function HomeScreen() {
                                             alarmName={alarm.name}
                                             time={t12}
                                             period={period}
+                                            eventCreatedAt={event.created_at}
                                             onCheckIn={() =>
                                                 handleCheckIn(alarmId)
                                             }
