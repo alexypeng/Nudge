@@ -46,7 +46,9 @@ export default function HomeScreen() {
     const groupError = useGroupStore((s) => s.error);
 
     const [visibleIds, setVisibleIds] = useState<Set<string>>(new Set());
-    const [activeEvents, setActiveEvents] = useState<Record<string, AlarmEventOut>>({});
+    const [activeEvents, setActiveEvents] = useState<
+        Record<string, AlarmEventOut>
+    >({});
 
     const fetchEvents = async () => {
         if (!token) return;
@@ -60,7 +62,7 @@ export default function HomeScreen() {
                         events[alarm.id] = event;
                     }
                 } catch {}
-            })
+            }),
         );
         setActiveEvents(events);
     };
@@ -76,17 +78,20 @@ export default function HomeScreen() {
             alarmFetch().then(fetchEvents);
             groupFetch();
             const activeIds = new Set(
-                useAlarmStore.getState().alarms
-                    .filter((a) => a.is_active)
-                    .map((a) => a.id)
+                useAlarmStore
+                    .getState()
+                    .alarms.filter((a) => a.is_active)
+                    .map((a) => a.id),
             );
             setVisibleIds(activeIds);
-        }, [])
+        }, []),
     );
 
     if (!token) return <Redirect href="/(auth)/login" />;
 
-    const isFirstLoad = (alarmLoading && alarms.length === 0) || (groupLoading && groups.length === 0);
+    const isFirstLoad =
+        (alarmLoading && alarms.length === 0) ||
+        (groupLoading && groups.length === 0);
     const fetchError = alarmError || groupError;
 
     const displayedAlarms = alarms
@@ -98,12 +103,13 @@ export default function HomeScreen() {
         .sort(
             (a, b) =>
                 new Date(a.next_trigger_utc!).getTime() -
-                new Date(b.next_trigger_utc!).getTime()
+                new Date(b.next_trigger_utc!).getTime(),
         )[0];
 
     return (
         <ScrollView
             className="flex-1"
+            contentContainerStyle={{ flexGrow: 1 }}
             contentContainerClassName="px-5 pt-14 pb-8"
             style={{ backgroundColor: Colors.background }}
         >
@@ -115,6 +121,8 @@ export default function HomeScreen() {
                     color: Colors.textPrimary,
                     letterSpacing: -0.5,
                     marginBottom: 20,
+                    paddingTop: 30,
+                    textAlign: "center",
                 }}
             >
                 {getGreeting()}, {user?.display_name ?? "there"}
@@ -123,7 +131,10 @@ export default function HomeScreen() {
             {fetchError && (
                 <ErrorBanner
                     message={fetchError}
-                    onRetry={() => { alarmFetch(); groupFetch(); }}
+                    onRetry={() => {
+                        alarmFetch();
+                        groupFetch();
+                    }}
                     style={{ marginBottom: 12 }}
                 />
             )}
@@ -131,211 +142,254 @@ export default function HomeScreen() {
             {isFirstLoad ? (
                 <ArcadeSpinner style={{ marginTop: 40 }} />
             ) : (
-            <>
-
-            {/* Ringing Alarms */}
-            {Object.keys(activeEvents).length > 0 && (
                 <>
-                    <Text
-                        className="mt-3 mb-2"
-                        style={{
-                            fontSize: 10,
-                            fontWeight: "400",
-                            color: Colors.statusLate,
-                            letterSpacing: 2.5,
-                            textTransform: "uppercase",
-                        }}
-                    >
-                        PENDING CHECK-IN
-                    </Text>
-                    {Object.entries(activeEvents).map(([alarmId, event]) => {
-                        const alarm = alarms.find((a) => a.id === alarmId);
-                        if (!alarm) return null;
-                        const { time: t12, period } = formatTime12h(alarm.time);
-                        return (
-                            <RingingAlarmCard
-                                key={alarmId}
-                                alarmName={alarm.name}
-                                time={t12}
-                                period={period}
-                                onCheckIn={() => handleCheckIn(alarmId)}
-                            />
-                        );
-                    })}
-                </>
-            )}
+                    {/* Ringing Alarms */}
+                    {Object.keys(activeEvents).length > 0 && (
+                        <>
+                            <Text
+                                className="mt-3 mb-2"
+                                style={{
+                                    fontSize: 10,
+                                    fontWeight: "400",
+                                    color: Colors.statusLate,
+                                    letterSpacing: 2.5,
+                                    textTransform: "uppercase",
+                                }}
+                            >
+                                PENDING CHECK-IN
+                            </Text>
+                            {Object.entries(activeEvents).map(
+                                ([alarmId, event]) => {
+                                    const alarm = alarms.find(
+                                        (a) => a.id === alarmId,
+                                    );
+                                    if (!alarm) return null;
+                                    const { time: t12, period } = formatTime12h(
+                                        alarm.time,
+                                    );
+                                    return (
+                                        <RingingAlarmCard
+                                            key={alarmId}
+                                            alarmName={alarm.name}
+                                            time={t12}
+                                            period={period}
+                                            onCheckIn={() =>
+                                                handleCheckIn(alarmId)
+                                            }
+                                        />
+                                    );
+                                },
+                            )}
+                        </>
+                    )}
 
-            {/* Next Alarm Hero */}
-            <Text
-                className="mt-6 mb-2"
-                style={{
-                    fontSize: 10,
-                    fontWeight: "400",
-                    color: Colors.textDim,
-                    letterSpacing: 2.5,
-                    textTransform: "uppercase",
-                }}
-            >
-                NEXT ALARM
-            </Text>
-            {nextAlarm ? (
-                <GlassCard style={{ borderColor: Colors.borderHot }}>
-                    <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-                        <Text
-                            style={{
-                                fontSize: 48,
-                                fontWeight: "900",
-                                color: Colors.accent,
-                                letterSpacing: -0.5,
-                            }}
-                        >
-                            {formatTime12h(nextAlarm.time).time}
-                        </Text>
-                        <Text
-                            style={{
-                                fontSize: 17,
-                                fontWeight: "700",
-                                color: Colors.accent,
-                                marginLeft: 4,
-                            }}
-                        >
-                            {formatTime12h(nextAlarm.time).period}
-                        </Text>
-                    </View>
-                    <Text
-                        className="mt-1"
-                        style={{
-                            fontSize: 15,
-                            fontWeight: "900",
-                            color: Colors.textPrimary,
-                            letterSpacing: -0.5,
-                        }}
-                    >
-                        {nextAlarm.name}
-                    </Text>
-                </GlassCard>
-            ) : (
-                <View style={{ alignItems: "center", paddingVertical: 24 }}>
-                    <Bell color={Colors.textDim} size={36} strokeWidth={1.5} />
-                    <Text
-                        style={{
-                            fontSize: 14,
-                            fontWeight: "700",
-                            color: Colors.textSecondary,
-                            marginTop: 12,
-                        }}
-                    >
-                        No alarms yet
-                    </Text>
-                </View>
-            )}
-
-            {/* Alarms */}
-            {displayedAlarms.length > 0 && (
-                <>
+                    {/* Next Alarm Hero */}
                     <Text
                         className="mt-6 mb-2"
                         style={{
-                            fontSize: 10,
-                            fontWeight: "400",
+                            fontSize: 12,
+                            fontWeight: "700",
                             color: Colors.textDim,
-                            letterSpacing: 2.5,
+                            letterSpacing: 2,
                             textTransform: "uppercase",
+                            paddingLeft: 5,
                         }}
                     >
-                        ACTIVE
+                        NEXT ALARM
                     </Text>
-                    {displayedAlarms.map((alarm) => (
-                        <AlarmCard
-                            key={alarm.id}
-                            alarm={alarm}
-                            groupName={groups.find((g) => g.id === alarm.group_id)?.name}
-                            className="mb-2"
-                            onPress={() =>
-                                router.push({
-                                    pathname: "/alarm/[id]",
-                                    params: { id: alarm.id },
-                                })
-                            }
-                            onToggle={(isActive) => alarmUpdate(alarm.id, { is_active: isActive })}
-                        />
-                    ))}
-                </>
-            )}
-
-            {/* Groups */}
-            <Text
-                className="mt-6 mb-2"
-                style={{
-                    fontSize: 10,
-                    fontWeight: "400",
-                    color: Colors.textDim,
-                    letterSpacing: 2.5,
-                    textTransform: "uppercase",
-                }}
-            >
-                MY GROUPS
-            </Text>
-            {groups.length > 0 ? (
-                <View className="flex-row flex-wrap" style={{ gap: 8 }}>
-                    {groups.map((group) => (
-                        <Pressable
-                            key={group.id}
-                            onPress={() =>
-                                router.push({
-                                    pathname: "/group/[id]",
-                                    params: { id: group.id },
-                                })
-                            }
-                            style={{
-                                backgroundColor: Colors.surface,
-                                borderWidth: 1.5,
-                                borderColor: Colors.border,
-                                borderRadius: 18,
-                                padding: 16,
-                                width: "31%",
-                                aspectRatio: 1,
-                                justifyContent: "center",
-                                alignItems: "center",
-                            }}
-                        >
-                            <Ionicons
-                                name={(group.icon as keyof typeof Ionicons.glyphMap) || "people"}
-                                size={40}
-                                color={Colors.accent}
-                                style={{ marginBottom: 10 }}
-                            />
+                    {nextAlarm ? (
+                        <GlassCard style={{ borderColor: Colors.borderHot }}>
+                            <View
+                                style={{
+                                    flexDirection: "row",
+                                    alignItems: "baseline",
+                                }}
+                            >
+                                <Text
+                                    style={{
+                                        fontSize: 48,
+                                        fontWeight: "900",
+                                        color: Colors.accent,
+                                        letterSpacing: -0.5,
+                                    }}
+                                >
+                                    {formatTime12h(nextAlarm.time).time}
+                                </Text>
+                                <Text
+                                    style={{
+                                        fontSize: 17,
+                                        fontWeight: "700",
+                                        color: Colors.accent,
+                                        marginLeft: 4,
+                                    }}
+                                >
+                                    {formatTime12h(nextAlarm.time).period}
+                                </Text>
+                            </View>
                             <Text
+                                className="mt-1"
                                 style={{
                                     fontSize: 15,
                                     fontWeight: "900",
                                     color: Colors.textPrimary,
                                     letterSpacing: -0.5,
                                 }}
-                                numberOfLines={2}
                             >
-                                {group.name}
+                                {nextAlarm.name}
                             </Text>
-                        </Pressable>
-                    ))}
-                </View>
-            ) : (
-                <View style={{ alignItems: "center", paddingVertical: 24 }}>
-                    <Users color={Colors.textDim} size={36} strokeWidth={1.5} />
+                        </GlassCard>
+                    ) : (
+                        <View
+                            style={{
+                                alignItems: "center",
+                                paddingVertical: 24,
+                            }}
+                        >
+                            <Bell
+                                color={Colors.textDim}
+                                size={36}
+                                strokeWidth={1.5}
+                            />
+                            <Text
+                                style={{
+                                    fontSize: 14,
+                                    fontWeight: "700",
+                                    color: Colors.textSecondary,
+                                    marginTop: 12,
+                                }}
+                            >
+                                No alarms yet
+                            </Text>
+                        </View>
+                    )}
+
+                    {/* Alarms */}
+                    {displayedAlarms.length > 0 && (
+                        <>
+                            <Text
+                                className="mt-6 mb-2"
+                                style={{
+                                    fontSize: 12,
+                                    fontWeight: "700",
+                                    color: Colors.textDim,
+                                    letterSpacing: 2,
+                                    textTransform: "uppercase",
+                                    paddingLeft: 5,
+                                }}
+                            >
+                                ACTIVE
+                            </Text>
+                            {displayedAlarms.map((alarm) => (
+                                <AlarmCard
+                                    key={alarm.id}
+                                    alarm={alarm}
+                                    groupName={
+                                        groups.find(
+                                            (g) => g.id === alarm.group_id,
+                                        )?.name
+                                    }
+                                    className="mb-2"
+                                    onPress={() =>
+                                        router.push({
+                                            pathname: "/alarm/[id]",
+                                            params: { id: alarm.id },
+                                        })
+                                    }
+                                    onToggle={(isActive) =>
+                                        alarmUpdate(alarm.id, {
+                                            is_active: isActive,
+                                        })
+                                    }
+                                />
+                            ))}
+                        </>
+                    )}
+
+                    {/* Groups */}
                     <Text
+                        className="mt-6 mb-2"
                         style={{
-                            fontSize: 14,
+                            fontSize: 12,
                             fontWeight: "700",
-                            color: Colors.textSecondary,
-                            marginTop: 12,
+                            color: Colors.textDim,
+                            letterSpacing: 2,
+                            textTransform: "uppercase",
+                            paddingLeft: 5,
                         }}
                     >
-                        No groups yet
+                        MY GROUPS
                     </Text>
-                </View>
-            )}
-
-            </>
+                    {groups.length > 0 ? (
+                        <View className="flex-row flex-wrap" style={{ gap: 8 }}>
+                            {groups.map((group) => (
+                                <Pressable
+                                    key={group.id}
+                                    onPress={() =>
+                                        router.push({
+                                            pathname: "/group/[id]",
+                                            params: { id: group.id },
+                                        })
+                                    }
+                                    style={{
+                                        backgroundColor: Colors.surface,
+                                        borderWidth: 1.5,
+                                        borderColor: Colors.border,
+                                        borderRadius: 18,
+                                        padding: 16,
+                                        width: "31%",
+                                        aspectRatio: 1,
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                    }}
+                                >
+                                    <Ionicons
+                                        name={
+                                            (group.icon as keyof typeof Ionicons.glyphMap) ||
+                                            "people"
+                                        }
+                                        size={40}
+                                        color={Colors.accent}
+                                        style={{ marginBottom: 10 }}
+                                    />
+                                    <Text
+                                        style={{
+                                            fontSize: 15,
+                                            fontWeight: "900",
+                                            color: Colors.textPrimary,
+                                            letterSpacing: -0.5,
+                                        }}
+                                        numberOfLines={2}
+                                    >
+                                        {group.name}
+                                    </Text>
+                                </Pressable>
+                            ))}
+                        </View>
+                    ) : (
+                        <View
+                            style={{
+                                alignItems: "center",
+                                paddingVertical: 24,
+                            }}
+                        >
+                            <Users
+                                color={Colors.textDim}
+                                size={36}
+                                strokeWidth={1.5}
+                            />
+                            <Text
+                                style={{
+                                    fontSize: 14,
+                                    fontWeight: "700",
+                                    color: Colors.textSecondary,
+                                    marginTop: 12,
+                                }}
+                            >
+                                No groups yet
+                            </Text>
+                        </View>
+                    )}
+                </>
             )}
         </ScrollView>
     );
