@@ -57,6 +57,7 @@ export default function GroupCreateScreen() {
     const [name, setName] = useState("");
     const [icon, setIcon] = useState<string>("people");
     const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [search, setSearch] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -232,54 +233,109 @@ export default function GroupCreateScreen() {
 
                 <Text style={styles.label}>ADD MEMBERS</Text>
                 {friends.length > 0 ? (
-                    friends.map((friend) => {
-                        const isSelected = selected.has(friend.user.id);
-                        return (
-                            <Pressable
-                                key={friend.friendship_id}
-                                onPress={() => toggleSelect(friend.user.id)}
-                                style={{
-                                    backgroundColor: isSelected
-                                        ? Colors.accent
-                                        : Colors.surface,
-                                    borderWidth: 1.5,
-                                    borderColor: isSelected
-                                        ? Colors.accent
-                                        : Colors.border,
-                                    borderRadius: 18,
-                                    padding: 16,
-                                    width: "31%",
-                                    aspectRatio: 1,
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                }}
-                            >
-                                <View style={styles.friendBox}>
-                                    <View style={styles.avatar}>
-                                        <Text style={styles.avatarText}>
-                                            {friend.user.display_name
-                                                .charAt(0)
-                                                .toUpperCase()}
-                                        </Text>
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text
-                                            style={styles.friendName}
-                                            numberOfLines={1}
+                    <>
+                        <TextInput
+                            className="h-12 px-4 mb-4"
+                            style={{
+                                backgroundColor: Colors.surface,
+                                color: Colors.textPrimary,
+                                borderRadius: 12,
+                                borderWidth: 1,
+                                borderColor: Colors.border,
+                                fontSize: 15,
+                            }}
+                            value={search}
+                            onChangeText={setSearch}
+                            placeholder="Search friends"
+                            placeholderTextColor={Colors.textDim}
+                        />
+                        <View
+                            className="flex-row flex-wrap mb-2"
+                            style={{ gap: 8 }}
+                        >
+                            {friends
+                                .filter((f) => {
+                                    if (!search) return true;
+                                    const q = search.toLowerCase();
+                                    return (
+                                        f.user.display_name
+                                            .toLowerCase()
+                                            .includes(q) ||
+                                        f.user.username
+                                            .toLowerCase()
+                                            .includes(q)
+                                    );
+                                })
+                                .map((friend) => {
+                                    const active = selected.has(friend.user.id);
+                                    return (
+                                        <Pressable
+                                            key={friend.friendship_id}
+                                            onPress={() =>
+                                                toggleSelect(friend.user.id)
+                                            }
+                                            style={{
+                                                backgroundColor: active
+                                                    ? Colors.accent
+                                                    : Colors.surface,
+                                                borderWidth: 1.5,
+                                                borderColor: active
+                                                    ? Colors.accent
+                                                    : Colors.border,
+                                                borderRadius: 18,
+                                                padding: 16,
+                                                width: "31%",
+                                                aspectRatio: 1,
+                                                justifyContent: "center",
+                                                alignItems: "center",
+                                            }}
                                         >
-                                            {friend.user.display_name}
-                                        </Text>
-                                        <Text
-                                            style={styles.username}
-                                            numberOfLines={1}
-                                        >
-                                            @{friend.user.username}
-                                        </Text>
-                                    </View>
-                                </View>
-                            </Pressable>
-                        );
-                    })
+                                            <View
+                                                style={{
+                                                    width: 40,
+                                                    height: 40,
+                                                    borderRadius: 20,
+                                                    backgroundColor: active
+                                                        ? Colors.surface
+                                                        : Colors.avatarBlue,
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    marginBottom: 10,
+                                                }}
+                                            >
+                                                <Text
+                                                    style={{
+                                                        fontSize: 16,
+                                                        fontWeight: "900",
+                                                        color: active
+                                                            ? Colors.accent
+                                                            : Colors.surface,
+                                                    }}
+                                                >
+                                                    {friend.user.display_name
+                                                        .charAt(0)
+                                                        .toUpperCase()}
+                                                </Text>
+                                            </View>
+                                            <Text
+                                                style={{
+                                                    fontSize: 15,
+                                                    fontWeight: "900",
+                                                    color: active
+                                                        ? Colors.surface
+                                                        : Colors.textPrimary,
+                                                    letterSpacing: -0.5,
+                                                    textAlign: "center",
+                                                }}
+                                                numberOfLines={2}
+                                            >
+                                                {friend.user.display_name}
+                                            </Text>
+                                        </Pressable>
+                                    );
+                                })}
+                        </View>
+                    </>
                 ) : (
                     <View style={{ alignItems: "center", paddingVertical: 24 }}>
                         <UserPlus
@@ -364,56 +420,5 @@ const styles = StyleSheet.create({
         letterSpacing: 2.5,
         textTransform: "uppercase",
         marginBottom: 6,
-    },
-    friendBox: {
-        flexDirection: "column",
-        alignItems: "center",
-        textAlign: "center",
-    },
-    checkbox: {
-        width: 22,
-        height: 22,
-        borderRadius: 6,
-        borderWidth: 1.5,
-        borderColor: Colors.border,
-        marginRight: 12,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    checkboxSelected: {
-        backgroundColor: Colors.accent,
-        borderColor: Colors.accent,
-    },
-    checkmark: {
-        fontSize: 14,
-        fontWeight: "900",
-        color: Colors.surface,
-    },
-    avatar: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: Colors.avatarBlue,
-        alignItems: "center",
-        justifyContent: "center",
-        marginRight: 12,
-        alignSelf: "center",
-    },
-    avatarText: {
-        fontSize: 14,
-        fontWeight: "900",
-        color: Colors.surface,
-    },
-    friendName: {
-        fontSize: 15,
-        fontWeight: "700",
-        color: Colors.textPrimary,
-        letterSpacing: -0.5,
-    },
-    username: {
-        fontSize: 12,
-        fontWeight: "400",
-        color: Colors.textSecondary,
-        marginTop: 1,
     },
 });
