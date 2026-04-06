@@ -93,7 +93,7 @@ export default function AlarmsScreen() {
                                 marginTop: 16,
                             }}
                         >
-                            No alarms yet
+                            No alarms set
                         </Text>
                         <Text
                             style={{

@@ -351,11 +351,13 @@ export default function HomeScreen() {
                             <Text
                                 className="mt-3 mb-2"
                                 style={{
-                                    fontSize: 10,
-                                    fontWeight: "400",
+                                    fontSize: 12,
+                                    fontWeight: "700",
                                     color: Colors.statusLate,
-                                    letterSpacing: 2.5,
+                                    letterSpacing: 2,
                                     textTransform: "uppercase",
+                                    paddingLeft: 5,
+                                    paddingBottom: 6,
                                 }}
                             >
                                 PENDING CHECK-IN
@@ -392,11 +394,13 @@ export default function HomeScreen() {
                             <Text
                                 className="mt-6 mb-2"
                                 style={{
-                                    fontSize: 10,
-                                    fontWeight: "400",
+                                    fontSize: 12,
+                                    fontWeight: "700",
                                     color: Colors.statusSnooze,
-                                    letterSpacing: 2.5,
+                                    letterSpacing: 2,
                                     textTransform: "uppercase",
+                                    paddingLeft: 5,
+                                    paddingBottom: 6,
                                 }}
                             >
                                 RING YOUR FRIENDS
@@ -489,7 +493,7 @@ export default function HomeScreen() {
                                     marginTop: 12,
                                 }}
                             >
-                                No alarms yet
+                                No alarms set
                             </Text>
                         </View>
                     )}
