@@ -453,7 +453,7 @@ export default function GroupScreen() {
                             style={{
                                 backgroundColor: Colors.background,
                                 color: Colors.textPrimary,
-                                borderRadius: 12,
+                                borderRadius: 14,
                                 borderWidth: 1,
                                 borderColor: Colors.border,
                                 fontSize: 15,

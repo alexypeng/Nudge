@@ -81,7 +81,7 @@ export default function AddToGroupScreen() {
                         style={{
                             backgroundColor: Colors.surface,
                             color: Colors.textPrimary,
-                            borderRadius: 12,
+                            borderRadius: 14,
                             borderWidth: 1,
                             borderColor: Colors.border,
                             fontSize: 15,
