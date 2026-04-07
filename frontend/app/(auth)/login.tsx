@@ -98,7 +98,6 @@ export default function LoginScreen() {
                     disabled={isLoading}
                     className="mb-3"
                 />
-                {/* TODO: Re-enable when email domain is set up
                 <Link
                     href="/(auth)/forgot-password"
                     className="text-center mt-4"
@@ -106,7 +105,6 @@ export default function LoginScreen() {
                 >
                     Forgot password?
                 </Link>
-                */}
                 <Link
                     href="/(auth)/register"
                     className="text-center mt-4"
