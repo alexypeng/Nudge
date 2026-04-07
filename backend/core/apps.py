@@ -1,6 +1,7 @@
 from django.apps import AppConfig
 import firebase_admin
 from firebase_admin import credentials
+import json
 import os
 
 
@@ -14,7 +15,11 @@ class CoreConfig(AppConfig):
 
             if os.path.exists(cred_path):
                 cred = credentials.Certificate(cred_path)
-                firebase_admin.initialize_app(cred)
-                print("Firebase Admin SDK Initialized.")
+            elif os.environ.get("FIREBASE_CREDENTIALS"):
+                cred = credentials.Certificate(json.loads(os.environ["FIREBASE_CREDENTIALS"]))
             else:
                 print("WARNING: Firebase credentials not found. Push notifications will fail.")
+                return
+
+            firebase_admin.initialize_app(cred)
+            print("Firebase Admin SDK Initialized.")
