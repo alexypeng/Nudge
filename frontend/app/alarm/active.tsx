@@ -5,14 +5,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/src/theme/colors";
 import { TactileButton } from "@/src/components/TactileButton";
 import { useAlarmStore } from "@/src/stores/alarmStore";
-import { useAuthStore } from "@/src/stores/authStore";
-import { api } from "@/src/api/client";
 import { cancelAlarm } from "@/src/services/alarmScheduler";
 
 export default function ActiveAlarmScreen() {
     const { alarmId } = useLocalSearchParams<{ alarmId: string }>();
     const alarm = useAlarmStore((s) => s.alarms.find((a) => a.id === alarmId));
-    const token = useAuthStore((s) => s.token);
     const [dismissing, setDismissing] = useState(false);
 
     const time = alarm?.time ?? "";
@@ -25,11 +22,9 @@ export default function ActiveAlarmScreen() {
     const handleDismiss = async () => {
         setDismissing(true);
         try {
-            if (alarmId && token) {
-                await api.ringAlarm(token, alarmId).catch(() => {});
+            if (alarmId) {
                 await cancelAlarm(alarmId);
             }
-            await useAlarmStore.getState().fetch();
         } finally {
             if (router.canGoBack()) {
                 router.back();
