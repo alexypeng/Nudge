@@ -92,7 +92,6 @@ def login_user(request, payload: UserLogin):
 def forgot_password(request, payload: PasswordResetRequest):
     user = User.objects.filter(email=payload.email).first()
     if user:
-        # Invalidate old codes
         PasswordResetCode.objects.filter(user=user, used=False).update(used=True)
         code = f"{random.randint(0, 999999):06d}"
         PasswordResetCode.objects.create(user=user, code=code)
@@ -103,7 +102,6 @@ def forgot_password(request, payload: PasswordResetRequest):
             recipient_list=[user.email],
             fail_silently=True,
         )
-    # Always return 200 to avoid leaking whether the email exists
     return 200, {"message": "If that email is registered, a reset code has been sent."}
 
 
