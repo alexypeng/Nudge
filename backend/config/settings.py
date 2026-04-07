@@ -25,6 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
+
 def _env_bool(name: str, default: bool) -> bool:
     value = os.environ.get(name)
     if value is None:
@@ -42,7 +43,11 @@ SECRET_KEY = os.environ.get(
 DEBUG = _env_bool("DJANGO_DEBUG", True)
 
 _allowed_hosts = os.environ.get("DJANGO_ALLOWED_HOSTS", "").strip()
-ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts.split(",") if h.strip()] if _allowed_hosts else []
+ALLOWED_HOSTS = (
+    [h.strip() for h in _allowed_hosts.split(",") if h.strip()]
+    if _allowed_hosts
+    else []
+)
 
 
 # Application definition
@@ -92,7 +97,10 @@ WSGI_APPLICATION = "config.wsgi.application"
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 
-database_url: str = os.environ.get("DATABASE_URL") or f"sqlite:///{(BASE_DIR / 'db.sqlite3').as_posix()}"
+database_url: str = (
+    os.environ.get("DATABASE_URL")
+    or f"sqlite:///{(BASE_DIR / 'db.sqlite3').as_posix()}"
+)
 
 _is_postgres = database_url.startswith(("postgres://", "postgresql://"))
 if _is_postgres:
@@ -149,6 +157,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 AUTH_USER_MODEL = "users.User"
 
@@ -161,4 +170,6 @@ EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "resend")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "RingSync <noreply@ringsync.app>")
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "DEFAULT_FROM_EMAIL", "RingSync <noreply@ringsync.app>"
+)
