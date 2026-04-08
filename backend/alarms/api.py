@@ -258,6 +258,16 @@ def update_alarm(request, alarm_id: str, payload: AlarmUpdate):
 
         setattr(alarm, field, value)
 
+    alarm.is_active = True
+
+    latest_event = AlarmEvent.objects.filter(
+        alarm=alarm, status__in=[AlarmEvent.Status.RINGING, AlarmEvent.Status.EXPIRED]
+    ).order_by("-created_at").first()
+    if latest_event:
+        latest_event.status = AlarmEvent.Status.CHECKED_IN
+        latest_event.checked_in_at = timezone.now()
+        latest_event.save(update_fields=["status", "checked_in_at"])
+
     alarm.save()
     return alarm
 
