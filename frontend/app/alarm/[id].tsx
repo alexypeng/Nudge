@@ -58,6 +58,7 @@ export default function EditAlarmScreen() {
                 time: timeStr,
                 repeats: DAYS.filter((d) => selectedDays.includes(d)).join(","),
                 is_one_time: isOneTime,
+                is_active: true,
             });
             router.back();
         } catch (err) {
