@@ -21,7 +21,7 @@ import Animated, {
 import { Ionicons } from "@expo/vector-icons";
 import { Check } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DatePicker from "react-native-date-picker";
 import { Colors } from "@/src/theme/colors";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassCard } from "@/src/components/GlassCard";
@@ -154,15 +154,11 @@ export default function AlarmCreateScreen() {
             >
                 {/* Time Picker */}
                 <View className="items-center mb-8">
-                    <DateTimePicker
-                        value={time}
+                    <DatePicker
+                        date={time}
+                        onDateChange={setTime}
                         mode="time"
-                        display="spinner"
-                        is24Hour={false}
-                        themeVariant="dark"
-                        onChange={(_, selectedDate) => {
-                            if (selectedDate) setTime(selectedDate);
-                        }}
+                        theme="dark"
                     />
                 </View>
 

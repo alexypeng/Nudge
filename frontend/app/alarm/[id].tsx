@@ -10,7 +10,7 @@ import {
     KeyboardAvoidingView,
     Platform,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DatePicker from "react-native-date-picker";
 import { Colors } from "@/src/theme/colors";
 import { TactileButton } from "@/src/components/TactileButton";
 
@@ -105,15 +105,11 @@ export default function EditAlarmScreen() {
             >
                 {/* Time Picker */}
                 <View className="items-center mb-8">
-                    <DateTimePicker
-                        value={time}
+                    <DatePicker
+                        date={time}
+                        onDateChange={setTime}
                         mode="time"
-                        display="spinner"
-                        is24Hour={false}
-                        themeVariant="dark"
-                        onChange={(_, selectedDate) => {
-                            if (selectedDate) setTime(selectedDate);
-                        }}
+                        theme="dark"
                     />
                 </View>
 
