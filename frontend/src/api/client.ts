@@ -226,6 +226,12 @@ export const api = {
     deleteAlarm: (token: string, alarmId: string) =>
         request<void>("DELETE", `/api/alarms/alarm/${alarmId}/`, token),
 
+    ringAlarm: (token: string, alarmId: string) =>
+        request<{ message: string; event_id: string }>(
+            "POST",
+            `/api/alarms/alarm/${alarmId}/ring/`,
+            token,
+        ),
     checkIn: (token: string, alarmId: string) =>
         request<{ message: string }>(
             "POST",

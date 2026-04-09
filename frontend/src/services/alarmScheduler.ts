@@ -1,5 +1,5 @@
 import ExpoAlarm, { AlarmEvent } from "@/modules/expo-alarm";
-import { AlarmOut } from "@/src/api/client";
+import { api, AlarmOut } from "@/src/api/client";
 import { router } from "expo-router";
 
 const DAY_MAP: Record<string, number> = {
@@ -101,12 +101,24 @@ export async function checkAlarmCapability() {
 
 export function setupAlarmListener() {
     if (!ExpoAlarm) return { remove: () => {} };
-    return ExpoAlarm.addListener("onAlarmFired", (event: AlarmEvent) => {
+    return ExpoAlarm.addListener("onAlarmFired", async (event: AlarmEvent) => {
         console.log(
             "[Alarm] onAlarmFired event received:",
             JSON.stringify(event),
         );
+        const { useAuthStore } = require("@/src/stores/authStore");
         const { useAlarmStore } = require("@/src/stores/alarmStore");
+        const token = useAuthStore.getState().token;
+
+        if (token) {
+            try {
+                await api.ringAlarm(token, event.alarmId);
+                console.log("[Alarm] ring API called successfully");
+            } catch (e) {
+                console.warn("[Alarm] ring API failed:", e);
+            }
+        }
+
         useAlarmStore.getState().fetch();
         try {
             router.push({
