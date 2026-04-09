@@ -8,6 +8,7 @@ import {
 declare class ExpoAlarmModule extends NativeModule<ExpoAlarmModuleEvents> {
     requestPermission(): Promise<boolean>;
     checkCapability(): Promise<AlarmCapability>;
+    checkNotificationPermission(): Promise<{ granted: boolean; canRequest: boolean }>;
     scheduleAlarm(config: AlarmConfig): Promise<void>;
     cancelAlarm(id: string): Promise<void>;
     cancelAllAlarms(): Promise<void>;
