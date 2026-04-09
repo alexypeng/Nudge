@@ -67,6 +67,13 @@ class Command(BaseCommand):
 
                 print(f"[{now}] RINGING event created for {alarm.user.display_name} — {alarm.name}")
 
+                transaction.on_commit(
+                    lambda alarm=alarm, event=event: send_group_push(
+                        users=[alarm.user], action=Actions.RINGING,
+                        data={"alarm_id": str(alarm.id), "event_id": str(event.id)}
+                    )
+                )
+
     def reap_expired_events(self, now):
         """Phase B: Reap RINGING events older than 5 minutes to EXPIRED."""
         threshold = now - timedelta(minutes=5)
