@@ -67,10 +67,6 @@ class Command(BaseCommand):
 
                 print(f"[{now}] RINGING event created for {alarm.user.display_name} — {alarm.name}")
 
-                transaction.on_commit(
-                    lambda event=event: self.notify_group_ringing(event)
-                )
-
     def reap_expired_events(self, now):
         """Phase B: Reap RINGING events older than 5 minutes to EXPIRED."""
         threshold = now - timedelta(minutes=5)
@@ -101,16 +97,6 @@ class Command(BaseCommand):
                 transaction.on_commit(
                     lambda event=event: self.notify_group_expired(event)
                 )
-
-    def notify_group_ringing(self, event):
-        group_members = event.alarm.group.members.exclude(id=event.user.id)
-        data_payload = {
-            "title": f"{event.user.display_name}'s alarm is ringing!",
-            "body": f"{event.alarm.name} — check if they wake up",
-            "event_id": str(event.id),
-            "alarm_id": str(event.alarm.id),
-        }
-        send_group_push(group_members, Actions.RINGING, data_payload, silent=False)
 
     def notify_group_expired(self, event):
         group_members = event.alarm.group.members.all()
