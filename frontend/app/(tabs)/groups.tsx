@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { View, Text, TextInput, ScrollView, Pressable } from "react-native";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Users } from "lucide-react-native";
 import { Colors } from "@/src/theme/colors";
@@ -8,7 +8,6 @@ import { useGroupStore } from "@/src/stores/groupStore";
 import { TactileButton } from "@/src/components/TactileButton";
 import { ArcadeSpinner } from "@/src/components/ArcadeSpinner";
 import { ErrorBanner } from "@/src/components/ErrorBanner";
-import { usePolling } from "@/src/hooks/usePolling";
 
 export default function GroupsScreen() {
     const router = useRouter();
@@ -18,9 +17,9 @@ export default function GroupsScreen() {
     const error = useGroupStore((s) => s.error);
     const [search, setSearch] = useState("");
 
-    usePolling(() => {
+    useFocusEffect(useCallback(() => {
         fetchGroups();
-    });
+    }, []));
 
     return (
         <View

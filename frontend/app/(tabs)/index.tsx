@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, Pressable } from "react-native";
-import { Redirect, useRouter } from "expo-router";
+import { Redirect, useFocusEffect, useRouter } from "expo-router";
 
 import { Ionicons } from "@expo/vector-icons";
 import { Bell, Users } from "lucide-react-native";
@@ -7,7 +7,6 @@ import * as Haptics from "expo-haptics";
 import { Colors } from "@/src/theme/colors";
 import { useAuthStore } from "@/src/stores/authStore";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { usePolling } from "@/src/hooks/usePolling";
 import { useAlarmStore } from "@/src/stores/alarmStore";
 import { useGroupStore } from "@/src/stores/groupStore";
 import { api, AlarmEventOut } from "@/src/api/client";
@@ -46,12 +45,10 @@ function getGreeting() {
 
 function RingFriendCard({
     friend,
-    status,
     cooldownUntil,
     onRing,
 }: {
     friend: RingableFriend;
-    status?: string;
     cooldownUntil: number;
     onRing: () => void;
 }) {
@@ -119,30 +116,13 @@ function RingFriendCard({
                 </View>
                 <View style={{ alignItems: "center", width: 80 }}>
                     <TactileButton
-                        label={
-                            status === "Sent!"
-                                ? "Sent!"
-                                : onCooldown
-                                  ? cooldownLabel
-                                  : "Ring"
-                        }
+                        label={onCooldown ? cooldownLabel : "Ring"}
                         onPress={onRing}
-                        disabled={status === "Sent!" || onCooldown}
+                        disabled={onCooldown}
                         size={36}
                         style={{ width: 80 }}
-                        textStyle={{ fontSize: 12 }}
+                        textStyle={{ fontSize: 14 }}
                     />
-                    {status && status !== "Sent!" && (
-                        <Text
-                            style={{
-                                fontSize: 10,
-                                color: Colors.statusLate,
-                                marginTop: 4,
-                            }}
-                        >
-                            {status}
-                        </Text>
-                    )}
                 </View>
             </View>
         </GlassCard>
@@ -168,7 +148,6 @@ export default function HomeScreen() {
         Record<string, AlarmEventOut>
     >({});
     const [ringableFriends, setRingableFriends] = useState<RingableFriend[]>([]);
-    const [ringStatus, setRingStatus] = useState<Record<string, string>>({});
     const [ringCooldowns, setRingCooldowns] = useState<Record<string, number>>({});
 
     const fetchEvents = async () => {
@@ -256,28 +235,12 @@ export default function HomeScreen() {
         try {
             await api.triggerAlarm(token, alarmId);
             setRingCooldowns((prev) => ({ ...prev, [alarmId]: Date.now() }));
-            setRingStatus((prev) => ({ ...prev, [alarmId]: "Sent!" }));
         } catch (err) {
-            const message = (err as Error).message;
-            setRingStatus((prev) => ({
-                ...prev,
-                [alarmId]: message.includes("429")
-                    ? "Too soon, try again shortly"
-                    : message,
-            }));
+            console.warn("[Ring] triggerAlarm failed:", (err as Error).message);
         }
-        setTimeout(
-            () =>
-                setRingStatus((prev) => {
-                    const next = { ...prev };
-                    delete next[alarmId];
-                    return next;
-                }),
-            3000,
-        );
     };
 
-    usePolling(() => {
+    useFocusEffect(useCallback(() => {
         alarmFetch().then(fetchEvents);
         groupFetch().then(fetchRingableFriends);
         const activeIds = new Set(
@@ -287,7 +250,7 @@ export default function HomeScreen() {
                 .map((a) => a.id),
         );
         setVisibleIds(activeIds);
-    });
+    }, []));
 
     if (!token) return <Redirect href="/(auth)/login" />;
 
@@ -408,7 +371,6 @@ export default function HomeScreen() {
                                 <RingFriendCard
                                     key={friend.alarmId}
                                     friend={friend}
-                                    status={ringStatus[friend.alarmId]}
                                     cooldownUntil={ringCooldowns[friend.alarmId] ? ringCooldowns[friend.alarmId] + RING_COOLDOWN_MS : 0}
                                     onRing={() => handleRing(friend.alarmId)}
                                 />

@@ -1,5 +1,6 @@
+import { useCallback } from "react";
 import { View, Text, ScrollView } from "react-native";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { Bell } from "lucide-react-native";
 import { Colors } from "@/src/theme/colors";
 import { useAlarmStore } from "@/src/stores/alarmStore";
@@ -8,7 +9,6 @@ import { AlarmCard } from "@/src/components/AlarmCard";
 import { TactileButton } from "@/src/components/TactileButton";
 import { ArcadeSpinner } from "@/src/components/ArcadeSpinner";
 import { ErrorBanner } from "@/src/components/ErrorBanner";
-import { usePolling } from "@/src/hooks/usePolling";
 
 export default function AlarmsScreen() {
     const router = useRouter();
@@ -19,9 +19,9 @@ export default function AlarmsScreen() {
     const error = useAlarmStore((s) => s.error);
     const groups = useGroupStore((s) => s.groups);
 
-    usePolling(() => {
+    useFocusEffect(useCallback(() => {
         fetchAlarms();
-    });
+    }, []));
 
     return (
         <View
