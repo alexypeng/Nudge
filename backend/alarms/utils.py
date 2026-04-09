@@ -3,7 +3,7 @@ from users.models import UserDevice
 from alarms.enums import Actions
 
 
-def send_wake_up_push(user, ringer_name):
+def send_ring_push(user, ringer_name):
     devices = UserDevice.objects.filter(user=user, is_active=True)
 
     if not devices.exists():

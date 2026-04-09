@@ -192,6 +192,9 @@ def send_friend_request(request, payload: FriendRequestCreate):
 
         friendship = Friendship.objects.create(from_user=request.auth, to_user=to_user)
 
+        send_group_push(users=[to_user], action=Actions.FRIEND_REQUEST_RECEIVED,
+            data={"friendship_id": str(friendship.id)})
+
     return 201, friendship
 
 

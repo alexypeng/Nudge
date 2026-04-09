@@ -53,14 +53,35 @@ export function setupNotificationListeners() {
                 useAlarmStore.getState().fetch();
             }
 
-            if (action === "group_member_added") {
+            if (
+                action === "group_member_added" ||
+                action === "group_member_joined" ||
+                action === "group_member_left" ||
+                action === "group_updated"
+            ) {
                 const { useGroupStore } = require("@/src/stores/groupStore");
+                useGroupStore.getState().fetch();
+            }
+
+            if (
+                action === "alarm_created" ||
+                action === "alarm_updated" ||
+                action === "alarm_deleted"
+            ) {
+                const { useAlarmStore } = require("@/src/stores/alarmStore");
+                const { useGroupStore } = require("@/src/stores/groupStore");
+                useAlarmStore.getState().fetch();
                 useGroupStore.getState().fetch();
             }
 
             if (action === "friend_accepted") {
                 const { useFriendStore } = require("@/src/stores/friendStore");
                 useFriendStore.getState().fetch();
+            }
+
+            if (action === "friend_request_received") {
+                const { useFriendStore } = require("@/src/stores/friendStore");
+                useFriendStore.getState().fetchAll();
             }
         },
     );

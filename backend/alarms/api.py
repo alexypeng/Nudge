@@ -23,7 +23,7 @@ from .schemas import (
     LeaderboardEntry,
     ManualRingOut,
 )
-from .utils import send_group_push, send_wake_up_push
+from .utils import send_group_push, send_ring_push
 
 router = Router()
 
@@ -59,6 +59,10 @@ def update_group(request, group_id: str, payload: GroupUpdate):
         setattr(group, field, value)
 
     group.save()
+
+    other_members = group.members.exclude(id=request.auth.id)
+    send_group_push(other_members, Actions.GROUP_UPDATED, data={"group_id": str(group.id)})
+
     return 200, group
 
 
@@ -84,6 +88,9 @@ def join_group(request, group_id: str):
 
     group.members.add(request.auth)
 
+    other_members = group.members.exclude(id=request.auth.id)
+    send_group_push(other_members, Actions.GROUP_MEMBER_JOINED, data={"group_id": str(group.id)})
+
     return 200, group
 
 
@@ -100,6 +107,10 @@ def leave_group(request, group_id: str):
         group.members.remove(request.auth)
 
         Alarm.objects.filter(user=request.auth, group=group).delete()
+
+        remaining = group.members.all()
+        if remaining.exists():
+            send_group_push(remaining, Actions.GROUP_MEMBER_LEFT, data={"group_id": str(group.id)})
 
         if group.members.count() == 0:
             group.delete()
@@ -222,6 +233,11 @@ def create_alarm(request, payload: AlarmCreate):
         group_id=payload.group_id,
         sound_filename=payload.sound_filename,
     )
+
+    group_members = group.members.exclude(id=request.auth.id)
+    send_group_push(group_members, Actions.ALARM_CREATED,
+        data={"alarm_id": str(alarm.id), "group_id": str(group.id)})
+
     return alarm
 
 
@@ -239,6 +255,10 @@ def delete_alarm(request, alarm_id: str):
 
     if alarm.user.id != request.auth.id:
         return 403, None
+
+    group_members = alarm.group.members.exclude(id=request.auth.id)
+    send_group_push(group_members, Actions.ALARM_DELETED,
+        data={"alarm_id": str(alarm.id), "group_id": str(alarm.group_id)})
 
     alarm.delete()
 
@@ -269,6 +289,11 @@ def update_alarm(request, alarm_id: str, payload: AlarmUpdate):
         latest_event.save(update_fields=["status", "checked_in_at"])
 
     alarm.save()
+
+    group_members = alarm.group.members.exclude(id=request.auth.id)
+    send_group_push(group_members, Actions.ALARM_UPDATED,
+        data={"alarm_id": str(alarm.id), "group_id": str(alarm.group_id)})
+
     return alarm
 
 
@@ -318,7 +343,7 @@ def trigger_alarm(request, alarm_id: str):
             ringer=request.auth,
         )
 
-    success = send_wake_up_push(user=alarm.user, ringer_name=request.auth.display_name)
+    success = send_ring_push(user=alarm.user, ringer_name=request.auth.display_name)
 
     if not success:
         print(
