@@ -16,10 +16,12 @@ import DatePicker from "react-native-date-picker";
 import { Colors } from "@/src/theme/colors";
 import { GlassCard } from "@/src/components/GlassCard";
 
+import { useGridTileStyle } from "@/src/components/gridTile";
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
 export default function AlarmCreateScreen() {
+    const tileStyle = useGridTileStyle();
     const router = useRouter();
     const navigation = useNavigation();
 
@@ -257,8 +259,7 @@ export default function AlarmCreateScreen() {
                                                             : Colors.border,
                                                         borderRadius: 18,
                                                         padding: 16,
-                                                        width: "31%",
-                                                        aspectRatio: 1,
+                                                        ...tileStyle,
                                                         justifyContent:
                                                             "center",
                                                         alignItems: "center",

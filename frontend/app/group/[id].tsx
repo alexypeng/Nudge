@@ -256,6 +256,9 @@ export default function GroupScreen() {
                                         <Text
                                             style={{
                                                 fontSize: 14,
+                                                fontWeight: "900",
+                                                // Medals are emoji; plain rank numbers need a color or they render black.
+                                                color: Colors.textSecondary,
                                                 width: 28,
                                                 textAlign: "center",
                                             }}
