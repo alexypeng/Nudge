@@ -8,9 +8,12 @@ import { Colors } from "@/src/theme/colors";
 import { AlarmCard } from "@/src/components/AlarmCard";
 import { GlassCard } from "@/src/components/GlassCard";
 import { TactileButton } from "@/src/components/TactileButton";
-import { api, LeaderboardEntry } from "@/src/api/client";
+import { AlarmOut, api, LeaderboardEntry, UserOut } from "@/src/api/client";
 import { useAuthStore } from "@/src/stores/authStore";
 import { ErrorBanner } from "@/src/components/ErrorBanner";
+
+const EMPTY_MEMBERS: UserOut[] = [];
+const EMPTY_ALARMS: AlarmOut[] = [];
 
 const ICON_OPTIONS: (keyof typeof Ionicons.glyphMap)[] = [
     "people",
@@ -40,8 +43,8 @@ export default function GroupScreen() {
     const leaveGroup = useGroupStore((s) => s.leave);
     const updateGroup = useGroupStore((s) => s.update);
     const fetchGroupDetail = useGroupStore((s) => s.fetchGroupDetail);
-    const members = useGroupStore((s) => s.members[id] ?? []);
-    const groupAlarms = useGroupStore((s) => s.groupAlarms[id] ?? []);
+    const members = useGroupStore((s) => s.members[id] ?? EMPTY_MEMBERS);
+    const groupAlarms = useGroupStore((s) => s.groupAlarms[id] ?? EMPTY_ALARMS);
     const alarmStatuses = useGroupStore((s) => s.alarmStatuses);
     const allAlarms = useAlarmStore((s) => s.alarms);
     const fetchAlarms = useAlarmStore((s) => s.fetch);
