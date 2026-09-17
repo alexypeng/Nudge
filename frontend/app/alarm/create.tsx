@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter, useNavigation } from "expo-router";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useLayoutEffect, useState, useCallback } from "react";
 import { useAlarmStore } from "@/src/stores/alarmStore";
 import { useGroupStore } from "@/src/stores/groupStore";
 import {
@@ -10,20 +10,11 @@ import {
     Pressable,
     KeyboardAvoidingView,
     Platform,
-    ActivityIndicator,
-    StyleSheet,
 } from "react-native";
-import Animated, {
-    useSharedValue,
-    useAnimatedStyle,
-    withSpring,
-} from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
-import { Check } from "lucide-react-native";
-import * as Haptics from "expo-haptics";
+import { GroupIcon } from "@/src/components/GroupIcon";
+import { HeaderSubmitButton } from "@/src/components/HeaderSubmitButton";
 import DatePicker from "react-native-date-picker";
 import { Colors } from "@/src/theme/colors";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassCard } from "@/src/components/GlassCard";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -48,14 +39,9 @@ export default function AlarmCreateScreen() {
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const insets = useSafeAreaInsets();
     const isOneTime = selectedDays.length === 0;
     const needsGroupPicker = !paramGroupId;
     const canSubmit = !!name && !!selectedGroupId && !isSubmitting;
-    const btnY = useSharedValue(0);
-    const btnAnim = useAnimatedStyle(() => ({
-        transform: [{ translateY: btnY.value }],
-    }));
 
     useEffect(() => {
         if (needsGroupPicker) fetchGroups();
@@ -87,70 +73,32 @@ export default function AlarmCreateScreen() {
         }
     }, [name, time, selectedDays, selectedGroupId, isOneTime]);
 
-    useEffect(() => {
-        navigation.setOptions({ headerShown: false });
-    }, []);
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <HeaderSubmitButton
+                    canSubmit={canSubmit}
+                    isSubmitting={isSubmitting}
+                    onSubmit={handleCreate}
+                    accessibilityLabel="Create alarm"
+                />
+            ),
+        });
+    }, [navigation, canSubmit, isSubmitting, handleCreate]);
 
     return (
+        // iOS: the ScrollView insets itself for the keyboard, which stays correct under the
+        // native header and inside the modal sheet. Android: resize the container instead.
         <KeyboardAvoidingView
             className="flex-1"
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            behavior={Platform.OS === "ios" ? undefined : "height"}
             style={{ backgroundColor: Colors.background }}
         >
-            <View
-                style={[
-                    styles.header,
-                    { paddingTop: insets.top - 32, paddingBottom: 24 },
-                ]}
-            >
-                <Text style={styles.headerTitle}>New Alarm</Text>
-                <Pressable
-                    onPressIn={() => {
-                        btnY.value = withSpring(2, {
-                            damping: 28,
-                            stiffness: 600,
-                        });
-                    }}
-                    onPressOut={() => {
-                        btnY.value = withSpring(0, {
-                            damping: 28,
-                            stiffness: 600,
-                        });
-                    }}
-                    onPress={() => {
-                        if (!canSubmit) return;
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        handleCreate();
-                    }}
-                    disabled={!canSubmit}
-                    style={styles.headerBtnHit}
-                >
-                    <Animated.View
-                        style={[
-                            styles.headerBtn,
-                            { opacity: canSubmit ? 1 : 0.3 },
-                            btnAnim,
-                        ]}
-                    >
-                        {isSubmitting ? (
-                            <ActivityIndicator
-                                size="small"
-                                color={Colors.surface}
-                            />
-                        ) : (
-                            <Check
-                                color={Colors.surface}
-                                size={18}
-                                strokeWidth={3}
-                            />
-                        )}
-                    </Animated.View>
-                </Pressable>
-            </View>
-            <View style={styles.divider} />
             <ScrollView
                 className="flex-1"
                 contentContainerClassName="px-5 pt-4 pb-8"
+                keyboardShouldPersistTaps="handled"
+                automaticallyAdjustKeyboardInsets
             >
                 {/* Time Picker */}
                 <View className="items-center mb-8">
@@ -317,11 +265,8 @@ export default function AlarmCreateScreen() {
                                                         alignItems: "center",
                                                     }}
                                                 >
-                                                    <Ionicons
-                                                        name={
-                                                            (group.icon as keyof typeof Ionicons.glyphMap) ||
-                                                            "people"
-                                                        }
+                                                    <GroupIcon
+                                                        name={group.icon}
                                                         size={40}
                                                         color={
                                                             active
@@ -380,40 +325,3 @@ export default function AlarmCreateScreen() {
         </KeyboardAvoidingView>
     );
 }
-
-const styles = StyleSheet.create({
-    header: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        paddingHorizontal: 20,
-        paddingBottom: 8,
-    },
-    headerTitle: {
-        fontSize: 16,
-        fontWeight: "900",
-        color: Colors.textPrimary,
-        letterSpacing: -0.5,
-    },
-    headerBtnHit: {
-        position: "absolute",
-        right: 20,
-    },
-    headerBtn: {
-        width: 42,
-        height: 42,
-        borderRadius: 99,
-        backgroundColor: Colors.accent,
-        alignItems: "center",
-        justifyContent: "center",
-        shadowColor: Colors.accentPress,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 1,
-        shadowRadius: 0,
-        elevation: 4,
-    },
-    divider: {
-        height: 1,
-        backgroundColor: "rgba(255, 255, 255, 0.05)",
-    },
-});

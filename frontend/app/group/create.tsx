@@ -3,8 +3,8 @@ import { useFriendStore } from "@/src/stores/friendStore";
 import { useAuthStore } from "@/src/stores/authStore";
 import { api } from "@/src/api/client";
 import { useRouter, useNavigation } from "expo-router";
-import { UserPlus, Check } from "lucide-react-native";
-import { useEffect, useState, useCallback } from "react";
+import { UserPlus } from "lucide-react-native";
+import { useEffect, useLayoutEffect, useState, useCallback } from "react";
 import {
     View,
     Text,
@@ -14,37 +14,13 @@ import {
     ScrollView,
     Pressable,
     StyleSheet,
-    ActivityIndicator,
 } from "react-native";
-import Animated, {
-    useSharedValue,
-    useAnimatedStyle,
-    withSpring,
-} from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Colors } from "@/src/theme/colors";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { DEFAULT_GROUP_ICON, GROUP_ICON_NAMES } from "@/src/theme/groupIcons";
 import { GlassCard } from "@/src/components/GlassCard";
-
-const ICON_OPTIONS: (keyof typeof Ionicons.glyphMap)[] = [
-    "people",
-    "alarm",
-    "sunny",
-    "fitness",
-    "book",
-    "moon",
-    "trophy",
-    "flame",
-    "star",
-    "musical-notes",
-    "heart",
-    "rocket",
-    "football",
-    "cafe",
-    "code-slash",
-    "paw",
-];
+import { GroupIcon } from "@/src/components/GroupIcon";
+import { HeaderSubmitButton } from "@/src/components/HeaderSubmitButton";
 
 export default function GroupCreateScreen() {
     const router = useRouter();
@@ -55,18 +31,13 @@ export default function GroupCreateScreen() {
     const fetchFriends = useFriendStore((s) => s.fetch);
 
     const [name, setName] = useState("");
-    const [icon, setIcon] = useState<string>("people");
+    const [icon, setIcon] = useState<string>(DEFAULT_GROUP_ICON);
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [search, setSearch] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const insets = useSafeAreaInsets();
     const canSubmit = !!name && !isSubmitting;
-    const btnY = useSharedValue(0);
-    const btnAnim = useAnimatedStyle(() => ({
-        transform: [{ translateY: btnY.value }],
-    }));
 
     useEffect(() => {
         fetchFriends();
@@ -105,71 +76,32 @@ export default function GroupCreateScreen() {
         }
     }, [name, icon, selected, token]);
 
-    useEffect(() => {
-        navigation.setOptions({ headerShown: false });
-    }, []);
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <HeaderSubmitButton
+                    canSubmit={canSubmit}
+                    isSubmitting={isSubmitting}
+                    onSubmit={handleGroupCreate}
+                    accessibilityLabel="Create group"
+                />
+            ),
+        });
+    }, [navigation, canSubmit, isSubmitting, handleGroupCreate]);
 
     return (
+        // iOS: the ScrollView insets itself for the keyboard, which stays correct under the
+        // native header and inside the modal sheet. Android: resize the container instead.
         <KeyboardAvoidingView
             className="flex-1"
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            behavior={Platform.OS === "ios" ? undefined : "height"}
             style={{ backgroundColor: Colors.background }}
         >
-            <View
-                style={[
-                    styles.header,
-                    { paddingTop: insets.top - 32, paddingBottom: 24 },
-                ]}
-            >
-                <Text style={styles.headerTitle}>New Group</Text>
-                <Pressable
-                    onPressIn={() => {
-                        btnY.value = withSpring(2, {
-                            damping: 28,
-                            stiffness: 600,
-                        });
-                    }}
-                    onPressOut={() => {
-                        btnY.value = withSpring(0, {
-                            damping: 28,
-                            stiffness: 600,
-                        });
-                    }}
-                    onPress={() => {
-                        if (!canSubmit) return;
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        handleGroupCreate();
-                    }}
-                    disabled={!canSubmit}
-                    style={styles.headerBtnHit}
-                >
-                    <Animated.View
-                        style={[
-                            styles.headerBtn,
-                            { opacity: canSubmit ? 1 : 0.3 },
-                            btnAnim,
-                        ]}
-                    >
-                        {isSubmitting ? (
-                            <ActivityIndicator
-                                size="small"
-                                color={Colors.surface}
-                            />
-                        ) : (
-                            <Check
-                                color={Colors.surface}
-                                size={18}
-                                strokeWidth={3}
-                            />
-                        )}
-                    </Animated.View>
-                </Pressable>
-            </View>
-            <View style={styles.divider} />
             <ScrollView
                 className="flex-1"
                 contentContainerClassName="px-5 pt-4 pb-8"
                 keyboardShouldPersistTaps="handled"
+                automaticallyAdjustKeyboardInsets
             >
                 <Text style={styles.label}>ICON</Text>
                 <ScrollView
@@ -178,7 +110,7 @@ export default function GroupCreateScreen() {
                     contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
                     style={{ marginBottom: 16, flexGrow: 0 }}
                 >
-                    {ICON_OPTIONS.map((iconName) => {
+                    {GROUP_ICON_NAMES.map((iconName) => {
                         const isSelected = icon === iconName;
                         return (
                             <Pressable
@@ -199,7 +131,7 @@ export default function GroupCreateScreen() {
                                         : Colors.border,
                                 }}
                             >
-                                <Ionicons
+                                <GroupIcon
                                     name={iconName}
                                     size={22}
                                     color={
@@ -379,40 +311,6 @@ export default function GroupCreateScreen() {
 }
 
 const styles = StyleSheet.create({
-    header: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        paddingHorizontal: 20,
-        paddingBottom: 8,
-    },
-    headerTitle: {
-        fontSize: 16,
-        fontWeight: "900",
-        color: Colors.textPrimary,
-        letterSpacing: -0.5,
-    },
-    headerBtnHit: {
-        position: "absolute",
-        right: 20,
-    },
-    headerBtn: {
-        width: 42,
-        height: 42,
-        borderRadius: 99,
-        backgroundColor: Colors.accent,
-        alignItems: "center",
-        justifyContent: "center",
-        shadowColor: Colors.accentPress,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 1,
-        shadowRadius: 0,
-        elevation: 4,
-    },
-    divider: {
-        height: 1,
-        backgroundColor: "rgba(255, 255, 255, 0.05)",
-    },
     label: {
         fontSize: 12,
         fontWeight: "700",

@@ -1,8 +1,8 @@
 import { useState, useCallback } from "react";
 import { View, Text, TextInput, ScrollView, Pressable } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { Users } from "lucide-react-native";
+import { GroupIcon } from "@/src/components/GroupIcon";
 import { Colors } from "@/src/theme/colors";
 import { useGroupStore } from "@/src/stores/groupStore";
 import { TactileButton } from "@/src/components/TactileButton";
@@ -87,11 +87,8 @@ export default function GroupsScreen() {
                                     alignItems: "center",
                                 }}
                             >
-                                <Ionicons
-                                    name={
-                                        (group.icon as keyof typeof Ionicons.glyphMap) ||
-                                        "people"
-                                    }
+                                <GroupIcon
+                                    name={group.icon}
                                     size={40}
                                     color={Colors.accent}
                                     style={{ marginBottom: 10 }}

@@ -1,5 +1,5 @@
 import { View, Text, Pressable, StyleSheet, ViewStyle } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { CircleAlert, X } from "lucide-react-native";
 import { GlassCard } from "./GlassCard";
 import { Colors } from "../theme/colors";
 import * as Haptics from "expo-haptics";
@@ -15,7 +15,7 @@ export function ErrorBanner({ message, onRetry, onDismiss, style }: ErrorBannerP
     return (
         <GlassCard style={[styles.card, style]}>
             <View style={styles.row}>
-                <Ionicons name="alert-circle" size={18} color={Colors.statusLate} />
+                <CircleAlert size={18} color={Colors.statusLate} />
                 <Text style={styles.message} numberOfLines={2}>
                     {message}
                 </Text>
@@ -38,7 +38,7 @@ export function ErrorBanner({ message, onRetry, onDismiss, style }: ErrorBannerP
                         }}
                         hitSlop={8}
                     >
-                        <Ionicons name="close" size={16} color={Colors.textDim} />
+                        <X size={16} color={Colors.textDim} />
                     </Pressable>
                 )}
             </View>
