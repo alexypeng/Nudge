@@ -551,6 +551,7 @@ export default function HomeScreen() {
                                             fontWeight: "900",
                                             color: Colors.textPrimary,
                                             letterSpacing: -0.5,
+                                            textAlign: "center",
                                         }}
                                         numberOfLines={2}
                                     >
