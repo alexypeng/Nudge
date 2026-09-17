@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
+import { Text } from "@/src/components/Text";
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
     badge: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "rgba(255,255,255,0.06)",
+        backgroundColor: Colors.track,
         borderWidth: 1,
         borderColor: Colors.statusLate,
         borderRadius: 99,
@@ -185,7 +186,7 @@ const styles = StyleSheet.create({
         flex: 1,
         height: 6,
         borderRadius: 99,
-        backgroundColor: "rgba(255,255,255,0.06)",
+        backgroundColor: Colors.track,
         overflow: "hidden",
     },
     barFill: {

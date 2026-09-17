@@ -1,12 +1,11 @@
 import { useState } from "react";
 import {
-    Text,
-    TextInput,
     KeyboardAvoidingView,
     Platform,
     Keyboard,
     TouchableWithoutFeedback,
 } from "react-native";
+import { FONT_FAMILY, Text, TextInput } from "@/src/components/Text";
 import { useRouter, Link } from "expo-router";
 import { useAuthStore } from "@/src/stores/authStore";
 import { TactileButton } from "@/src/components/TactileButton";
@@ -141,7 +140,7 @@ export default function RegisterPage() {
                 <Link
                     href="/(auth)/login"
                     className="text-center mt-5"
-                    style={{ color: Colors.textSecondary }}
+                    style={{ fontFamily: FONT_FAMILY, color: Colors.textSecondary }}
                 >
                     Already have an account? Sign in
                 </Link>

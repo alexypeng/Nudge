@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { StyleSheet, View, Pressable } from 'react-native';
+import { Text } from '@/src/components/Text';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -78,7 +79,7 @@ export function AlarmCard({ alarm, groupName, isRinging = false, onPress, onTogg
             <Pressable onPress={handleToggle} hitSlop={8}>
               <View style={[
                 styles.track,
-                { backgroundColor: alarm.is_active ? Colors.accent : 'rgba(255,255,255,0.08)' },
+                { backgroundColor: alarm.is_active ? Colors.accent : Colors.hairline },
               ]}>
                 <Animated.View style={[styles.thumb, thumbStyle]} />
               </View>
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.switchThumb,
   },
   dimmed: {
     opacity: 0.35,

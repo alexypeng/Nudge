@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { View, Text, TextInput, ScrollView, Pressable } from "react-native";
+import { View, ScrollView, Pressable } from "react-native";
+import { Text, TextInput } from "@/src/components/Text";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Users } from "lucide-react-native";
 import { GroupIcon } from "@/src/components/GroupIcon";

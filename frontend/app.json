@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "nudge",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nudgeapp.nudge",
@@ -34,7 +34,36 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "android": {
+            "fonts": [
+              {
+                "fontFamily": "DMSans",
+                "fontDefinitions": [
+                  { "path": "./assets/fonts/dm-sans/dmsans_400regular.ttf", "weight": 400 },
+                  { "path": "./assets/fonts/dm-sans/dmsans_500medium.ttf", "weight": 500 },
+                  { "path": "./assets/fonts/dm-sans/dmsans_600semibold.ttf", "weight": 600 },
+                  { "path": "./assets/fonts/dm-sans/dmsans_700bold.ttf", "weight": 700 },
+                  { "path": "./assets/fonts/dm-sans/dmsans_800extrabold.ttf", "weight": 800 },
+                  { "path": "./assets/fonts/dm-sans/dmsans_900black.ttf", "weight": 900 }
+                ]
+              }
+            ]
+          },
+          "ios": {
+            "fonts": [
+              "./assets/fonts/dm-sans/dmsans_400regular.ttf",
+              "./assets/fonts/dm-sans/dmsans_500medium.ttf",
+              "./assets/fonts/dm-sans/dmsans_600semibold.ttf",
+              "./assets/fonts/dm-sans/dmsans_700bold.ttf",
+              "./assets/fonts/dm-sans/dmsans_800extrabold.ttf",
+              "./assets/fonts/dm-sans/dmsans_900black.ttf"
+            ]
+          }
+        }
+      ],
       "expo-secure-store",
       "expo-web-browser",
       [
@@ -57,8 +86,9 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
+          "imageWidth": 160,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#0b1120"
         }
       ],
       "expo-status-bar"

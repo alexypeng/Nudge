@@ -3,13 +3,12 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
     View,
-    Text,
-    TextInput,
     ScrollView,
     Pressable,
     KeyboardAvoidingView,
     Platform,
 } from "react-native";
+import { Text, TextInput } from "@/src/components/Text";
 import DatePicker from "react-native-date-picker";
 import { Colors } from "@/src/theme/colors";
 import { TactileButton } from "@/src/components/TactileButton";

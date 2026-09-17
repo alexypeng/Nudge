@@ -7,14 +7,13 @@ import { UserPlus } from "lucide-react-native";
 import { useEffect, useLayoutEffect, useState, useCallback } from "react";
 import {
     View,
-    Text,
-    TextInput,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
     Pressable,
     StyleSheet,
 } from "react-native";
+import { Text, TextInput } from "@/src/components/Text";
 import * as Haptics from "expo-haptics";
 import { Colors } from "@/src/theme/colors";
 import { DEFAULT_GROUP_ICON, GROUP_ICON_NAMES } from "@/src/theme/groupIcons";

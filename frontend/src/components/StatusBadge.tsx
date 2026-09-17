@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/src/components/Text';
 import { Colors } from '../theme/colors';
 import { AlarmEventStatus } from '../api/client';
 

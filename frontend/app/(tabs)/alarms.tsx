@@ -1,5 +1,6 @@
 import { useCallback } from "react";
-import { View, Text, ScrollView } from "react-native";
+import { View, ScrollView } from "react-native";
+import { Text } from "@/src/components/Text";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Bell } from "lucide-react-native";
 import { Colors } from "@/src/theme/colors";

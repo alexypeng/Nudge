@@ -4,13 +4,12 @@ import { useAlarmStore } from "@/src/stores/alarmStore";
 import { useGroupStore } from "@/src/stores/groupStore";
 import {
     View,
-    Text,
-    TextInput,
     ScrollView,
     Pressable,
     KeyboardAvoidingView,
     Platform,
 } from "react-native";
+import { Text, TextInput } from "@/src/components/Text";
 import { GroupIcon } from "@/src/components/GroupIcon";
 import { HeaderSubmitButton } from "@/src/components/HeaderSubmitButton";
 import DatePicker from "react-native-date-picker";

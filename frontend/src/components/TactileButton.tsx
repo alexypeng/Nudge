@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, Pressable, ViewStyle, TextStyle } from 'react-native';
+import { StyleSheet, Pressable, ViewStyle, TextStyle } from 'react-native';
+import { Text } from '@/src/components/Text';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -23,7 +24,7 @@ const SPRING = { damping: 28, stiffness: 600 };
 
 const variantColors = {
   primary: { bg: Colors.accent, shadow: Colors.accentPress },
-  danger: { bg: Colors.statusLate, shadow: '#B91C1C' },
+  danger: { bg: Colors.statusLate, shadow: Colors.statusLatePress },
   ghost: { bg: 'transparent', shadow: 'transparent' },
 };
 

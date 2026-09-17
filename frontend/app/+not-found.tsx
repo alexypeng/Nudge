@@ -1,4 +1,5 @@
-import { View, Text } from "react-native";
+import { View } from "react-native";
+import { FONT_FAMILY, Text } from "@/src/components/Text";
 import { Link } from "expo-router";
 import { Colors } from "@/src/theme/colors";
 
@@ -16,7 +17,7 @@ export default function NotFoundScreen() {
             >
                 Page not found
             </Text>
-            <Link href="/" style={{ color: Colors.accent }}>
+            <Link href="/" style={{ fontFamily: FONT_FAMILY, color: Colors.accent }}>
                 Go home
             </Link>
         </View>
