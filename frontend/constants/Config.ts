@@ -1,7 +1,12 @@
-import Constants from "expo-constants";
+// Set EXPO_PUBLIC_API_URL in frontend/.env (see .env.example). Expo inlines it at build time,
+// so restart Metro after changing it.
+const configuredUrl = process.env.EXPO_PUBLIC_API_URL;
 
-const LOCAL_IP = "10.0.0.137";
+if (!configuredUrl) {
+    throw new Error(
+        "EXPO_PUBLIC_API_URL is not set. Copy frontend/.env.example to frontend/.env and set the backend URL.",
+    );
+}
 
-export const API_URL = __DEV__
-    ? `http://${LOCAL_IP}:8000`
-    : "https://server-production-9114.up.railway.app/";
+// Paths start with "/api/...", so drop any trailing slash to avoid "//api".
+export const API_URL = configuredUrl.replace(/\/+$/, "");

@@ -68,6 +68,8 @@ export interface AlarmOut {
     is_active: boolean;
     next_trigger_utc: string | null;
     sound_filename: string;
+    /** Latest ringing/checked-in/missed event; filled in by the alarm list endpoints. */
+    latest_event: AlarmEventOut | null;
 }
 
 export interface AlarmCreate {
@@ -246,12 +248,6 @@ export const api = {
             ringer_id: string | null;
             created_at: string;
         }>("POST", `/api/alarms/alarm/${alarmId}/trigger/`, token),
-    getLatestEvent: (token: string, alarmId: string) =>
-        request<AlarmEventOut | undefined>(
-            "GET",
-            `/api/alarms/alarm/${alarmId}/event/`,
-            token,
-        ),
 
     searchUsers: (token: string, query: string) =>
         request<UserSearchOut[]>(

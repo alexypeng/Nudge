@@ -323,3 +323,68 @@ class PermissionAndValidationTests(TestCase):
         response = self.client.post(f"/api/alarms/group/{self.group.id}/join/", **self.other_auth)
         self.assertIn(response.status_code, (404, 405))
         self.assertFalse(self.group.members.filter(id=self.other.id).exists())
+
+
+class LatestEventInListTests(TestCase):
+    def setUp(self):
+        self.owner = make_user("owner")
+        self.friend = make_user("friend")
+        self.group = Group.objects.create(name="Crew")
+        self.group.members.add(self.owner, self.friend)
+        self.trigger = utc(2026, 9, 16, 11, 0)
+        self.alarm = make_alarm(self.owner, self.group, repeats="Wed", is_one_time=False,
+                                trigger=self.trigger + timedelta(days=7))
+        self.owner_auth = {"HTTP_AUTHORIZATION": f"Bearer {AuthToken.objects.create(user=self.owner).id}"}
+        self.friend_auth = {"HTTP_AUTHORIZATION": f"Bearer {AuthToken.objects.create(user=self.friend).id}"}
+
+    def group_alarms(self):
+        response = self.client.get(f"/api/alarms/group/{self.group.id}/alarms/", **self.friend_auth)
+        self.assertEqual(response.status_code, 200)
+        return {row["id"]: row for row in response.json()}
+
+    def test_group_alarms_include_latest_event(self):
+        AlarmEvent.objects.create(alarm=self.alarm, user=self.owner, status=AlarmEvent.Status.CHECKED_IN,
+                                  scheduled_for=self.trigger - timedelta(days=7))
+        latest = AlarmEvent.objects.create(alarm=self.alarm, user=self.owner, status=AlarmEvent.Status.EXPIRED,
+                                           scheduled_for=self.trigger)
+
+        row = self.group_alarms()[str(self.alarm.id)]
+
+        self.assertEqual(row["latest_event"]["id"], str(latest.id))
+        self.assertEqual(row["latest_event"]["status"], "EXPIRED")
+
+    def test_own_alarm_list_includes_latest_event(self):
+        AlarmEvent.objects.create(alarm=self.alarm, user=self.owner, status=AlarmEvent.Status.RINGING,
+                                  scheduled_for=self.trigger)
+        response = self.client.get("/api/alarms/alarm/", **self.owner_auth)
+        self.assertEqual(response.json()[0]["latest_event"]["status"], "RINGING")
+
+    def test_alarm_without_events_has_null_latest_event(self):
+        self.assertIsNone(self.group_alarms()[str(self.alarm.id)]["latest_event"])
+
+    def test_event_from_before_an_edit_is_hidden(self):
+        AlarmEvent.objects.create(alarm=self.alarm, user=self.owner, status=AlarmEvent.Status.EXPIRED,
+                                  scheduled_for=self.trigger)
+        Alarm.objects.filter(pk=self.alarm.pk).update(schedule_changed_at=self.trigger + timedelta(minutes=10))
+        self.assertIsNone(self.group_alarms()[str(self.alarm.id)]["latest_event"])
+
+    def test_query_count_does_not_grow_with_alarms(self):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        def count_queries():
+            with CaptureQueriesContext(connection) as ctx:
+                self.group_alarms()
+            return len(ctx.captured_queries)
+
+        AlarmEvent.objects.create(alarm=self.alarm, user=self.owner, scheduled_for=self.trigger)
+        with_one = count_queries()
+
+        for i in range(5):
+            alarm = make_alarm(self.friend, self.group, repeats="Wed", is_one_time=False,
+                               trigger=self.trigger + timedelta(days=7))
+            AlarmEvent.objects.create(alarm=alarm, user=self.friend, scheduled_for=self.trigger + timedelta(minutes=i))
+        with_six = count_queries()
+
+        self.assertEqual(len(self.group_alarms()), 6)
+        self.assertEqual(with_one, with_six)

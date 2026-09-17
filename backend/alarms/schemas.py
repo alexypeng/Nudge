@@ -22,6 +22,16 @@ class GroupUpdate(Schema):
     icon: Optional[str] = None
 
 
+class AlarmEventOut(Schema):
+    id: uuid.UUID
+    alarm_id: uuid.UUID
+    user_id: uuid.UUID
+    status: str
+    created_at: datetime
+    scheduled_for: datetime
+    checked_in_at: Optional[datetime] = None
+
+
 class AlarmOut(Schema):
     id: uuid.UUID
     name: str
@@ -33,6 +43,12 @@ class AlarmOut(Schema):
     is_active: bool
     next_trigger_utc: Optional[datetime] = None
     sound_filename: str
+    # Latest ringing/checked-in/missed status, filled in by list endpoints (null elsewhere).
+    latest_event: Optional[AlarmEventOut] = None
+
+    @staticmethod
+    def resolve_latest_event(obj):
+        return getattr(obj, "latest_event", None)
 
 
 class AlarmCreate(Schema):
@@ -97,16 +113,6 @@ class AlarmUpdate(Schema):
         if self.repeats == "" and self.is_one_time is False:
             raise ValueError("Cannot clear repeating days unless changing to a one-time alarm.")
         return self
-
-
-class AlarmEventOut(Schema):
-    id: uuid.UUID
-    alarm_id: uuid.UUID
-    user_id: uuid.UUID
-    status: str
-    created_at: datetime
-    scheduled_for: datetime
-    checked_in_at: Optional[datetime] = None
 
 
 class ManualRingOut(Schema):

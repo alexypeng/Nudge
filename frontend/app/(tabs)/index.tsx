@@ -6,7 +6,7 @@ import { GroupIcon } from "@/src/components/GroupIcon";
 import * as Haptics from "expo-haptics";
 import { Colors } from "@/src/theme/colors";
 import { useAuthStore } from "@/src/stores/authStore";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useAlarmStore } from "@/src/stores/alarmStore";
 import { useGroupStore } from "@/src/stores/groupStore";
 import { api, AlarmEventOut } from "@/src/api/client";
@@ -145,28 +145,20 @@ export default function HomeScreen() {
     const groupError = useGroupStore((s) => s.error);
 
     const [visibleIds, setVisibleIds] = useState<Set<string>>(new Set());
-    const [activeEvents, setActiveEvents] = useState<
-        Record<string, AlarmEventOut>
-    >({});
     const [ringableFriends, setRingableFriends] = useState<RingableFriend[]>([]);
     const [ringCooldowns, setRingCooldowns] = useState<Record<string, number>>({});
 
-    const fetchEvents = async () => {
-        if (!token) return;
-        const allAlarms = useAlarmStore.getState().alarms;
+    // Alarms waiting for a check-in, straight from the alarm list (no request per alarm).
+    const activeEvents = useMemo(() => {
         const events: Record<string, AlarmEventOut> = {};
-        await Promise.all(
-            allAlarms.map(async (alarm) => {
-                try {
-                    const event = await api.getLatestEvent(token, alarm.id);
-                    if (event && (event.status === "RINGING" || event.status === "EXPIRED")) {
-                        events[alarm.id] = event;
-                    }
-                } catch {}
-            }),
-        );
-        setActiveEvents(events);
-    };
+        for (const alarm of alarms) {
+            const event = alarm.latest_event;
+            if (event && (event.status === "RINGING" || event.status === "EXPIRED")) {
+                events[alarm.id] = event;
+            }
+        }
+        return events;
+    }, [alarms]);
 
     const handleCheckIn = async (alarmId: string) => {
         if (!token) return;
@@ -175,7 +167,7 @@ export default function HomeScreen() {
         } finally {
             // Silence it either way; a failed check-in (e.g. too late) shouldn't keep it ringing.
             await stopRinging(alarmId);
-            await fetchEvents();
+            await alarmFetch();
         }
     };
 
@@ -247,7 +239,7 @@ export default function HomeScreen() {
     };
 
     useFocusEffect(useCallback(() => {
-        alarmFetch().then(fetchEvents);
+        alarmFetch();
         groupFetch().then(fetchRingableFriends);
         const activeIds = new Set(
             useAlarmStore

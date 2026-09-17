@@ -58,15 +58,11 @@ export const useGroupStore = create<GroupStore>((set) => ({
                 api.listGroupAlarms(token, groupId),
             ]);
 
+            // The group alarm list already carries each alarm's latest status.
             const statuses: Record<string, string> = {};
-            await Promise.all(
-                alarms.map(async (alarm) => {
-                    try {
-                        const event = await api.getLatestEvent(token, alarm.id);
-                        if (event) statuses[alarm.id] = event.status;
-                    } catch {}
-                }),
-            );
+            for (const alarm of alarms) {
+                if (alarm.latest_event) statuses[alarm.id] = alarm.latest_event.status;
+            }
 
             set((state) => ({
                 members: { ...state.members, [groupId]: members },
