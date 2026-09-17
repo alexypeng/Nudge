@@ -34,7 +34,7 @@ router = Router()
 
 @router.post("/group/", response=GroupOut, auth=TokenAuth())
 def create_group(request, payload: GroupCreate):
-    group = Group.objects.create(name=payload.name)
+    group = Group.objects.create(name=payload.name, icon=payload.icon)
     group.members.add(request.auth)
     return group
 
