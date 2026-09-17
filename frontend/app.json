@@ -48,7 +48,8 @@
         "expo-build-properties",
         {
           "ios": {
-            "deploymentTarget": "26.0"
+            "deploymentTarget": "26.0",
+            "enableSceneSupport": true
           }
         }
       ],
