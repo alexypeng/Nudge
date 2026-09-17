@@ -14,7 +14,7 @@ import { Colors } from "@/src/theme/colors";
 import { TactileButton } from "@/src/components/TactileButton";
 import * as Haptics from "expo-haptics";
 
-const ONBOARDING_KEY = "ringsync_onboarding_seen";
+const ONBOARDING_KEY = "nudge_onboarding_seen";
 
 interface Page {
     id: string;

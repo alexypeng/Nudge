@@ -5,7 +5,22 @@ import * as Notifications from "expo-notifications";
 import { registerForPushNotifications } from "../services/notificationService";
 import { cancelAllAlarms } from "../services/alarmScheduler";
 
-const TOKEN_KEY = "ringsync_token";
+const TOKEN_KEY = "nudge_token";
+// Where the token was saved before the app was renamed from RingSync.
+const LEGACY_TOKEN_KEY = "ringsync_token";
+
+async function readStoredToken(): Promise<string | null> {
+    const token = await SecureStore.getItemAsync(TOKEN_KEY);
+    if (token) return token;
+
+    const legacy = await SecureStore.getItemAsync(LEGACY_TOKEN_KEY);
+    if (legacy) {
+        // Move it over once so existing installs stay signed in.
+        await SecureStore.setItemAsync(TOKEN_KEY, legacy);
+        await SecureStore.deleteItemAsync(LEGACY_TOKEN_KEY);
+    }
+    return legacy;
+}
 
 interface AuthState {
     user: UserOut | null;
@@ -82,7 +97,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
     loadToken: async () => {
         try {
-            const token = await SecureStore.getItemAsync(TOKEN_KEY);
+            const token = await readStoredToken();
             if (token) {
                 const user = await syncTimezone(token, await api.getMe(token));
                 set({ token, user });
