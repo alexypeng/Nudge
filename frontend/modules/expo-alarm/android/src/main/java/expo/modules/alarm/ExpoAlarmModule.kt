@@ -1,6 +1,7 @@
 package expo.modules.alarm
 
 import android.app.AlarmManager
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -37,19 +38,42 @@ class ExpoAlarmModule : Module() {
             onAlarmFired = null
         }
 
+        // While an alarm is waiting for a check-in, let the app appear over the lock screen.
+        OnActivityEntersForeground {
+            setShowOverLockScreen(AlarmStorage.peekPendingAlarm(context) != null)
+        }
+
         AsyncFunction("checkCapability") {
             val canSchedule = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 alarmManager.canScheduleExactAlarms()
             } else {
                 true
             }
+            val canFullScreen = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                    .canUseFullScreenIntent()
+            } else {
+                true
+            }
+            val notificationsEnabled = NotificationManagerCompat.from(context).areNotificationsEnabled()
+
+            val reason = when {
+                !canSchedule -> "Exact alarm permission required"
+                !notificationsEnabled -> "Notifications are turned off, so alarms can't ring"
+                !canFullScreen -> "Full-screen alarms are turned off; alarms will ring as notifications"
+                else -> "Exact alarms supported"
+            }
             return@AsyncFunction mapOf(
-                "available" to canSchedule,
-                "reason" to if (canSchedule) "Exact alarms supported" else "Exact alarm permission required"
+                "available" to (canSchedule && notificationsEnabled),
+                "reason" to reason,
+                "canUseFullScreenIntent" to canFullScreen,
+                "notificationsEnabled" to notificationsEnabled
             )
         }
 
         AsyncFunction("requestPermission") {
+            // USE_EXACT_ALARM grants this automatically on Android 13+; the settings screen is only
+            // needed on Android 12, where SCHEDULE_EXACT_ALARM must be granted by the user.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 if (alarmManager.canScheduleExactAlarms()) {
                     return@AsyncFunction true
@@ -108,6 +132,26 @@ class ExpoAlarmModule : Module() {
                 AlarmSchedulerHelper.cancelAlarm(context, config.id)
             }
             AlarmStorage.clearAll(context)
+        }
+
+        AsyncFunction("consumePendingAlarm") {
+            return@AsyncFunction AlarmStorage.consumePendingAlarm(context)
+        }
+
+        // Silences a ringing alarm without touching its schedule (repeating alarms keep firing).
+        AsyncFunction("stopRinging") { id: String ->
+            AlarmSchedulerHelper.stopRinging(context, id)
+            setShowOverLockScreen(false)
+        }
+    }
+
+    private fun setShowOverLockScreen(enabled: Boolean) {
+        val activity = appContext.currentActivity ?: return
+        activity.runOnUiThread {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                activity.setShowWhenLocked(enabled)
+                activity.setTurnScreenOn(enabled)
+            }
         }
     }
 }

@@ -5,16 +5,24 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 
+// Reschedules stored alarms whenever the system drops them (reboot) or their wall-clock
+// trigger time moves (clock or time zone change), since triggers are computed in local time.
 class BootReceiver : BroadcastReceiver() {
+    private val handledActions = setOf(
+        Intent.ACTION_BOOT_COMPLETED,
+        "android.intent.action.QUICKBOOT_POWERON",
+        "com.htc.intent.action.QUICKBOOT_POWERON",
+        Intent.ACTION_TIME_CHANGED,
+        Intent.ACTION_TIMEZONE_CHANGED
+    )
+
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != Intent.ACTION_BOOT_COMPLETED &&
-            intent.action != "android.intent.action.QUICKBOOT_POWERON" &&
-            intent.action != "com.htc.intent.action.QUICKBOOT_POWERON") {
+        if (intent.action !in handledActions) {
             return
         }
 
         val alarms = AlarmStorage.getAllAlarms(context)
-        Log.i("BootReceiver", "Rescheduling ${alarms.size} alarms after boot")
+        Log.i("BootReceiver", "Rescheduling ${alarms.size} alarms after ${intent.action}")
 
         for (config in alarms) {
             try {

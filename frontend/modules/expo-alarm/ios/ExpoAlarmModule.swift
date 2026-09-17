@@ -130,15 +130,10 @@ public class ExpoAlarmModule: Module {
             tintColor: .blue
           )
 
-          let countdownDuration = Alarm.CountdownDuration(
-            preAlert: nil,
-            postAlert: 5 * 60
-          )
-
           let alarmConfig = AlarmManager.AlarmConfiguration(
-            countdownDuration: countdownDuration,
             schedule: schedule,
             attributes: attributes,
+            stopIntent: OpenAlarmCheckInIntent(alarmID: alarmUUID, backendAlarmID: id),
             secondaryIntent: nil,
             sound: .default
           )
@@ -187,13 +182,28 @@ public class ExpoAlarmModule: Module {
       self.store.removeAll()
     }
 
+    AsyncFunction("consumePendingAlarm") { () -> String? in
+      return PendingAlarmStore.consume()
+    }
+
+    // Silences a ringing alarm without cancelling its schedule (repeating alarms keep firing).
+    AsyncFunction("stopRinging") { (id: String) in
+      guard let uuid = self.store.uuid(for: id) else { return }
+      do {
+        try AlarmManager.shared.stop(id: uuid)
+      } catch {
+        // Not ringing (already stopped from the system UI); nothing to do.
+      }
+    }
+
     OnStartObserving {
       self.observerTask = Task {
         for await alarms in AlarmManager.shared.alarmUpdates {
           for alarm in alarms {
             guard alarm.state == .alerting else { continue }
             guard let backendId = self.store.backendId(for: alarm.id) else { continue }
-            print("ExpoAlarm: alarm \(backendId) is alerting!")
+            // Also remember it, in case JS isn't ready to navigate when the event arrives.
+            PendingAlarmStore.set(backendId)
             self.sendEvent("onAlarmFired", [
               "alarmId": backendId,
               "action": "fired"

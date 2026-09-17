@@ -111,20 +111,19 @@ object AlarmSchedulerHelper {
         )
 
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val canScheduleExact =
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
+        val showIntent = launchAppIntent(context, config.id)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && alarmManager.canScheduleExactAlarms()) {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                triggerTime,
-                pendingIntent
-            )
-        } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                triggerTime,
+        if (canScheduleExact && showIntent != null) {
+            // setAlarmClock is never deferred by Doze or battery optimizations, shows the system
+            // alarm icon, and lets the user jump into the app from the clock UI.
+            alarmManager.setAlarmClock(
+                AlarmManager.AlarmClockInfo(triggerTime, showIntent),
                 pendingIntent
             )
         } else {
+            // Without exact-alarm access the system may delay this by several minutes.
             alarmManager.setAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
                 triggerTime,
@@ -133,6 +132,29 @@ object AlarmSchedulerHelper {
         }
 
         return true
+    }
+
+    /** Opens the app with the alarm id, so it can show the check-in screen. */
+    fun launchAppIntent(context: Context, alarmId: String): PendingIntent? {
+        val launchIntent = context.packageManager
+            .getLaunchIntentForPackage(context.packageName)?.apply {
+                putExtra("alarmId", alarmId)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            } ?: return null
+
+        return PendingIntent.getActivity(
+            context,
+            getRequestCode(alarmId),
+            launchIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    fun stopRinging(context: Context, alarmId: String) {
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(getRequestCode(alarmId))
+        AlarmStorage.clearPendingAlarm(context, alarmId)
     }
 
     fun cancelAlarm(context: Context, id: String) {

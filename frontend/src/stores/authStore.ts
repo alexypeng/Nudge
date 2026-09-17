@@ -20,6 +20,17 @@ interface AuthState {
     deleteAccount: () => Promise<void>;
 }
 
+// The server rings alarms at the account's time zone, so keep it matching the device (e.g. after travel).
+async function syncTimezone(token: string, user: UserOut): Promise<UserOut> {
+    const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (!deviceTimezone || deviceTimezone === user.timezone) return user;
+    try {
+        return await api.updateMe(token, { timezone: deviceTimezone });
+    } catch {
+        return user;
+    }
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     token: null,
@@ -31,7 +42,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         try {
             const { token } = await api.login(data);
             await SecureStore.setItemAsync(TOKEN_KEY, token);
-            const user = await api.getMe(token);
+            const user = await syncTimezone(token, await api.getMe(token));
             set({ token, user });
             registerForPushNotifications(token).catch(() => {});
         } finally {
@@ -50,7 +61,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         try {
             const token = await SecureStore.getItemAsync(TOKEN_KEY);
             if (token) {
-                const user = await api.getMe(token);
+                const user = await syncTimezone(token, await api.getMe(token));
                 set({ token, user });
                 registerForPushNotifications(token).catch(() => {});
             }
