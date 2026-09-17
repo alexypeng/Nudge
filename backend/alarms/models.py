@@ -8,6 +8,11 @@ from django.db.models.signals import pre_delete, post_save
 from django.dispatch import receiver
 from django.db.models import Count
 
+# Checking in within this window after the scheduled alarm time counts toward the leaderboard.
+ON_TIME_WINDOW = timedelta(minutes=5)
+# After this, a missed alarm can no longer be checked in at all.
+LATE_CHECK_IN_CUTOFF = timedelta(hours=2)
+
 
 @receiver(pre_delete, sender=User)
 def nuke_empty_groups_on_user_exit(sender, instance, **kwargs):
@@ -46,6 +51,9 @@ class Alarm(models.Model):
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
 
     next_trigger_utc = models.DateTimeField(null=True, blank=True, db_index=True)
+    # Set when the owner edits the alarm; events scheduled before this are hidden from the UI
+    # but still count on the leaderboard.
+    schedule_changed_at = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if self.is_active:
@@ -67,7 +75,7 @@ class Alarm(models.Model):
         except ZoneInfoNotFoundError:
             user_tz = ZoneInfo("UTC")
 
-        now_user_time = now_override if now_override else timezone.now().astimezone(user_tz)
+        now_user_time = (now_override or timezone.now()).astimezone(user_tz)
         naive_target = datetime.combine(now_user_time.date(), self.time)
 
         target_time_today = timezone.make_aware(naive_target, timezone=user_tz)
@@ -105,6 +113,9 @@ class AlarmEvent(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.RINGING)
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    # The alarm time this event is for. On-time and late check-ins are measured from here,
+    # not from when the scheduler happened to record the event.
+    scheduled_for = models.DateTimeField(db_index=True)
     checked_in_at = models.DateTimeField(null=True, blank=True)
 
     sound_filename = models.CharField(max_length=255, default="default_chime.wav")
@@ -116,6 +127,17 @@ class AlarmEvent(models.Model):
         indexes = [
             models.Index(fields=["alarm", "-created_at"]),
         ]
+        constraints = [
+            # One event per alarm occurrence, so a restarted or duplicated scheduler can't double-fire.
+            models.UniqueConstraint(fields=["alarm", "scheduled_for"], name="unique_event_per_occurrence"),
+        ]
+
+    def is_on_time(self):
+        return (
+            self.status == self.Status.CHECKED_IN
+            and self.checked_in_at is not None
+            and self.checked_in_at - self.scheduled_for <= ON_TIME_WINDOW
+        )
 
 
 class ManualRing(models.Model):
