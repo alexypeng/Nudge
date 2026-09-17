@@ -193,6 +193,8 @@ export const api = {
         request<UserOut>("PUT", "/api/users/user/", token, data),
     deleteMe: (token: string) =>
         request<void>("DELETE", "/api/users/user/", token),
+    logout: (token: string, pushToken?: string) =>
+        request<void>("POST", "/api/users/logout/", token, { push_token: pushToken ?? null }),
 
     registerDevice: (token: string, data: DeviceCreate) =>
         request<void>("POST", "/api/users/devices/", token, data),
@@ -209,8 +211,6 @@ export const api = {
             `/api/alarms/group/${groupId}/members/`,
             token,
         ),
-    joinGroup: (token: string, groupId: string) =>
-        request<GroupOut>("POST", `/api/alarms/group/${groupId}/join/`, token),
     leaveGroup: (token: string, groupId: string) =>
         request<void>("POST", `/api/alarms/group/${groupId}/leave/`, token),
     listGroupAlarms: (token: string, groupId: string) =>

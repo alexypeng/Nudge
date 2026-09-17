@@ -281,3 +281,45 @@ class CheckInAndLeaderboardTests(TestCase):
         response = self.client.post(f"/api/alarms/alarm/{self.alarm.id}/ring/", **self.owner_auth)
         self.assertEqual(response.status_code, 200)
         self.assertFalse(AlarmEvent.objects.filter(alarm=self.alarm).exists())
+
+
+class PermissionAndValidationTests(TestCase):
+    def setUp(self):
+        self.owner = make_user("owner")
+        self.other = make_user("other")
+        self.group = Group.objects.create(name="Crew")
+        self.group.members.add(self.owner)
+        self.alarm = make_alarm(self.owner, self.group)
+        self.other_auth = {"HTTP_AUTHORIZATION": f"Bearer {AuthToken.objects.create(user=self.other).id}"}
+
+    def test_editing_someone_elses_alarm_is_forbidden(self):
+        response = self.client.put(
+            f"/api/alarms/alarm/{self.alarm.id}/", data={"name": "mine now"},
+            content_type="application/json", **self.other_auth,
+        )
+        self.assertEqual(response.status_code, 403)
+        self.alarm.refresh_from_db()
+        self.assertEqual(self.alarm.name, "Wake up")
+
+    def test_deleting_someone_elses_alarm_is_forbidden(self):
+        response = self.client.delete(f"/api/alarms/alarm/{self.alarm.id}/", **self.other_auth)
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(Alarm.objects.filter(pk=self.alarm.pk).exists())
+
+    def test_creating_an_alarm_in_a_group_you_are_not_in_is_forbidden(self):
+        response = self.client.post(
+            "/api/alarms/alarm/",
+            data={"name": "sneaky", "time": "07:00", "is_one_time": True, "group_id": str(self.group.id)},
+            content_type="application/json", **self.other_auth,
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(Alarm.objects.filter(name="sneaky").exists())
+
+    def test_invalid_id_is_a_validation_error_not_a_crash(self):
+        response = self.client.get("/api/alarms/alarm/not-a-uuid/event/", **self.other_auth)
+        self.assertEqual(response.status_code, 422)
+
+    def test_groups_cannot_be_joined_without_an_invite(self):
+        response = self.client.post(f"/api/alarms/group/{self.group.id}/join/", **self.other_auth)
+        self.assertIn(response.status_code, (404, 405))
+        self.assertFalse(self.group.members.filter(id=self.other.id).exists())

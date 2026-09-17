@@ -48,6 +48,7 @@ export default function SettingsScreen() {
     const initial = displayName?.charAt(0).toUpperCase() ?? "?";
 
     const handleLogout = () => {
+        // Navigate right away; the server-side cleanup in logout() finishes in the background.
         logout();
         router.replace("/(auth)/login");
     };

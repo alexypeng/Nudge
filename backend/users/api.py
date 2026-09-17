@@ -1,23 +1,33 @@
-import random
+import logging
+import secrets
 import uuid
 
 from django.contrib.auth import authenticate
 from django.core.mail import send_mail
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import F, Q
 from ninja import Router
 from ninja.errors import HttpError
+from ninja.throttling import AnonRateThrottle
 
 from alarms.enums import Actions
 from alarms.utils import send_group_push
 
 from .auth import TokenAuth
-from .models import AuthToken, Friendship, PasswordResetCode, User, UserDevice
+from .models import (
+    MAX_RESET_CODE_ATTEMPTS,
+    AuthToken,
+    Friendship,
+    PasswordResetCode,
+    User,
+    UserDevice,
+)
 from .schemas import (
     DeviceCreate,
     FriendOut,
     FriendRequestCreate,
     FriendRequestOut,
+    LogoutRequest,
     PasswordResetConfirm,
     PasswordResetRequest,
     TokenOut,
@@ -28,8 +38,11 @@ from .schemas import (
     UserUpdate,
 )
 
+logger = logging.getLogger(__name__)
 
 router = Router()
+
+INVALID_RESET = "Invalid or expired code."
 
 
 @router.post("/user/", response=UserOut)
@@ -76,7 +89,7 @@ def update_user(request, payload: UserUpdate):
     return user
 
 
-@router.post("/login/", response=TokenOut)
+@router.post("/login/", response=TokenOut, throttle=[AnonRateThrottle("20/m")])
 def login_user(request, payload: UserLogin):
     user = authenticate(username=payload.email, password=payload.password)
 
@@ -88,39 +101,55 @@ def login_user(request, payload: UserLogin):
         raise HttpError(401, "Invalid email or password")
 
 
-@router.post("/forgot-password/", response={200: dict})
+@router.post("/logout/", response={204: None}, auth=TokenAuth())
+def logout_user(request, payload: LogoutRequest):
+    # Ends only this session; other devices stay logged in.
+    request.auth_token.delete()
+    if payload.push_token:
+        UserDevice.objects.filter(user=request.auth, push_token=payload.push_token).update(is_active=False)
+    return 204, None
+
+
+@router.post("/forgot-password/", response={200: dict}, throttle=[AnonRateThrottle("5/h")])
 def forgot_password(request, payload: PasswordResetRequest):
     user = User.objects.filter(email=payload.email).first()
     if user:
         PasswordResetCode.objects.filter(user=user, used=False).update(used=True)
-        code = f"{random.randint(0, 999999):06d}"
+        code = f"{secrets.randbelow(1_000_000):06d}"
         PasswordResetCode.objects.create(user=user, code=code)
-        send_mail(
-            subject="Your RingSync reset code",
-            message=f"Your password reset code is: {code}\n\nThis code expires in 10 minutes.",
-            from_email=None,
-            recipient_list=[user.email],
-            fail_silently=True,
-        )
+        try:
+            send_mail(
+                subject="Your RingSync reset code",
+                message=f"Your password reset code is: {code}\n\nThis code expires in 10 minutes.",
+                from_email=None,
+                recipient_list=[user.email],
+            )
+        except Exception:
+            # Still return the generic response so this endpoint can't reveal which emails exist.
+            logger.exception("Failed to send password reset email")
     return 200, {"message": "If that email is registered, a reset code has been sent."}
 
 
-@router.post("/reset-password/", response={200: dict, 400: dict})
+@router.post("/reset-password/", response={200: dict, 400: dict}, throttle=[AnonRateThrottle("10/m")])
 def reset_password(request, payload: PasswordResetConfirm):
-    user = User.objects.filter(email=payload.email).first()
-    if not user:
-        return 400, {"error": "Invalid code or email."}
-
-    code_obj = (
-        PasswordResetCode.objects.filter(user=user, code=payload.code, used=False)
-        .order_by("-created_at")
-        .first()
-    )
-
-    if not code_obj or code_obj.is_expired():
-        return 400, {"error": "Invalid or expired code."}
-
     with transaction.atomic():
+        code_obj = (
+            PasswordResetCode.objects.select_for_update()
+            .select_related("user")
+            .filter(user__email=payload.email, used=False)
+            .order_by("-created_at")
+            .first()
+        )
+
+        if not code_obj or code_obj.is_expired() or code_obj.attempts >= MAX_RESET_CODE_ATTEMPTS:
+            return 400, {"error": INVALID_RESET}
+
+        if not secrets.compare_digest(code_obj.code, payload.code):
+            # Count the miss; after MAX_RESET_CODE_ATTEMPTS the code is dead and a new one is needed.
+            PasswordResetCode.objects.filter(pk=code_obj.pk).update(attempts=F("attempts") + 1)
+            return 400, {"error": INVALID_RESET}
+
+        user = code_obj.user
         user.set_password(payload.new_password)
         user.save(update_fields=["password"])
         user.authtoken_set.all().delete()
@@ -226,7 +255,7 @@ def list_pending_requests(request):
     response={200: FriendOut, 403: dict, 404: dict},
     auth=TokenAuth(),
 )
-def accept_friend_request(request, friendship_id: str):
+def accept_friend_request(request, friendship_id: uuid.UUID):
     friendship = Friendship.objects.filter(id=friendship_id).first()
     if not friendship:
         return 404, {"error": "Request not found"}
@@ -254,7 +283,7 @@ def accept_friend_request(request, friendship_id: str):
     response={204: None, 403: dict, 404: dict},
     auth=TokenAuth(),
 )
-def decline_friend_request(request, friendship_id: str):
+def decline_friend_request(request, friendship_id: uuid.UUID):
     friendship = Friendship.objects.filter(id=friendship_id).first()
     if not friendship:
         return 404, {"error": "Request not found"}
@@ -274,7 +303,7 @@ def decline_friend_request(request, friendship_id: str):
     response={204: None, 403: dict, 404: dict},
     auth=TokenAuth(),
 )
-def remove_friend(request, friendship_id: str):
+def remove_friend(request, friendship_id: uuid.UUID):
     friendship = Friendship.objects.filter(id=friendship_id).first()
     if not friendship:
         return 404, {"error": "Friendship not found"}
