@@ -184,7 +184,9 @@ AUTH_USER_MODEL = "users.User"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Email (Resend SMTP or any SMTP provider)
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# Locally, set EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend to print emails
+# (e.g. password reset codes) in the runserver terminal instead of sending them.
+EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.resend.com")
 EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "resend")
