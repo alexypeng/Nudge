@@ -6,6 +6,21 @@ A social alarm clock. You set alarms with friends in a group; when your alarm go
 - **Scheduler (the "Reaper"):** a background process that records rings at the alarm time and marks unanswered alarms as running late
 - **App:** Expo (React Native) in `frontend/`, with a native alarm module for Android (AlarmManager) and iOS (AlarmKit)
 
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/welcome.png" alt="Welcome screen" width="200"></td>
+    <td align="center"><img src="docs/screenshots/home.png" alt="Home screen with a friend running late" width="200"></td>
+    <td align="center"><img src="docs/screenshots/leaderboard.png" alt="Group leaderboard" width="200"></td>
+    <td align="center"><img src="docs/screenshots/check-in.png" alt="Check-in screen" width="200"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Welcome</b></td>
+    <td align="center"><b>Home</b><br>someone needs a nudge</td>
+    <td align="center"><b>Group</b><br>on-time leaderboard</td>
+    <td align="center"><b>Alarm</b><br>check in within 5 min</td>
+  </tr>
+</table>
+
 ## How it works
 
 1. You create an alarm in a group. The app schedules it on your phone, and the backend stores its next trigger time.
@@ -98,7 +113,39 @@ frontend/
   src/         api client, stores (Zustand), services, components, theme (colors)
   modules/expo-alarm/   native alarm module (Android Kotlin, iOS Swift)
   scripts/     asset generators (splash icon)
+docs/
+  screenshots/ README gallery, retaken with `manage.py seed_demo`
 ```
+
+## Screenshots
+
+The images above come from a deterministic demo group, so they can be retaken after a UI change
+and still show the same names and numbers.
+
+```powershell
+cd backend
+uv run python manage.py seed_demo      # "Morning Crew": Maya 90% / Sam 70% / Leo 55%
+```
+
+Sign in as `sam@nudge.demo` / `nudgedemo123`, then capture each screen from the emulator:
+
+```powershell
+$adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
+& $adb shell screencap -p /sdcard/shot.png
+& $adb pull /sdcard/shot.png docs\screenshots\home.png
+```
+
+(PowerShell redirection mangles binary output, so the screenshot goes via the device's storage.)
+
+The check-in screen doesn't need a real alarm to fire — deep link straight to it (any alarm id from
+`GET /api/alarms/alarm/`):
+
+```powershell
+& $adb shell am start -a android.intent.action.VIEW -d "nudge://alarm/active?alarmId=<alarm id>"
+```
+
+Crop the emulator's light navigation bar off the bottom before committing (the current images are
+720x1184). Re-running `seed_demo` wipes and rebuilds the demo accounts, so it's safe to repeat.
 
 ## Known limitations
 
