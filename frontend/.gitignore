@@ -29,6 +29,10 @@ modules/**/android/build/
 # Testing
 coverage/
 
+# Firebase (repo is public; provide via the GOOGLE_SERVICES_JSON env var on EAS)
+google-services.json
+GoogleService-Info.plist
+
 # Misc
 *.log
 .DS_Store
