@@ -27,4 +27,5 @@ env/
 celerybeat-schedule
 celerybeat.pid
 
+nudge-firebase-adminsdk.json
 ringsync-firebase-adminsdk.json

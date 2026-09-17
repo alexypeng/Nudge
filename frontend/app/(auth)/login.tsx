@@ -51,7 +51,7 @@ export default function LoginScreen() {
                     className="text-base mb-8 text-center"
                     style={{ color: Colors.textSecondary }}
                 >
-                    Welcome back to RingSync
+                    Welcome back to Nudge
                 </Text>
                 <TextInput
                     className="h-14 px-4 mb-3"

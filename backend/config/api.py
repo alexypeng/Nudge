@@ -7,7 +7,7 @@ api = NinjaAPI()
 
 @api.get("/hello")
 def hello(request):
-    return {"message": "Hello, RingSync!"}
+    return {"message": "Hello, Nudge!"}
 
 
 api.add_router("/alarms/", alarms_router)

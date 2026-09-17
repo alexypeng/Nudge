@@ -119,7 +119,7 @@ def forgot_password(request, payload: PasswordResetRequest):
         PasswordResetCode.objects.create(user=user, code=code)
         try:
             send_mail(
-                subject="Your RingSync reset code",
+                subject="Your Nudge reset code",
                 message=f"Your password reset code is: {code}\n\nThis code expires in 10 minutes.",
                 from_email=None,
                 recipient_list=[user.email],

@@ -75,7 +75,7 @@ def send_group_push(users, action, data, silent=True):
                 headers={"apns-priority": "10", "apns-push-type": "alert"},
                 payload=messaging.APNSPayload(
                     aps=messaging.Aps(
-                        alert=messaging.ApsAlert(title=data.get("title", "RingSync"), body=data.get("body", "")),
+                        alert=messaging.ApsAlert(title=data.get("title", "Nudge"), body=data.get("body", "")),
                         sound="default",
                     )
                 ),
@@ -83,7 +83,7 @@ def send_group_push(users, action, data, silent=True):
             android=messaging.AndroidConfig(
                 priority="high",
                 notification=messaging.AndroidNotification(
-                    title=data.get("title", "RingSync"), body=data.get("body", "")
+                    title=data.get("title", "Nudge"), body=data.get("body", "")
                 ),
             ),
         )
