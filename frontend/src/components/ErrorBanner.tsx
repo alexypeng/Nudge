@@ -1,4 +1,5 @@
-import { View, Text, Pressable, StyleSheet, ViewStyle } from "react-native";
+import { View, Pressable, StyleSheet, ViewStyle } from "react-native";
+import { Text } from "@/src/components/Text";
 import { CircleAlert, X } from "lucide-react-native";
 import { GlassCard } from "./GlassCard";
 import { Colors } from "../theme/colors";
@@ -48,7 +49,7 @@ export function ErrorBanner({ message, onRetry, onDismiss, style }: ErrorBannerP
 
 const styles = StyleSheet.create({
     card: {
-        borderColor: "rgba(255, 99, 99, 0.3)",
+        borderColor: Colors.statusLateBorder,
     },
     row: {
         flexDirection: "row",
@@ -62,9 +63,9 @@ const styles = StyleSheet.create({
         color: Colors.statusLate,
     },
     retryPill: {
-        backgroundColor: "rgba(255, 99, 99, 0.1)",
+        backgroundColor: Colors.statusLateSubtle,
         borderWidth: 1,
-        borderColor: "rgba(255, 99, 99, 0.25)",
+        borderColor: Colors.statusLateBorder,
         borderRadius: 99,
         paddingHorizontal: 12,
         paddingVertical: 4,

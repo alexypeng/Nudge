@@ -1,12 +1,11 @@
 import { useState } from "react";
 import {
-    Text,
-    TextInput,
     KeyboardAvoidingView,
     Platform,
     Keyboard,
     TouchableWithoutFeedback,
 } from "react-native";
+import { FONT_FAMILY, Text, TextInput } from "@/src/components/Text";
 import { useRouter, Link } from "expo-router";
 import { useAuthStore } from "@/src/stores/authStore";
 import { TactileButton } from "@/src/components/TactileButton";
@@ -101,7 +100,7 @@ export default function LoginScreen() {
                 <Link
                     href="/(auth)/forgot-password"
                     className="text-center mt-4"
-                    style={{ color: Colors.accent }}
+                    style={{ fontFamily: FONT_FAMILY, color: Colors.accent }}
                 >
                     Forgot password?
                 </Link>
@@ -109,6 +108,7 @@ export default function LoginScreen() {
                     href="/(auth)/register"
                     className="text-center mt-4"
                     style={{
+                        fontFamily: FONT_FAMILY,
                         color: Colors.textSecondary,
                     }}
                 >

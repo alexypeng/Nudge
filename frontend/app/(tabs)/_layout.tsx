@@ -2,6 +2,7 @@ import { Tabs } from "expo-router";
 import { Home, Bell, Users, UserPlus, Settings } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "@/src/theme/colors";
+import { FONT_FAMILY } from "@/src/components/Text";
 
 // Height of the tab content (12 top padding + icon + label) above the system inset.
 // The inset is added on top so the bar clears the iPhone home indicator and Android's
@@ -17,11 +18,12 @@ export default function TabLayout() {
                 headerShown: false,
                 tabBarStyle: {
                     backgroundColor: Colors.background,
-                    borderTopColor: "rgba(255,255,255,0.08)",
+                    borderTopColor: Colors.hairline,
                     paddingTop: 12,
                     paddingBottom: insets.bottom,
                     height: TAB_BAR_CONTENT_HEIGHT + insets.bottom,
                 },
+                tabBarLabelStyle: { fontFamily: FONT_FAMILY, fontWeight: "700" },
                 tabBarActiveTintColor: Colors.accent,
                 tabBarInactiveTintColor: Colors.textSecondary,
             }}

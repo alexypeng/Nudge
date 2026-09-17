@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { View, Text, TextInput, ScrollView, Pressable, StyleSheet } from "react-native";
+import { View, ScrollView, Pressable, StyleSheet } from "react-native";
+import { Text, TextInput } from "@/src/components/Text";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useFriendStore } from "@/src/stores/friendStore";
 import { useAuthStore } from "@/src/stores/authStore";

@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { StyleSheet, View, Pressable } from 'react-native';
+import { Text } from '@/src/components/Text';
 import { Colors } from '../theme/colors';
 import { GroupOut } from '../api/client';
 import { GlassCard } from './GlassCard';

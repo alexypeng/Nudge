@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, ScrollView, Pressable } from "react-native";
+import { Text } from "@/src/components/Text";
 import { Redirect, useFocusEffect, useRouter } from "expo-router";
 
 import { Bell, Users } from "lucide-react-native";

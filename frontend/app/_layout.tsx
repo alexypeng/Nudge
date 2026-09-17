@@ -6,6 +6,7 @@ import { Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/src/stores/authStore";
 import { Colors } from "@/src/theme/colors";
+import { FONT_FAMILY } from "@/src/components/Text";
 import {
     requestAlarmPermission,
     checkAlarmCapability,
@@ -65,6 +66,8 @@ export default function RootLayout() {
             screenOptions={{
                 headerStyle: { backgroundColor: Colors.background },
                 headerTintColor: Colors.textPrimary,
+                // Screen title style from CLAUDE.md (native headers don't support letterSpacing).
+                headerTitleStyle: { fontFamily: FONT_FAMILY, fontWeight: "900", fontSize: 16 },
                 headerBackButtonDisplayMode: "minimal",
                 // Keep stack screen content above the Android navigation bar and the
                 // iPhone home indicator; apps draw behind both (edge-to-edge).

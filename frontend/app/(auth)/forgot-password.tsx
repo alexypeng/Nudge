@@ -1,13 +1,12 @@
 import { useState } from "react";
 import {
-    Text,
-    TextInput,
     KeyboardAvoidingView,
     Platform,
     Keyboard,
     TouchableWithoutFeedback,
     View,
 } from "react-native";
+import { Text, TextInput } from "@/src/components/Text";
 import { useRouter } from "expo-router";
 import { TactileButton } from "@/src/components/TactileButton";
 import { Colors } from "@/src/theme/colors";

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Text, TextInput, ScrollView, Pressable, StyleSheet } from "react-native";
+import { View, ScrollView, Pressable, StyleSheet } from "react-native";
+import { Text, TextInput } from "@/src/components/Text";
 import { useFriendStore } from "@/src/stores/friendStore";
 import { Colors } from "@/src/theme/colors";
 import { GlassCard } from "@/src/components/GlassCard";
@@ -189,7 +190,7 @@ const styles = StyleSheet.create({
     statusPill: {
         backgroundColor: Colors.accentSubtle,
         borderWidth: 1,
-        borderColor: "rgba(96,165,250,0.25)",
+        borderColor: Colors.accentBorderSubtle,
         borderRadius: 99,
         paddingHorizontal: 9,
         paddingVertical: 3,

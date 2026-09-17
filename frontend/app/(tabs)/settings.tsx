@@ -1,13 +1,12 @@
 import { useState } from "react";
 import {
     View,
-    Text,
-    TextInput,
     ScrollView,
     Pressable,
     Modal,
     StyleSheet,
 } from "react-native";
+import { Text, TextInput } from "@/src/components/Text";
 import { useRouter } from "expo-router";
 import { useAuthStore } from "@/src/stores/authStore";
 import { Colors } from "@/src/theme/colors";
@@ -247,7 +246,7 @@ export default function SettingsScreen() {
             >
                 <Pressable
                     className="flex-1 items-center justify-center"
-                    style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+                    style={{ backgroundColor: Colors.overlay }}
                     onPress={() => setShowDeleteModal(false)}
                 >
                     <Pressable
@@ -256,7 +255,7 @@ export default function SettingsScreen() {
                             backgroundColor: Colors.surface,
                             borderRadius: 18,
                             borderWidth: 1.5,
-                            borderColor: "rgba(255, 99, 99, 0.3)",
+                            borderColor: Colors.statusLateBorder,
                             padding: 20,
                         }}
                     >
@@ -343,7 +342,7 @@ const styles = StyleSheet.create({
     },
     divider: {
         height: 1,
-        backgroundColor: "rgba(255,255,255,0.05)",
+        backgroundColor: Colors.divider,
         marginVertical: 10,
     },
     feedback: {

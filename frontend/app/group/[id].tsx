@@ -2,7 +2,8 @@ import { useAlarmStore } from "@/src/stores/alarmStore";
 import { useGroupStore } from "@/src/stores/groupStore";
 import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { View, Text, TextInput, ScrollView, Pressable, Modal } from "react-native";
+import { View, ScrollView, Pressable, Modal } from "react-native";
+import { Text, TextInput } from "@/src/components/Text";
 import { DEFAULT_GROUP_ICON, GROUP_ICON_NAMES } from "@/src/theme/groupIcons";
 import { GroupIcon } from "@/src/components/GroupIcon";
 import { Colors } from "@/src/theme/colors";
@@ -242,7 +243,7 @@ export default function GroupScreen() {
                                                 ? 1
                                                 : 0,
                                         borderBottomColor:
-                                            "rgba(255,255,255,0.05)",
+                                            Colors.divider,
                                     }}
                                 >
                                     <View
@@ -292,7 +293,7 @@ export default function GroupScreen() {
                                                 height: 6,
                                                 borderRadius: 99,
                                                 backgroundColor:
-                                                    "rgba(255,255,255,0.06)",
+                                                    Colors.track,
                                                 overflow: "hidden",
                                             }}
                                         >
@@ -499,7 +500,7 @@ export default function GroupScreen() {
             >
                 <Pressable
                     className="flex-1 items-center justify-center"
-                    style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+                    style={{ backgroundColor: Colors.overlay }}
                     onPress={() => {
                         setGroupName(group?.name ?? "");
                         setGroupIcon(group?.icon ?? DEFAULT_GROUP_ICON);
@@ -612,7 +613,7 @@ export default function GroupScreen() {
             >
                 <Pressable
                     className="flex-1 justify-end"
-                    style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+                    style={{ backgroundColor: Colors.overlay }}
                     onPress={() => setSelectedMemberId(null)}
                 >
                     <Pressable

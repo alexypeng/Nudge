@@ -1,12 +1,12 @@
 import { useRef, useState, useCallback } from "react";
 import {
     View,
-    Text,
     FlatList,
     useWindowDimensions,
     StyleSheet,
     ViewToken,
 } from "react-native";
+import { Text } from "@/src/components/Text";
 import { useRouter } from "expo-router";
 import { AlarmClock, BellRing, LucideIcon, Trophy } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: "rgba(255,255,255,0.15)",
+        backgroundColor: Colors.dotInactive,
     },
     dotActive: {
         backgroundColor: Colors.accent,
