@@ -55,6 +55,12 @@ class Alarm(models.Model):
     # but still count on the leaderboard.
     schedule_changed_at = models.DateTimeField(null=True, blank=True)
 
+    def shows_event(self, event):
+        """Events from before the owner last edited the alarm are hidden in the app (they still count)."""
+        return event is not None and (
+            self.schedule_changed_at is None or event.scheduled_for >= self.schedule_changed_at
+        )
+
     def save(self, *args, **kwargs):
         if self.is_active:
             self.next_trigger_utc = self.calculate_next_trigger()

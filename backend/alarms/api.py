@@ -3,7 +3,7 @@ import uuid
 from datetime import timedelta
 
 from django.db import transaction
-from django.db.models import Count, F, Q
+from django.db.models import Count, F, OuterRef, Q, Subquery
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from ninja import Router
@@ -31,6 +31,25 @@ from .utils import send_group_push, send_ring_push
 logger = logging.getLogger(__name__)
 
 router = Router()
+
+
+def with_latest_events(alarms):
+    """
+    Attaches each alarm's latest visible event as `alarm.latest_event`, using two queries in total
+    instead of one request per alarm from the app.
+    """
+    alarms = list(
+        alarms.annotate(
+            latest_event_id=Subquery(
+                AlarmEvent.objects.filter(alarm=OuterRef("pk")).order_by("-scheduled_for").values("id")[:1]
+            )
+        )
+    )
+    events = AlarmEvent.objects.in_bulk([a.latest_event_id for a in alarms if a.latest_event_id])
+    for alarm in alarms:
+        event = events.get(alarm.latest_event_id)
+        alarm.latest_event = event if alarm.shows_event(event) else None
+    return alarms
 
 # ==========================================
 # Group CRUD
@@ -156,7 +175,7 @@ def list_group_alarms(request, group_id: uuid.UUID):
     if request.auth not in group.members.all():
         return 403, None
 
-    return 200, list(Alarm.objects.filter(group=group))
+    return 200, with_latest_events(Alarm.objects.filter(group=group))
 
 
 @router.get(
@@ -240,7 +259,7 @@ def list_alarms(request, group_id: uuid.UUID | None = None):
     qs = Alarm.objects.filter(user=request.auth)
     if group_id:
         qs = qs.filter(group_id=group_id)
-    return list(qs)
+    return with_latest_events(qs)
 
 
 @router.delete("/alarm/{alarm_id}/", response={204: None}, auth=TokenAuth())
@@ -354,7 +373,7 @@ def get_latest_event(request, alarm_id: uuid.UUID):
 
     event = AlarmEvent.objects.filter(alarm=alarm).order_by("-scheduled_for").first()
 
-    if not event or (alarm.schedule_changed_at and event.scheduled_for < alarm.schedule_changed_at):
+    if not alarm.shows_event(event):
         return 204, None
 
     return 200, event
