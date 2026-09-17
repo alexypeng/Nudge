@@ -49,7 +49,7 @@ export default function SettingsScreen() {
     const handleLogout = () => {
         // Navigate right away; the server-side cleanup in logout() finishes in the background.
         logout();
-        router.replace("/(auth)/login");
+        router.replace("/(auth)/welcome");
     };
 
     const handleSaveProfile = async () => {
@@ -92,7 +92,7 @@ export default function SettingsScreen() {
         setIsDeleting(true);
         try {
             await deleteAccount();
-            router.replace("/(auth)/login");
+            router.replace("/(auth)/welcome");
         } catch (err) {
             setError((err as Error).message);
             setIsDeleting(false);
@@ -101,9 +101,11 @@ export default function SettingsScreen() {
 
     return (
         <>
+            {/* Top spacing lives on the content, not the ScrollView: padding on the ScrollView
+                itself shifts the content down without adding scroll range, cutting off the bottom. */}
             <ScrollView
-                className="flex-1 pt-16"
-                contentContainerClassName="px-5 pt-8 pb-8"
+                className="flex-1"
+                contentContainerClassName="px-5 pt-24 pb-8"
                 style={{ backgroundColor: Colors.background }}
                 keyboardShouldPersistTaps="handled"
             >

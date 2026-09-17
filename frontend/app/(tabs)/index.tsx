@@ -19,6 +19,7 @@ import { ErrorBanner } from "@/src/components/ErrorBanner";
 import { TactileButton } from "@/src/components/TactileButton";
 import { stopRinging } from "@/src/services/alarmScheduler";
 
+import { useGridTileStyle } from "@/src/components/gridTile";
 interface RingableFriend {
     alarmId: string;
     alarmName: string;
@@ -132,6 +133,7 @@ function RingFriendCard({
 }
 
 export default function HomeScreen() {
+    const tileStyle = useGridTileStyle();
     const router = useRouter();
     const token = useAuthStore((s) => s.token);
     const user = useAuthStore((s) => s.user);
@@ -251,7 +253,7 @@ export default function HomeScreen() {
         setVisibleIds(activeIds);
     }, []));
 
-    if (!token) return <Redirect href="/(auth)/login" />;
+    if (!token) return <Redirect href="/(auth)/welcome" />;
 
     const isFirstLoad =
         (alarmLoading && alarms.length === 0) ||
@@ -532,8 +534,7 @@ export default function HomeScreen() {
                                         borderColor: Colors.border,
                                         borderRadius: 18,
                                         padding: 16,
-                                        width: "31%",
-                                        aspectRatio: 1,
+                                        ...tileStyle,
                                         justifyContent: "center",
                                         alignItems: "center",
                                     }}

@@ -10,7 +10,9 @@ import { TactileButton } from "@/src/components/TactileButton";
 import { ArcadeSpinner } from "@/src/components/ArcadeSpinner";
 import { ErrorBanner } from "@/src/components/ErrorBanner";
 
+import { useGridTileStyle } from "@/src/components/gridTile";
 export default function GroupsScreen() {
+    const tileStyle = useGridTileStyle();
     const router = useRouter();
     const groups = useGroupStore((s) => s.groups);
     const fetchGroups = useGroupStore((s) => s.fetch);
@@ -82,8 +84,7 @@ export default function GroupsScreen() {
                                     borderColor: Colors.border,
                                     borderRadius: 18,
                                     padding: 16,
-                                    width: "31%",
-                                    aspectRatio: 1,
+                                    ...tileStyle,
                                     justifyContent: "center",
                                     alignItems: "center",
                                 }}
