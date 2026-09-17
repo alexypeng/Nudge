@@ -5,7 +5,7 @@ import Animated, {
     useAnimatedStyle,
     withSpring,
 } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
+import { AlarmClock } from "lucide-react-native";
 import { Colors } from "../theme/colors";
 import { TactileButton } from "./TactileButton";
 
@@ -78,8 +78,7 @@ export function RingingAlarmCard({
                     <Text style={styles.name}>{alarmName}</Text>
                 </View>
                 <View style={styles.badge}>
-                    <Ionicons
-                        name="alarm"
+                    <AlarmClock
                         size={12}
                         color={Colors.statusLate}
                         style={{ marginRight: 4 }}

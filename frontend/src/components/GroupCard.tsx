@@ -1,9 +1,9 @@
 import React from 'react';
 import { StyleSheet, Text, View, Pressable } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
 import { GroupOut } from '../api/client';
 import { GlassCard } from './GlassCard';
+import { GroupIcon } from './GroupIcon';
 
 interface GroupCardProps {
   group: GroupOut;
@@ -16,8 +16,8 @@ export function GroupCard({ group, onPress, className }: GroupCardProps) {
     <Pressable className={className} onPress={onPress}>
       <GlassCard>
         <View style={styles.row}>
-          <Ionicons
-            name={(group.icon as keyof typeof Ionicons.glyphMap) || 'people'}
+          <GroupIcon
+            name={group.icon}
             size={20}
             color={Colors.accent}
             style={{ marginRight: 8 }}

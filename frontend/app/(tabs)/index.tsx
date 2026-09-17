@@ -1,8 +1,8 @@
 import { View, Text, ScrollView, Pressable } from "react-native";
 import { Redirect, useFocusEffect, useRouter } from "expo-router";
 
-import { Ionicons } from "@expo/vector-icons";
 import { Bell, Users } from "lucide-react-native";
+import { GroupIcon } from "@/src/components/GroupIcon";
 import * as Haptics from "expo-haptics";
 import { Colors } from "@/src/theme/colors";
 import { useAuthStore } from "@/src/stores/authStore";
@@ -539,11 +539,8 @@ export default function HomeScreen() {
                                         alignItems: "center",
                                     }}
                                 >
-                                    <Ionicons
-                                        name={
-                                            (group.icon as keyof typeof Ionicons.glyphMap) ||
-                                            "people"
-                                        }
+                                    <GroupIcon
+                                        name={group.icon}
                                         size={40}
                                         color={Colors.accent}
                                         style={{ marginBottom: 10 }}

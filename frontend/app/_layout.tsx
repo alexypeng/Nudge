@@ -2,6 +2,7 @@ import "@/global.css";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { Stack } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/src/stores/authStore";
 import { Colors } from "@/src/theme/colors";
 import {
@@ -23,6 +24,7 @@ setupNotifications();
 
 export default function RootLayout() {
     const { token, isLoaded, loadToken } = useAuthStore();
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         loadToken();
@@ -49,10 +51,22 @@ export default function RootLayout() {
                 headerStyle: { backgroundColor: Colors.background },
                 headerTintColor: Colors.textPrimary,
                 headerBackButtonDisplayMode: "minimal",
-                contentStyle: { backgroundColor: Colors.background },
+                // Keep stack screen content above the Android navigation bar and the
+                // iPhone home indicator; apps draw behind both (edge-to-edge).
+                contentStyle: {
+                    backgroundColor: Colors.background,
+                    paddingBottom: insets.bottom,
+                },
             }}
         >
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+                name="(tabs)"
+                options={{
+                    headerShown: false,
+                    // The tab bar pads itself for the bottom inset.
+                    contentStyle: { backgroundColor: Colors.background },
+                }}
+            />
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
             <Stack.Screen
                 name="onboarding"
