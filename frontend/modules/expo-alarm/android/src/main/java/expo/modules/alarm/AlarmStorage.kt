@@ -19,8 +19,46 @@ object AlarmStorage {
     private const val PREFS_NAME = "expo_alarm_configs"
     private const val LEGACY_PREFS_NAME = "expo_alarm_ids"
 
+    // Kept in a separate file: getAllAlarms() treats every entry in PREFS_NAME as an alarm config.
+    private const val PENDING_PREFS_NAME = "expo_alarm_pending"
+    private const val PENDING_ID_KEY = "alarm_id"
+    private const val PENDING_AT_KEY = "fired_at"
+    // Matches the backend's late check-in cutoff; older rings can't be checked in anyway.
+    private const val PENDING_MAX_AGE_MS = 2 * 60 * 60 * 1000L
+
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    private fun pendingPrefs(context: Context): SharedPreferences =
+        context.getSharedPreferences(PENDING_PREFS_NAME, Context.MODE_PRIVATE)
+
+    /** Remembers the alarm that just rang so the app can open its check-in screen, even if it was killed. */
+    fun setPendingAlarm(context: Context, id: String) {
+        pendingPrefs(context).edit()
+            .putString(PENDING_ID_KEY, id)
+            .putLong(PENDING_AT_KEY, System.currentTimeMillis())
+            .commit()
+    }
+
+    fun peekPendingAlarm(context: Context): String? {
+        val prefs = pendingPrefs(context)
+        val id = prefs.getString(PENDING_ID_KEY, null) ?: return null
+        val firedAt = prefs.getLong(PENDING_AT_KEY, 0L)
+        return if (System.currentTimeMillis() - firedAt <= PENDING_MAX_AGE_MS) id else null
+    }
+
+    fun consumePendingAlarm(context: Context): String? {
+        val id = peekPendingAlarm(context)
+        pendingPrefs(context).edit().clear().apply()
+        return id
+    }
+
+    fun clearPendingAlarm(context: Context, id: String) {
+        val prefs = pendingPrefs(context)
+        if (prefs.getString(PENDING_ID_KEY, null) == id) {
+            prefs.edit().clear().apply()
+        }
+    }
 
     fun saveAlarm(context: Context, config: AlarmConfigData) {
         val json = JSONObject().apply {

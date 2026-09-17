@@ -12,6 +12,10 @@ declare class ExpoAlarmModule extends NativeModule<ExpoAlarmModuleEvents> {
     scheduleAlarm(config: AlarmConfig): Promise<void>;
     cancelAlarm(id: string): Promise<void>;
     cancelAllAlarms(): Promise<void>;
+    /** The alarm that rang while the app was closed or in the background, cleared once read. */
+    consumePendingAlarm(): Promise<string | null>;
+    /** Silences a ringing alarm without cancelling its schedule. */
+    stopRinging(id: string): Promise<void>;
 }
 
 export default requireOptionalNativeModule<ExpoAlarmModule>("ExpoAlarm");

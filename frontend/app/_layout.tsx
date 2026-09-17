@@ -1,6 +1,7 @@
 import "@/global.css";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { AppState } from "react-native";
 import { Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/src/stores/authStore";
@@ -8,6 +9,7 @@ import { Colors } from "@/src/theme/colors";
 import {
     requestAlarmPermission,
     checkAlarmCapability,
+    openPendingAlarm,
     setupAlarmListener,
 } from "@/src/services/alarmScheduler";
 import {
@@ -42,6 +44,19 @@ export default function RootLayout() {
     useEffect(() => {
         if (isLoaded) SplashScreen.hideAsync();
     }, [isLoaded]);
+
+    // An alarm that rang while the app was closed or backgrounded opens its check-in screen
+    // on launch and on every return to the foreground (once the navigator is mounted).
+    useEffect(() => {
+        if (!isLoaded || !token) return;
+        openPendingAlarm().catch((e) => console.warn("[Alarm] pending check failed:", e));
+        const sub = AppState.addEventListener("change", (state) => {
+            if (state === "active") {
+                openPendingAlarm().catch((e) => console.warn("[Alarm] pending check failed:", e));
+            }
+        });
+        return () => sub.remove();
+    }, [isLoaded, token]);
 
     if (!isLoaded) return null;
 

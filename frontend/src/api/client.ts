@@ -117,7 +117,14 @@ export interface AlarmEventOut {
     user_id: string;
     status: AlarmEventStatus;
     created_at: string;
+    /** The alarm time this event is for; countdowns and on-time are measured from here. */
+    scheduled_for: string;
     checked_in_at: string | null;
+}
+
+export interface CheckInOut {
+    message: string;
+    on_time: boolean;
 }
 
 export interface RingOut {
@@ -226,14 +233,8 @@ export const api = {
     deleteAlarm: (token: string, alarmId: string) =>
         request<void>("DELETE", `/api/alarms/alarm/${alarmId}/`, token),
 
-    ringAlarm: (token: string, alarmId: string) =>
-        request<{ message: string; event_id: string }>(
-            "POST",
-            `/api/alarms/alarm/${alarmId}/ring/`,
-            token,
-        ),
     checkIn: (token: string, alarmId: string) =>
-        request<{ message: string }>(
+        request<CheckInOut>(
             "POST",
             `/api/alarms/alarm/${alarmId}/check_in/`,
             token,

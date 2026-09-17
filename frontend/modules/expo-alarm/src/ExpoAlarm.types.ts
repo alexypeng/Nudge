@@ -12,6 +12,10 @@ export interface AlarmConfig {
 export interface AlarmCapability {
     available: boolean;
     reason: string;
+    /** Android 14+: whether alarms can open full screen over the lock screen. */
+    canUseFullScreenIntent?: boolean;
+    /** Android: alarms ring through a notification, so they need notifications enabled. */
+    notificationsEnabled?: boolean;
 }
 
 export interface AlarmEvent {

@@ -16,6 +16,7 @@ import { GlassCard } from "@/src/components/GlassCard";
 import { ArcadeSpinner } from "@/src/components/ArcadeSpinner";
 import { ErrorBanner } from "@/src/components/ErrorBanner";
 import { TactileButton } from "@/src/components/TactileButton";
+import { stopRinging } from "@/src/services/alarmScheduler";
 
 interface RingableFriend {
     alarmId: string;
@@ -169,8 +170,13 @@ export default function HomeScreen() {
 
     const handleCheckIn = async (alarmId: string) => {
         if (!token) return;
-        await api.checkIn(token, alarmId);
-        await fetchEvents();
+        try {
+            await api.checkIn(token, alarmId);
+        } finally {
+            // Silence it either way; a failed check-in (e.g. too late) shouldn't keep it ringing.
+            await stopRinging(alarmId);
+            await fetchEvents();
+        }
     };
 
     const fetchRingableFriends = async () => {
@@ -339,7 +345,7 @@ export default function HomeScreen() {
                                             alarmName={alarm.name}
                                             time={t12}
                                             period={period}
-                                            eventCreatedAt={event.created_at}
+                                            scheduledFor={event.scheduled_for}
                                             onCheckIn={() =>
                                                 handleCheckIn(alarmId)
                                             }

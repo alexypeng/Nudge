@@ -15,7 +15,7 @@ interface RingingAlarmCardProps {
     alarmName: string;
     time: string;
     period: string;
-    eventCreatedAt: string;
+    scheduledFor: string;
     onCheckIn: () => Promise<void>;
 }
 
@@ -23,12 +23,12 @@ export function RingingAlarmCard({
     alarmName,
     time,
     period,
-    eventCreatedAt,
+    scheduledFor,
     onCheckIn,
 }: RingingAlarmCardProps) {
     const [loading, setLoading] = useState(false);
     const [secondsLeft, setSecondsLeft] = useState(() => {
-        const elapsed = (Date.now() - new Date(eventCreatedAt).getTime()) / 1000;
+        const elapsed = (Date.now() - new Date(scheduledFor).getTime()) / 1000;
         return Math.max(0, Math.ceil(EXPIRY_SECONDS - elapsed));
     });
 
@@ -37,7 +37,7 @@ export function RingingAlarmCard({
     useEffect(() => {
         const interval = setInterval(() => {
             const elapsed =
-                (Date.now() - new Date(eventCreatedAt).getTime()) / 1000;
+                (Date.now() - new Date(scheduledFor).getTime()) / 1000;
             const remaining = Math.max(0, Math.ceil(EXPIRY_SECONDS - elapsed));
             setSecondsLeft(remaining);
             barWidth.value = withSpring(remaining / EXPIRY_SECONDS, {
@@ -47,7 +47,7 @@ export function RingingAlarmCard({
             if (remaining <= 0) clearInterval(interval);
         }, 1000);
         return () => clearInterval(interval);
-    }, [eventCreatedAt]);
+    }, [scheduledFor]);
 
     const animatedBarStyle = useAnimatedStyle(() => ({
         width: `${barWidth.value * 100}%`,
