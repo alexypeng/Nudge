@@ -97,7 +97,7 @@ export function setupNotificationListeners() {
             if (action === "alarm_ringing" || action === "manual_ring") {
                 const { useAlarmStore } = require("@/src/stores/alarmStore");
                 useAlarmStore.getState().fetch();
-                router.replace("/(tabs)/");
+                router.replace("/(tabs)");
             }
         },
     );
