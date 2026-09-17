@@ -1,14 +1,23 @@
 import uuid
 from datetime import datetime, time, timedelta
+from io import StringIO
 from unittest import mock
 from zoneinfo import ZoneInfo
 
+from django.core.management import call_command
 from django.test import TestCase
+from django.utils import timezone
 from users.models import AuthToken, User
 
 from alarms.enums import Actions
 from alarms.management.commands.scheduler import Command as Scheduler
-from alarms.models import Alarm, AlarmEvent, Group
+from alarms.management.commands.seed_demo import (
+    DEMO_MEMBERS,
+    EXPECTED_LEADERBOARD,
+    GROUP_NAME,
+    PRIMARY_EMAIL,
+)
+from alarms.models import LATE_CHECK_IN_CUTOFF, Alarm, AlarmEvent, Group
 
 UTC = ZoneInfo("UTC")
 
@@ -388,3 +397,55 @@ class LatestEventInListTests(TestCase):
 
         self.assertEqual(len(self.group_alarms()), 6)
         self.assertEqual(with_one, with_six)
+
+
+class SeedDemoTests(TestCase):
+    """The README screenshots rely on seed_demo producing the same data every run."""
+
+    def seed(self):
+        call_command("seed_demo", "--force", stdout=StringIO())
+
+    def leaderboard_rows(self):
+        group = Group.objects.get(name=GROUP_NAME)
+        token = AuthToken.objects.create(user=User.objects.get(email=PRIMARY_EMAIL))
+        response = self.client.get(
+            f"/api/alarms/group/{group.id}/leaderboard/",
+            HTTP_AUTHORIZATION=f"Bearer {token.id}",
+        )
+        self.assertEqual(response.status_code, 200)
+        return response.json()
+
+    def test_leaderboard_matches_the_documented_rates(self):
+        self.seed()
+        rows = [(row["display_name"], row["success_rate"]) for row in self.leaderboard_rows()]
+        self.assertEqual(rows, EXPECTED_LEADERBOARD)
+
+    def test_reseeding_is_idempotent(self):
+        self.seed()
+        self.seed()
+
+        self.assertEqual(Group.objects.filter(name=GROUP_NAME).count(), 1)
+        self.assertEqual(User.objects.filter(email__endswith="@nudge.demo").count(), len(DEMO_MEMBERS))
+        rows = [(row["display_name"], row["success_rate"]) for row in self.leaderboard_rows()]
+        self.assertEqual(rows, EXPECTED_LEADERBOARD)
+
+    def test_a_friend_is_currently_running_late(self):
+        self.seed()
+        live = AlarmEvent.objects.filter(status=AlarmEvent.Status.EXPIRED, checked_in_at__isnull=True).order_by("-scheduled_for").first()
+
+        self.assertIsNotNone(live)
+        self.assertNotEqual(live.user.email, PRIMARY_EMAIL, "the late friend must not be the screenshot account")
+        age = timezone.now() - live.scheduled_for
+        self.assertLess(age, LATE_CHECK_IN_CUTOFF, "a nudgeable alarm must still be inside the check-in window")
+
+    def test_primary_users_alarms_are_not_awaiting_check_in(self):
+        self.seed()
+        primary = User.objects.get(email=PRIMARY_EMAIL)
+
+        for alarm in Alarm.objects.filter(user=primary):
+            latest = AlarmEvent.objects.filter(alarm=alarm).order_by("-scheduled_for").first()
+            self.assertEqual(
+                latest.status,
+                AlarmEvent.Status.CHECKED_IN,
+                f"{alarm.name} would show a stale check-in prompt on the home screenshot",
+            )
