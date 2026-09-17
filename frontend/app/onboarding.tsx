@@ -8,7 +8,7 @@ import {
     ViewToken,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { AlarmClock, BellRing, LucideIcon, Trophy } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Colors } from "@/src/theme/colors";
 import { TactileButton } from "@/src/components/TactileButton";
@@ -18,7 +18,7 @@ const ONBOARDING_KEY = "ringsync_onboarding_seen";
 
 interface Page {
     id: string;
-    icon: keyof typeof Ionicons.glyphMap;
+    icon: LucideIcon;
     title: string;
     subtitle: string;
 }
@@ -26,21 +26,21 @@ interface Page {
 const pages: Page[] = [
     {
         id: "1",
-        icon: "alarm-outline",
+        icon: AlarmClock,
         title: "Wake up together",
         subtitle:
             "Set alarms with your friends and hold each other accountable every morning.",
     },
     {
         id: "2",
-        icon: "notifications-outline",
+        icon: BellRing,
         title: "Ring your friends",
         subtitle:
             "When someone oversleeps, give them a nudge. They\u2019ll get a push notification to wake up.",
     },
     {
         id: "3",
-        icon: "trophy-outline",
+        icon: Trophy,
         title: "Stay on track",
         subtitle:
             "See who\u2019s got the best wake-up rate in your group. Check in on time to climb the leaderboard.",
@@ -91,11 +91,7 @@ export default function OnboardingScreen() {
                 renderItem={({ item }) => (
                     <View style={[styles.page, { width }]}>
                         <View style={styles.iconContainer}>
-                            <Ionicons
-                                name={item.icon}
-                                size={72}
-                                color={Colors.accent}
-                            />
+                            <item.icon size={72} color={Colors.accent} />
                         </View>
                         <Text style={styles.title}>{item.title}</Text>
                         <Text style={styles.subtitle}>{item.subtitle}</Text>

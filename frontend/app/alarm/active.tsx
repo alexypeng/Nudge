@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { AlarmClock } from "lucide-react-native";
 import { Colors } from "@/src/theme/colors";
 import { TactileButton } from "@/src/components/TactileButton";
 import { useAlarmStore } from "@/src/stores/alarmStore";
@@ -37,8 +37,7 @@ export default function ActiveAlarmScreen() {
     return (
         <View style={styles.container}>
             <View style={styles.badge}>
-                <Ionicons
-                    name="alarm"
+                <AlarmClock
                     size={14}
                     color={Colors.statusLate}
                     style={{ marginRight: 5 }}

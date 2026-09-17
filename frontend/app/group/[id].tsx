@@ -3,7 +3,8 @@ import { useGroupStore } from "@/src/stores/groupStore";
 import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { View, Text, TextInput, ScrollView, Pressable, Modal } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { DEFAULT_GROUP_ICON, GROUP_ICON_NAMES } from "@/src/theme/groupIcons";
+import { GroupIcon } from "@/src/components/GroupIcon";
 import { Colors } from "@/src/theme/colors";
 import { AlarmCard } from "@/src/components/AlarmCard";
 import { GlassCard } from "@/src/components/GlassCard";
@@ -14,25 +15,6 @@ import { ErrorBanner } from "@/src/components/ErrorBanner";
 
 const EMPTY_MEMBERS: UserOut[] = [];
 const EMPTY_ALARMS: AlarmOut[] = [];
-
-const ICON_OPTIONS: (keyof typeof Ionicons.glyphMap)[] = [
-    "people",
-    "alarm",
-    "sunny",
-    "fitness",
-    "book",
-    "moon",
-    "trophy",
-    "flame",
-    "star",
-    "musical-notes",
-    "heart",
-    "rocket",
-    "football",
-    "cafe",
-    "code-slash",
-    "paw",
-];
 
 export default function GroupScreen() {
     const router = useRouter();
@@ -60,7 +42,7 @@ export default function GroupScreen() {
     const [isEditing, setIsEditing] = useState(false);
     const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
     const [groupName, setGroupName] = useState(group?.name ?? "");
-    const [groupIcon, setGroupIcon] = useState(group?.icon ?? "people");
+    const [groupIcon, setGroupIcon] = useState(group?.icon ?? DEFAULT_GROUP_ICON);
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
 
     const fetchLeaderboard = async () => {
@@ -84,8 +66,8 @@ export default function GroupScreen() {
                     onPress={() => setIsEditing(true)}
                     style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
                 >
-                    <Ionicons
-                        name={(group?.icon as keyof typeof Ionicons.glyphMap) || "people"}
+                    <GroupIcon
+                        name={group?.icon}
                         size={18}
                         color={Colors.accent}
                     />
@@ -109,7 +91,7 @@ export default function GroupScreen() {
         const iconChanged = groupIcon !== group?.icon;
         if (!nameChanged && !iconChanged) {
             setGroupName(group?.name ?? "");
-            setGroupIcon(group?.icon ?? "people");
+            setGroupIcon(group?.icon ?? DEFAULT_GROUP_ICON);
             return;
         }
         try {
@@ -120,7 +102,7 @@ export default function GroupScreen() {
         } catch (err) {
             setError((err as Error).message);
             setGroupName(group?.name ?? "");
-            setGroupIcon(group?.icon ?? "people");
+            setGroupIcon(group?.icon ?? DEFAULT_GROUP_ICON);
         }
     };
 
@@ -511,7 +493,7 @@ export default function GroupScreen() {
                 animationType="fade"
                 onRequestClose={() => {
                     setGroupName(group?.name ?? "");
-                    setGroupIcon(group?.icon ?? "people");
+                    setGroupIcon(group?.icon ?? DEFAULT_GROUP_ICON);
                     setIsEditing(false);
                 }}
             >
@@ -520,7 +502,7 @@ export default function GroupScreen() {
                     style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
                     onPress={() => {
                         setGroupName(group?.name ?? "");
-                        setGroupIcon(group?.icon ?? "people");
+                        setGroupIcon(group?.icon ?? DEFAULT_GROUP_ICON);
                         setIsEditing(false);
                     }}
                 >
@@ -553,7 +535,7 @@ export default function GroupScreen() {
                             contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
                             style={{ marginBottom: 16, flexGrow: 0 }}
                         >
-                            {ICON_OPTIONS.map((name) => {
+                            {GROUP_ICON_NAMES.map((name) => {
                                 const selected = groupIcon === name;
                                 return (
                                     <Pressable
@@ -574,7 +556,7 @@ export default function GroupScreen() {
                                                 : Colors.border,
                                         }}
                                     >
-                                        <Ionicons
+                                        <GroupIcon
                                             name={name}
                                             size={20}
                                             color={selected ? Colors.accent : Colors.textSecondary}

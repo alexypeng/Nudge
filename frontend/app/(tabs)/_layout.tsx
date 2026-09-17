@@ -1,8 +1,16 @@
 import { Tabs } from "expo-router";
 import { Home, Bell, Users, UserPlus, Settings } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "@/src/theme/colors";
 
+// Height of the tab content (12 top padding + icon + label) above the system inset.
+// The inset is added on top so the bar clears the iPhone home indicator and Android's
+// 3-button or gesture navigation bar, which apps draw behind since edge-to-edge became mandatory.
+const TAB_BAR_CONTENT_HEIGHT = 64;
+
 export default function TabLayout() {
+    const insets = useSafeAreaInsets();
+
     return (
         <Tabs
             screenOptions={{
@@ -11,7 +19,8 @@ export default function TabLayout() {
                     backgroundColor: Colors.background,
                     borderTopColor: "rgba(255,255,255,0.08)",
                     paddingTop: 12,
-                    height: 88
+                    paddingBottom: insets.bottom,
+                    height: TAB_BAR_CONTENT_HEIGHT + insets.bottom,
                 },
                 tabBarActiveTintColor: Colors.accent,
                 tabBarInactiveTintColor: Colors.textSecondary,
