@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, F, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from ninja import Router
@@ -10,7 +10,7 @@ from users.models import Friendship, User
 from users.schemas import UserOut
 
 from .enums import Actions
-from .models import Alarm, AlarmEvent, Group, ManualRing
+from .models import LATE_CHECK_IN_CUTOFF, ON_TIME_WINDOW, Alarm, AlarmEvent, Group, ManualRing
 from .schemas import (
     AddMemberRequest,
     AlarmCreate,
@@ -179,22 +179,27 @@ def group_leaderboard(request, group_id: str):
     if not group.members.filter(id=request.auth.id).exists():
         return 403, None
 
-    members = group.members.all()
-    group_alarm_ids = list(Alarm.objects.filter(group=group).values_list("id", flat=True))
+    counts = {
+        row["user_id"]: row
+        for row in AlarmEvent.objects.filter(alarm__group=group)
+        .values("user_id")
+        .annotate(
+            total=Count("id"),
+            on_time=Count(
+                "id",
+                filter=Q(
+                    status=AlarmEvent.Status.CHECKED_IN,
+                    checked_in_at__lte=F("scheduled_for") + ON_TIME_WINDOW,
+                ),
+            ),
+        )
+    }
 
     entries = []
-    for member in members:
-        events = list(AlarmEvent.objects.filter(
-            user=member, alarm_id__in=group_alarm_ids
-        ).values("status", "created_at", "checked_in_at"))
-
-        total = len(events)
-        on_time = sum(
-            1 for e in events
-            if e["status"] == AlarmEvent.Status.CHECKED_IN
-            and e["checked_in_at"] is not None
-            and (e["checked_in_at"] - e["created_at"]) <= timedelta(minutes=5)
-        )
+    for member in group.members.all():
+        row = counts.get(member.id, {})
+        total = row.get("total", 0)
+        on_time = row.get("on_time", 0)
 
         entries.append(LeaderboardEntry(
             user_id=member.id,
@@ -278,14 +283,9 @@ def update_alarm(request, alarm_id: str, payload: AlarmUpdate):
 
         setattr(alarm, field, value)
 
-    latest_event = AlarmEvent.objects.filter(
-        alarm=alarm, status__in=[AlarmEvent.Status.RINGING, AlarmEvent.Status.EXPIRED]
-    ).order_by("-created_at").first()
-    if latest_event:
-        latest_event.status = AlarmEvent.Status.CHECKED_IN
-        latest_event.checked_in_at = timezone.now()
-        latest_event.save(update_fields=["status", "checked_in_at"])
-
+    # Hide the previous ringing/missed status from the UI without rewriting it:
+    # a miss before the edit still counts on the leaderboard.
+    alarm.schedule_changed_at = timezone.now()
     alarm.save()
 
     group_members = alarm.group.members.exclude(id=request.auth.id)
@@ -315,7 +315,7 @@ def trigger_alarm(request, alarm_id: str):
         event = (
             AlarmEvent.objects.filter(alarm=alarm)
             .select_for_update()
-            .order_by("-created_at")
+            .order_by("-scheduled_for")
             .first()
         )
 
@@ -365,9 +365,9 @@ def get_latest_event(request, alarm_id: str):
     if not is_owner and not is_group_member:
         return 403, {"error": "You do not have access to this alarm"}
 
-    event = AlarmEvent.objects.filter(alarm=alarm).order_by("-created_at").first()
+    event = AlarmEvent.objects.filter(alarm=alarm).order_by("-scheduled_for").first()
 
-    if not event:
+    if not event or (alarm.schedule_changed_at and event.scheduled_for < alarm.schedule_changed_at):
         return 204, None
 
     return 200, event
@@ -379,44 +379,18 @@ def get_latest_event(request, alarm_id: str):
     auth=TokenAuth(),
 )
 def ring_alarm(request, alarm_id: str):
-    with transaction.atomic():
-        alarm = get_object_or_404(Alarm.objects.select_for_update(), id=alarm_id)
+    # Deprecated: the scheduler now records rings at the alarm time. Kept as a no-op so app
+    # builds that still call it when an alarm fires keep working. Remove once they're gone.
+    alarm = get_object_or_404(Alarm, id=alarm_id)
 
-        if alarm.user != request.auth:
-            return 403, {"error": "You do not have access to this alarm."}
+    if alarm.user != request.auth:
+        return 403, {"error": "You do not have access to this alarm."}
 
-        recent_threshold = timezone.now() - timedelta(minutes=2)
-        existing_event = AlarmEvent.objects.filter(
-            alarm=alarm,
-            created_at__gte=recent_threshold,
-            status=AlarmEvent.Status.RINGING,
-        ).exists()
-
-        if existing_event:
-            return 409, {"error": "An active event already exists for this alarm."}
-
-        event = AlarmEvent.objects.create(alarm=alarm, user=alarm.user)
-
-        if alarm.is_one_time:
-            alarm.is_active = False
-            alarm.save(update_fields=["is_active"])
-        else:
-            new_trigger = alarm.calculate_next_trigger(
-                now_override=timezone.now() + timedelta(minutes=2)
-            )
-            Alarm.objects.filter(pk=alarm.pk).update(next_trigger_utc=new_trigger)
-
-    group_members = alarm.group.members.exclude(id=alarm.user.id)
-    data_payload = {
-        "event_id": str(event.id),
-        "alarm_id": str(alarm.id),
-        "created_at": event.created_at.isoformat(),
-    }
-    send_group_push(group_members, Actions.RINGING, data_payload)
+    event = AlarmEvent.objects.filter(alarm=alarm).order_by("-scheduled_for").first()
 
     return 200, {
-        "message": "Alarm event created. 5-minute countdown started.",
-        "event_id": str(event.id),
+        "message": "Rings are recorded by the server at the alarm time.",
+        "event_id": str(event.id) if event else None,
     }
 
 
@@ -435,17 +409,21 @@ def check_in_alarm(request, alarm_id: str):
         event = (
             AlarmEvent.objects.filter(alarm=alarm)
             .select_for_update()
-            .order_by("-created_at")
+            .order_by("-scheduled_for")
             .first()
         )
+
+        now = timezone.now()
 
         if not event:
             return 404, None
         if event.status == AlarmEvent.Status.CHECKED_IN:
             return 409, {"error": "Already checked in"}
+        if now - event.scheduled_for > LATE_CHECK_IN_CUTOFF:
+            return 409, {"error": "You missed this one. Tomorrow's another shot!"}
 
         event.status = AlarmEvent.Status.CHECKED_IN
-        event.checked_in_at = timezone.now()
+        event.checked_in_at = now
         event.save(update_fields=["status", "checked_in_at"])
 
     group_members = alarm.group.members.exclude(id=alarm.user.id)
@@ -454,10 +432,8 @@ def check_in_alarm(request, alarm_id: str):
         "alarm_id": str(alarm.id),
     }
 
-    success = send_group_push(
-        users=group_members, action=Actions.CHECKED_IN, data=data_payload
-    )
+    send_group_push(users=group_members, action=Actions.CHECKED_IN, data=data_payload)
 
-    return 200, {"message": f"Checked in for {event.alarm.name}"}
+    return 200, {"message": f"Checked in for {event.alarm.name}", "on_time": event.is_on_time()}
 
 
