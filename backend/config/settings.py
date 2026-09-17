@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -33,21 +34,30 @@ def _env_bool(name: str, default: bool) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY",
-    "django-insecure-%3%q&!%0!)%&1$$&+^k4lezj+kp8ls-!-bbuj9hogxzv(nw_8x",
-)
+def _env_list(name: str) -> list[str]:
+    return [v.strip() for v in os.environ.get(name, "").split(",") if v.strip()]
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = _env_bool("DJANGO_DEBUG", True)
 
-_allowed_hosts = os.environ.get("DJANGO_ALLOWED_HOSTS", "").strip()
-ALLOWED_HOSTS = (
-    [h.strip() for h in _allowed_hosts.split(",") if h.strip()]
-    if _allowed_hosts
-    else []
-)
+# Off unless explicitly enabled, so a missing env var never ships debug mode to production.
+DEBUG = _env_bool("DJANGO_DEBUG", False)
+
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured("DJANGO_SECRET_KEY must be set when DJANGO_DEBUG is off.")
+    SECRET_KEY = "django-insecure-local-development-only"
+
+ALLOWED_HOSTS = _env_list("DJANGO_ALLOWED_HOSTS")
+
+# The API is served behind a TLS-terminating proxy (e.g. Railway).
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+CSRF_TRUSTED_ORIGINS = _env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+
+# Rate limits key on the client IP; set to the number of proxies in front of the app
+# so X-Forwarded-For is read correctly (0 means use REMOTE_ADDR).
+NINJA_NUM_PROXIES = int(os.environ.get("NINJA_NUM_PROXIES", "0")) or None
 
 
 # Application definition
@@ -122,6 +132,16 @@ else:
     }
 
 
+# Shared by every web worker, so rate limits hold across gunicorn processes.
+# The table is created by the users.0003 migration.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "django_cache",
+    }
+}
+
+
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
@@ -173,3 +193,19 @@ EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = os.environ.get(
     "DEFAULT_FROM_EMAIL", "RingSync <noreply@ringsync.app>"
 )
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "simple": {"format": "[{asctime}] {levelname} {name}: {message}", "style": "{"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "simple"},
+    },
+    "root": {"handlers": ["console"], "level": os.environ.get("LOG_LEVEL", "INFO")},
+    "loggers": {
+        # Keep Django's own request logging at its defaults.
+        "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
+    },
+}

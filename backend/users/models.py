@@ -1,6 +1,13 @@
+from datetime import timedelta
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 import uuid
+
+# Sessions last this long before the user has to log in again.
+AUTH_TOKEN_LIFETIME = timedelta(days=90)
+# Wrong guesses allowed on a reset code before it stops working.
+MAX_RESET_CODE_ATTEMPTS = 5
 
 
 class User(AbstractUser):
@@ -50,6 +57,7 @@ class PasswordResetCode(models.Model):
     code = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)
     used = models.BooleanField(default=False)
+    attempts = models.PositiveSmallIntegerField(default=0)
 
     def is_expired(self):
         from django.utils import timezone

@@ -1,3 +1,4 @@
+import logging
 import time
 from datetime import timedelta
 
@@ -8,12 +9,14 @@ from django.core.management import BaseCommand
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+logger = logging.getLogger(__name__)
+
 
 class Command(BaseCommand):
     help = "Runs the Reaper: fires due alarms and marks unanswered ones as running late."
 
     def handle(self, *args, **options):
-        print("Starting the Nudge Reaper...")
+        logger.info("Starting the Nudge Reaper")
 
         while True:
             self.run_once(timezone.now())
@@ -69,7 +72,7 @@ class Command(BaseCommand):
                 if event is None:
                     continue
 
-                print(f"[{now}] {status} {alarm.user.display_name} / {alarm.name} (scheduled {scheduled_for})")
+                logger.info("%s alarm %s (scheduled %s)", status, alarm.id, scheduled_for.isoformat())
 
                 if status == AlarmEvent.Status.RINGING:
                     transaction.on_commit(lambda event_id=str(event.id): self.notify_ringing(event_id))
@@ -97,7 +100,7 @@ class Command(BaseCommand):
                 event.status = AlarmEvent.Status.EXPIRED
                 event.save(update_fields=["status"])
 
-                print(f"[{now}] EXPIRED {event.user.display_name} / {event.alarm.name}")
+                logger.info("EXPIRED alarm %s event %s", event.alarm_id, event.id)
 
                 # An edited alarm hides its old events, so don't announce them either. They still count.
                 changed_at = event.alarm.schedule_changed_at

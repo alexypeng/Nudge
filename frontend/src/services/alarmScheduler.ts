@@ -61,6 +61,11 @@ export async function stopRinging(alarmId: string) {
     }
 }
 
+export async function cancelAllAlarms() {
+    if (!ExpoAlarm) return;
+    await ExpoAlarm.cancelAllAlarms();
+}
+
 export async function syncAllAlarms(alarms: AlarmOut[]) {
     if (!ExpoAlarm) return;
     await ExpoAlarm.cancelAllAlarms();

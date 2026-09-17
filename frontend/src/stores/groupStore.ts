@@ -19,7 +19,6 @@ interface GroupStore {
     fetchGroupDetail: (groupId: string) => Promise<void>;
     create: (data: GroupCreate) => Promise<GroupOut>;
     update: (id: string, data: GroupUpdate) => Promise<void>;
-    join: (id: string) => Promise<void>;
     leave: (id: string) => Promise<void>;
 }
 
@@ -92,13 +91,6 @@ export const useGroupStore = create<GroupStore>((set) => ({
         set((state) => ({
             groups: sortGroups(state.groups.map((g) => (g.id === id ? updated : g))),
         }));
-    },
-    join: async (id) => {
-        const token = useAuthStore.getState().token;
-        if (!token) return;
-
-        const group = await api.joinGroup(token, id);
-        set((state) => ({ groups: sortGroups([...state.groups, group]) }));
     },
     leave: async (id) => {
         const token = useAuthStore.getState().token;

@@ -1,6 +1,10 @@
+import logging
+
 from firebase_admin import messaging
 from users.models import UserDevice
 from alarms.enums import Actions
+
+logger = logging.getLogger(__name__)
 
 
 def send_ring_push(user, ringer_name):
@@ -21,7 +25,11 @@ def send_ring_push(user, ringer_name):
             payload=messaging.APNSPayload(
                 aps=messaging.Aps(
                     alert=messaging.ApsAlert(title="RING!", body=f"{ringer_name} is ringing your alarm!"),
-                    sound=messaging.CriticalSound(name="default", critical=1, volume=1.0),
+                    # Critical alerts need a special Apple entitlement. Time-sensitive still breaks
+                    # through Focus once the app has the Time Sensitive Notifications capability,
+                    # and is delivered as a normal alert without it.
+                    sound="default",
+                    custom_data={"interruption-level": "time-sensitive"},
                 )
             ),
         ),
@@ -39,7 +47,7 @@ def send_ring_push(user, ringer_name):
         response = messaging.send_each_for_multicast(message)
         return response.success_count > 0
     except Exception as e:
-        print(f"FCM Push Failed: {e}")
+        logger.warning("FCM push failed: %s", e)
         return False
 
 
@@ -91,5 +99,5 @@ def send_group_push(users, action, data, silent=True):
 
         return response.success_count > 0
     except Exception as e:
-        print(f"FCM Push Failed: {e}")
+        logger.warning("FCM push failed: %s", e)
         return False

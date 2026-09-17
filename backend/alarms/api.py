@@ -1,3 +1,5 @@
+import logging
+import uuid
 from datetime import timedelta
 
 from django.db import transaction
@@ -5,6 +7,7 @@ from django.db.models import Count, F, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from ninja import Router
+from ninja.errors import HttpError
 from users.auth import TokenAuth
 from users.models import Friendship, User
 from users.schemas import UserOut
@@ -24,6 +27,8 @@ from .schemas import (
     ManualRingOut,
 )
 from .utils import send_group_push, send_ring_push
+
+logger = logging.getLogger(__name__)
 
 router = Router()
 
@@ -49,7 +54,7 @@ def list_groups(request):
     response={200: GroupOut, 403: None, 404: None},
     auth=TokenAuth(),
 )
-def update_group(request, group_id: str, payload: GroupUpdate):
+def update_group(request, group_id: uuid.UUID, payload: GroupUpdate):
     group = get_object_or_404(Group, id=group_id)
 
     if request.auth not in group.members.all():
@@ -71,7 +76,7 @@ def update_group(request, group_id: str, payload: GroupUpdate):
     response={200: list[UserOut], 403: None},
     auth=TokenAuth(),
 )
-def list_group_members(request, group_id: str):
+def list_group_members(request, group_id: uuid.UUID):
     group = get_object_or_404(Group, id=group_id)
 
     if request.auth not in group.members.all():
@@ -81,23 +86,9 @@ def list_group_members(request, group_id: str):
 
 
 @router.post(
-    "/group/{group_id}/join/", response={200: GroupOut, 403: None}, auth=TokenAuth()
-)
-def join_group(request, group_id: str):
-    group = get_object_or_404(Group, id=group_id)
-
-    group.members.add(request.auth)
-
-    other_members = group.members.exclude(id=request.auth.id)
-    send_group_push(other_members, Actions.GROUP_MEMBER_JOINED, data={"group_id": str(group.id)})
-
-    return 200, group
-
-
-@router.post(
     "/group/{group_id}/leave/", response={204: None, 403: None}, auth=TokenAuth()
 )
-def leave_group(request, group_id: str):
+def leave_group(request, group_id: uuid.UUID):
     with transaction.atomic():
         group = get_object_or_404(Group.objects.select_for_update(), id=group_id)
 
@@ -123,7 +114,7 @@ def leave_group(request, group_id: str):
     response={200: GroupOut, 403: dict, 404: dict},
     auth=TokenAuth(),
 )
-def add_member_to_group(request, group_id: str, payload: AddMemberRequest):
+def add_member_to_group(request, group_id: uuid.UUID, payload: AddMemberRequest):
     group = get_object_or_404(Group, id=group_id)
 
     if not group.members.filter(id=request.auth.id).exists():
@@ -159,7 +150,7 @@ def add_member_to_group(request, group_id: str, payload: AddMemberRequest):
     response={200: list[AlarmOut], 403: None},
     auth=TokenAuth(),
 )
-def list_group_alarms(request, group_id: str):
+def list_group_alarms(request, group_id: uuid.UUID):
     group = get_object_or_404(Group, id=group_id)
 
     if request.auth not in group.members.all():
@@ -173,7 +164,7 @@ def list_group_alarms(request, group_id: str):
     response={200: list[LeaderboardEntry], 403: None},
     auth=TokenAuth(),
 )
-def group_leaderboard(request, group_id: str):
+def group_leaderboard(request, group_id: uuid.UUID):
     group = get_object_or_404(Group, id=group_id)
 
     if not group.members.filter(id=request.auth.id).exists():
@@ -224,9 +215,7 @@ def create_alarm(request, payload: AlarmCreate):
     group = get_object_or_404(Group, id=payload.group_id)
 
     if not group.members.filter(id=request.auth.id).exists():
-        return 403, {
-            "error": "You cannot assign an alarm to a group you are not a member of."
-        }
+        raise HttpError(403, "You cannot assign an alarm to a group you are not a member of.")
 
     clean_time = payload.time.replace(second=0, microsecond=0, tzinfo=None)
     alarm = Alarm.objects.create(
@@ -247,7 +236,7 @@ def create_alarm(request, payload: AlarmCreate):
 
 
 @router.get("/alarm/", response=list[AlarmOut], auth=TokenAuth())
-def list_alarms(request, group_id: str | None = None):
+def list_alarms(request, group_id: uuid.UUID | None = None):
     qs = Alarm.objects.filter(user=request.auth)
     if group_id:
         qs = qs.filter(group_id=group_id)
@@ -255,11 +244,11 @@ def list_alarms(request, group_id: str | None = None):
 
 
 @router.delete("/alarm/{alarm_id}/", response={204: None}, auth=TokenAuth())
-def delete_alarm(request, alarm_id: str):
+def delete_alarm(request, alarm_id: uuid.UUID):
     alarm = get_object_or_404(Alarm, id=alarm_id)
 
-    if alarm.user.id != request.auth.id:
-        return 403, None
+    if alarm.user_id != request.auth.id:
+        raise HttpError(403, "You can only delete your own alarms.")
 
     group_members = alarm.group.members.exclude(id=request.auth.id)
     send_group_push(group_members, Actions.ALARM_DELETED,
@@ -271,11 +260,11 @@ def delete_alarm(request, alarm_id: str):
 
 
 @router.put("/alarm/{alarm_id}/", response=AlarmOut, auth=TokenAuth())
-def update_alarm(request, alarm_id: str, payload: AlarmUpdate):
+def update_alarm(request, alarm_id: uuid.UUID, payload: AlarmUpdate):
     alarm = get_object_or_404(Alarm, id=alarm_id)
 
-    if alarm.user.id != request.auth.id:
-        return 403, None
+    if alarm.user_id != request.auth.id:
+        raise HttpError(403, "You can only edit your own alarms.")
 
     for field, value in payload.model_dump(exclude_unset=True).items():
         if field == "time":
@@ -305,7 +294,7 @@ def update_alarm(request, alarm_id: str, payload: AlarmUpdate):
     response={200: ManualRingOut, 403: dict, 409: dict, 404: None, 429: dict},
     auth=TokenAuth(),
 )
-def trigger_alarm(request, alarm_id: str):
+def trigger_alarm(request, alarm_id: uuid.UUID):
     with transaction.atomic():
         alarm = get_object_or_404(Alarm.objects.select_for_update(), id=alarm_id)
 
@@ -344,9 +333,7 @@ def trigger_alarm(request, alarm_id: str):
     success = send_ring_push(user=alarm.user, ringer_name=request.auth.display_name)
 
     if not success:
-        print(
-            f"Failed to ring {alarm.user.display_name}. They may be logged out or deleted the app."
-        )
+        logger.info("Could not ring user %s; no active devices received the push", alarm.user_id)
 
     return 200, manual_ring
 
@@ -356,7 +343,7 @@ def trigger_alarm(request, alarm_id: str):
     response={200: AlarmEventOut, 204: None, 403: dict},
     auth=TokenAuth(),
 )
-def get_latest_event(request, alarm_id: str):
+def get_latest_event(request, alarm_id: uuid.UUID):
     alarm = get_object_or_404(Alarm, id=alarm_id)
 
     is_owner = alarm.user == request.auth
@@ -378,7 +365,7 @@ def get_latest_event(request, alarm_id: str):
     response={200: dict, 403: dict, 409: dict, 404: None},
     auth=TokenAuth(),
 )
-def ring_alarm(request, alarm_id: str):
+def ring_alarm(request, alarm_id: uuid.UUID):
     # Deprecated: the scheduler now records rings at the alarm time. Kept as a no-op so app
     # builds that still call it when an alarm fires keep working. Remove once they're gone.
     alarm = get_object_or_404(Alarm, id=alarm_id)
@@ -399,7 +386,7 @@ def ring_alarm(request, alarm_id: str):
     response={200: dict, 404: None, 403: dict, 409: dict},
     auth=TokenAuth(),
 )
-def check_in_alarm(request, alarm_id: str):
+def check_in_alarm(request, alarm_id: uuid.UUID):
     with transaction.atomic():
         alarm = get_object_or_404(Alarm.objects.select_for_update(), id=alarm_id)
 

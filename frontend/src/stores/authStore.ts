@@ -1,7 +1,9 @@
 import { create } from "zustand";
 import { api, UserOut, UserUpdate, RegisterIn, LoginIn } from "@/src/api/client";
 import * as SecureStore from "expo-secure-store";
+import * as Notifications from "expo-notifications";
 import { registerForPushNotifications } from "../services/notificationService";
+import { cancelAllAlarms } from "../services/alarmScheduler";
 
 const TOKEN_KEY = "ringsync_token";
 
@@ -13,7 +15,7 @@ interface AuthState {
 
     login: (data: LoginIn) => Promise<void>;
     register: (data: RegisterIn) => Promise<void>;
-    logout: () => void;
+    logout: () => Promise<void>;
     loadToken: () => Promise<void>;
     fetchUser: () => Promise<void>;
     updateUser: (data: UserUpdate) => Promise<void>;
@@ -53,9 +55,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         await api.register(data);
         await get().login({ email: data.email, password: data.password });
     },
-    logout: () => {
-        SecureStore.deleteItemAsync(TOKEN_KEY);
+    logout: async () => {
+        const token = get().token;
+        // Log out locally first so the app responds instantly, even offline.
         set({ token: null, user: null });
+        await SecureStore.deleteItemAsync(TOKEN_KEY);
+        // A logged-out phone shouldn't keep ringing this account's alarms.
+        await cancelAllAlarms().catch(() => {});
+
+        if (token) {
+            // Best effort: end the session on the server and stop pushes to this device.
+            let pushToken: string | undefined;
+            try {
+                const { status } = await Notifications.getPermissionsAsync();
+                if (status === "granted") {
+                    // Can hang on devices without Google Play services; don't let it block logout.
+                    const device = await Promise.race([
+                        Notifications.getDevicePushTokenAsync(),
+                        new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+                    ]);
+                    pushToken = device?.data as string | undefined;
+                }
+            } catch {}
+            await api.logout(token, pushToken).catch(() => {});
+        }
     },
     loadToken: async () => {
         try {

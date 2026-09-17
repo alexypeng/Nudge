@@ -50,6 +50,11 @@ class TokenOut(Schema):
     token: str
 
 
+class LogoutRequest(Schema):
+    # Lets the server stop sending pushes to this device for the logged-out account.
+    push_token: Optional[str] = None
+
+
 class DeviceCreate(Schema):
     push_token: str
     device_type: str
